@@ -18,8 +18,8 @@ A Linux port of Zalo, bringing the popular Vietnamese messaging application to t
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/realdtn2/zalo-linux-port-2026.git
-   cd zalo-linux-port-2026
+   git clone https://github.com/realdtn2/zalo-linux-2026.git
+   cd zalo-linux-2026
    ```
 
 2. **Run the install script**:
@@ -60,4 +60,4 @@ This is an active work-in-progress project. Contributions are welcome! Please:
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on the [GitHub Issues](https://github.com/realdtn2/zalo-linux-port-2026/issues) page.
+For issues, questions, or suggestions, please open an issue on the [GitHub Issues](https://github.com/realdtn2/zalo-linux-2026/issues) page.
