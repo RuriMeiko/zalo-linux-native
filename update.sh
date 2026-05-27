@@ -5,95 +5,150 @@ set -e
 REPO_URL="https://github.com/realdtn2/zalo-linux-port-2026"
 INSTALL_DIR="$HOME/.local/share/zalo"
 TMP_DIR="/tmp/zalo-update-$$"
+FIFO="/tmp/zalo-update-$$.fifo"
 VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-port-2026/master/version.txt"
 
-# Files/dirs to update (excludes reverse-engineering, generate-addon.py, .git)
-UPDATE_ITEMS="bootstrap.js package.json start.sh libs main-dist native pc-dist"
+# Files/folders that should NOT be copied from the freshly cloned repo.
+# Same logic as install.sh – adjust to your needs.
+EXCLUDE_LIST=".git install.sh reverse-engineering generate-addon.py"
 
 # --- HELPERS ---
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 print_step() { echo ""; echo ">>> $1"; }
 
+# --- SEMVER COMPARE ---
+# Returns 0 if $1 < $2
+version_lt() {
+    local a="${1#v}" b="${2#v}"
+    IFS='.' read -r a1 a2 a3 <<< "$a"
+    IFS='.' read -r b1 b2 b3 <<< "$b"
+    a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
+    b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
+    if   [ "$a1" -lt "$b1" ]; then return 0
+    elif [ "$a1" -gt "$b1" ]; then return 1
+    elif [ "$a2" -lt "$b2" ]; then return 0
+    elif [ "$a2" -gt "$b2" ]; then return 1
+    elif [ "$a3" -lt "$b3" ]; then return 0
+    else return 1
+    fi
+}
+
 # --- DEPENDENCY INSTALL ---
 install_dependencies() {
-    print_step "Installing missing dependencies: git curl..."
+    print_step "Installing missing dependencies: git curl zenity..."
     if command_exists apt-get; then
-        sudo apt-get update -y && sudo apt-get install -y git curl
+        sudo apt-get update -y && sudo apt-get install -y git curl zenity
     elif command_exists dnf; then
-        sudo dnf install -y git curl
+        sudo dnf install -y git curl zenity
     elif command_exists yum; then
-        sudo yum install -y git curl
+        sudo yum install -y git curl zenity
     elif command_exists pacman; then
-        sudo pacman -Sy --noconfirm git curl
+        sudo pacman -Sy --noconfirm git curl zenity
     elif command_exists zypper; then
-        sudo zypper install -y git curl
+        sudo zypper install -y git curl zenity
     elif command_exists apk; then
-        sudo apk add git curl
+        sudo apk add git curl zenity
     elif command_exists xbps-install; then
-        sudo xbps-install -Sy git curl
+        sudo xbps-install -Sy git curl zenity
     elif command_exists emerge; then
-        sudo emerge --ask=n dev-vcs/git net-misc/curl
+        sudo emerge --ask=n dev-vcs/git net-misc/curl gnome-extra/zenity
     else
         echo "ERROR: No supported package manager found."
-        echo "Please manually install 'git' and 'curl', then re-run this script."
+        echo "Please manually install 'git', 'curl', and 'zenity', then re-run this script."
         exit 1
     fi
 }
 
 # --- CHECK DEPS ---
 MISSING=0
-command_exists git  || MISSING=1
-command_exists curl || MISSING=1
+command_exists git    || MISSING=1
+command_exists curl   || MISSING=1
+command_exists zenity || MISSING=1
 [ "$MISSING" -eq 1 ] && install_dependencies
 
 # --- VERSION CHECK ---
 print_step "Checking for updates..."
 REMOTE_VERSION=$(curl -sf --max-time 5 "$VERSION_URL" || echo "unknown")
-LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "none")
+LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "v0.0.0")
 
 echo "  Installed : $LOCAL_VERSION"
 echo "  Latest    : $REMOTE_VERSION"
 
 if [ "$REMOTE_VERSION" = "unknown" ]; then
-    echo "WARNING: Could not fetch remote version. Proceeding anyway..."
-elif [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
-    echo ""
-    echo "Already up to date ($LOCAL_VERSION). Nothing to do."
+    zenity --warning --title="Zalo Update" \
+        --text="Could not reach GitHub.\nCheck your internet connection." 2>/dev/null
+    exit 1
+elif ! version_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
+    zenity --info --title="Zalo Update" \
+        --text="Zalo is already up to date.\n\nInstalled: $LOCAL_VERSION" 2>/dev/null
     exit 0
 fi
 
-print_step "Fetching latest version from $REPO_URL..."
-git clone --depth=1 "$REPO_URL" "$TMP_DIR"
+# --- CONFIRM ---
+zenity --question --title="Zalo Update" \
+    --text="A new version is available.\n\nInstalled: $LOCAL_VERSION\nLatest:    $REMOTE_VERSION\n\nUpdate now?" \
+    2>/dev/null || exit 0
 
-print_step "Updating app files in $INSTALL_DIR..."
-for item in $UPDATE_ITEMS; do
-    if [ -e "$TMP_DIR/$item" ]; then
-        rm -rf "$INSTALL_DIR/$item"
-        cp -r "$TMP_DIR/$item" "$INSTALL_DIR/$item"
-        echo "  updated: $item"
-    fi
-done
+# --- SETUP FIFO ---
+mkfifo "$FIFO"
 
-# Update update.sh itself
-if [ -f "$TMP_DIR/update.sh" ]; then
-    cp "$TMP_DIR/update.sh" "$INSTALL_DIR/update.sh"
-    chmod +x "$INSTALL_DIR/update.sh"
-    echo "  updated: update.sh"
+# --- RUN UPDATE IN BACKGROUND, WRITE TO FIFO ---
+(
+    print_step "Fetching latest version from $REPO_URL..."
+    git clone --depth=1 "$REPO_URL" "$TMP_DIR"
+
+    print_step "Updating app files in $INSTALL_DIR..."
+    cd "$TMP_DIR"
+
+    shopt -s dotglob
+    for item in *; do
+        [[ "$item" == "." || "$item" == ".." ]] && continue
+
+        skip=false
+        for excluded in $EXCLUDE_LIST; do
+            if [ "$item" == "$excluded" ]; then
+                echo "  SKIPPED: $item"
+                skip=true
+                break
+            fi
+        done
+
+        if ! $skip; then
+            echo "  UPDATING: $item"
+            rm -rf "$INSTALL_DIR/$item"
+            cp -r "$item" "$INSTALL_DIR/"
+        fi
+    done
+
+    # Make every shell script executable
+    find "$INSTALL_DIR" -type f -name '*.sh' -exec chmod +x {} \;
+
+    rm -rf "$TMP_DIR"
+
+    echo ""
+    echo "============================================"
+    echo "  Zalo updated: $LOCAL_VERSION → $REMOTE_VERSION"
+    echo "  Close to apply changes."
+    echo "============================================"
+    echo ""
+) > "$FIFO" 2>&1 &
+UPDATE_PID=$!
+
+# --- OPEN ZENITY IMMEDIATELY, READING FROM FIFO (blocks until FIFO writer exits) ---
+zenity --text-info \
+    --title="Zalo Update" \
+    --width=560 --height=400 \
+    --ok-label="Close" \
+    2>/dev/null < "$FIFO"
+
+wait "$UPDATE_PID" 2>/dev/null
+UPDATE_EXIT=$?
+
+rm -f "$FIFO"
+
+if [ "$UPDATE_EXIT" -ne 0 ]; then
+    zenity --error --title="Zalo Update" \
+        --text="Update failed. See the log above for details." 2>/dev/null
 fi
 
-# Update version.txt
-if [ -f "$TMP_DIR/version.txt" ]; then
-    cp "$TMP_DIR/version.txt" "$INSTALL_DIR/version.txt"
-fi
-
-chmod +x "$INSTALL_DIR/start.sh"
-
-# --- CLEANUP ---
-rm -rf "$TMP_DIR"
-
-echo ""
-echo "============================================"
-echo "  Zalo updated: $LOCAL_VERSION → $REMOTE_VERSION"
-echo "  Restart Zalo to apply changes."
-echo "============================================"
-echo ""
+exit "$UPDATE_EXIT"

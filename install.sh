@@ -3,11 +3,14 @@ set -e
 
 # --- CONFIG ---
 APP_NAME="Zalo"
-REPO_URL="https://github.com/realdtn2/zalo-linux-port-2026"
 INSTALL_DIR="$HOME/.local/share/zalo"
 DESKTOP_DIR="$HOME/.local/share/applications"
 ICON_SRC="./pc-dist/favicon-96x96.v1.png"
 ICON_DEST="$HOME/.local/share/icons/zalo.png"
+
+# Files/folders in the current directory that should NOT be installed.
+# Add or remove entries as you like. Use exact names (no paths, no wildcards).
+EXCLUDE_LIST=".git install.sh reverse-engineering generate-addon.py"
 
 # --- HELPERS ---
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -56,14 +59,34 @@ rm -f  "$DESKTOP_DIR/${APP_NAME}Update.desktop"
 [ -d "$HOME/Desktop" ] && rm -f "$HOME/Desktop/$APP_NAME.desktop"
 [ -d "$HOME/Desktop" ] && rm -f "$HOME/Desktop/${APP_NAME}Update.desktop"
 
-# --- COPY APP FILES ---
-print_step "Copying app files to $INSTALL_DIR..."
+# --- COPY ALL FILES EXCEPT EXCLUSIONS ---
+print_step "Copying app files to $INSTALL_DIR (excluding: $EXCLUDE_LIST)..."
 mkdir -p "$INSTALL_DIR"
-for item in bootstrap.js package.json start.sh update.sh version.txt libs main-dist native pc-dist; do
-    [ -e "./$item" ] && cp -r "./$item" "$INSTALL_DIR/"
+
+# Make * match hidden files/directories as well
+shopt -s dotglob
+
+for item in *; do
+    # Skip . and .. explicitly
+    [[ "$item" == "." || "$item" == ".." ]] && continue
+
+    skip=false
+    for excluded in $EXCLUDE_LIST; do
+        if [ "$item" == "$excluded" ]; then
+            echo "  SKIPPED: $item"
+            skip=true
+            break
+        fi
+    done
+
+    if ! $skip; then
+        echo "  COPYING: $item"
+        cp -r "$item" "$INSTALL_DIR/"
+    fi
 done
-chmod +x "$INSTALL_DIR/start.sh"
-[ -f "$INSTALL_DIR/update.sh" ] && chmod +x "$INSTALL_DIR/update.sh"
+
+# Make sure every shell script is executable
+find "$INSTALL_DIR" -type f -name '*.sh' -exec chmod +x {} \;
 
 # --- INSTALL ICON ---
 print_step "Installing icon..."

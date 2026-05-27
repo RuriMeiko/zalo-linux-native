@@ -9,6 +9,23 @@ DOWNLOAD_URL="https://github.com/electron/electron/releases/download/$ELECTRON_V
 VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-port-2026/master/version.txt"
 INSTALL_DIR="$(dirname "$0")"
 
+# --- SEMVER COMPARE ---
+# Returns 0 if $1 < $2
+version_lt() {
+    local a="${1#v}" b="${2#v}"
+    IFS='.' read -r a1 a2 a3 <<< "$a"
+    IFS='.' read -r b1 b2 b3 <<< "$b"
+    a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
+    b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
+    if [ "$a1" -lt "$b1" ]; then return 0
+    elif [ "$a1" -gt "$b1" ]; then return 1
+    elif [ "$a2" -lt "$b2" ]; then return 0
+    elif [ "$a2" -gt "$b2" ]; then return 1
+    elif [ "$a3" -lt "$b3" ]; then return 0
+    else return 1
+    fi
+}
+
 # --- DOWNLOAD ELECTRON IF NOT EXISTS ---
 if [ ! -f "$ELECTRON_BIN" ]; then
     echo "[*] Electron $ELECTRON_VERSION not found. Downloading..."
@@ -33,9 +50,9 @@ fi
 # --- VERSION CHECK ---
 if command -v curl >/dev/null 2>&1; then
     REMOTE_VERSION=$(curl -sf --max-time 5 "$VERSION_URL" || echo "")
-    LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "none")
+    LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "v0.0.0")
 
-    if [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" != "$LOCAL_VERSION" ]; then
+    if [ -n "$REMOTE_VERSION" ] && version_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
         if command -v zenity >/dev/null 2>&1; then
             zenity --question \
                 --title="Zalo Update Available" \
