@@ -93,7 +93,7 @@ DESK
 
 cat > "$DESKTOP_DIR/${APP_NAME}Update.desktop" <<DESK
 [Desktop Entry]
-Name=$APP_NAME Update
+Name=Update $APP_NAME
 Comment=Update Zalo to the latest version
 Exec=bash -c 'bash $INSTALL_DIR/update.sh; read -p "Press Enter to close..."'
 Icon=$ICON_DEST
