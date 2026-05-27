@@ -5002,7 +5002,7 @@
                             }
                         } : void 0,
                         enableBadgeMenu: r.enableBadgeSettingButton
-                    }), q.a.createElement(Z.a, null, e === ae.a.VERIFIED ? q.a.createElement(ti, null) : q.a.createElement(oi, null)), q.a.createElement(Z.a, null, Object(H.createPortal)(i.popup, document.body, "popup")), q.a.createElement(ie.b, {
+                    }), q.a.createElement(Z.a, null, q.a.createElement(ti, null)), q.a.createElement(Z.a, null, Object(H.createPortal)(i.popup, document.body, "popup")), q.a.createElement(ie.b, {
                         windowId: re.c
                     }), Object(H.createPortal)(i.isLoading && q.a.createElement("div", {
                         style: {
