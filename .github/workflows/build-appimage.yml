@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,7 +18,7 @@ jobs:
           ref: latest
 
       - name: Install dependencies
-        run: sudo apt-get install -y wget unzip
+        run: sudo apt-get install -y wget unzip libfuse2
 
       - name: Build AppImage
         run: |
