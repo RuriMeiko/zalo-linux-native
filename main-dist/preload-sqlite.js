@@ -6767,6 +6767,24 @@ __ZaBUNDLENAME__ = "preload-sqlite", __SCRIPT_TYPE__ = "preload",
                             toPNG: t => e.toPNG(t)
                         }
                     },
+                    getClipboardImagePNG: () => {
+                        let e = r.clipboard.readImage();
+                        if (e.isEmpty()) { try { const buf = r.clipboard.readBuffer("image/png"); if (buf && buf.length > 0) { e = r.nativeImage.createFromBuffer(buf); } } catch(_) {} }
+                        if (e.isEmpty()) return null;
+                        return e.toPNG().toString('base64');
+                    },
+                    deleteFile: (p) => { try { require('fs').unlinkSync(p); } catch(_) {} },
+                    saveClipboardImageToTemp: () => {
+                        try {
+                            const _fs = require('fs'), _os = require('os'), _path = require('path');
+                            let e = r.clipboard.readImage();
+                            if (e.isEmpty()) { try { const buf = r.clipboard.readBuffer("image/png"); if (buf && buf.length > 0) { e = r.nativeImage.createFromBuffer(buf); } } catch(_) {} }
+                            if (e.isEmpty()) return null;
+                            const tmpPath = _path.join(_os.tmpdir(), "zalo_clip_" + Date.now() + ".png");
+                            _fs.writeFileSync(tmpPath, e.toPNG());
+                            return tmpPath;
+                        } catch(err) { return String(err); }
+                    },
                     getClipboardText: () => r.clipboard.readText(),
                     writeTextToClipboard: (e, t) => {
                         t ? r.clipboard.write({

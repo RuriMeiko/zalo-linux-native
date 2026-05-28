@@ -9,8 +9,8 @@ DOWNLOAD_URL="https://github.com/electron/electron/releases/download/$ELECTRON_V
 VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-2026/latest/version.txt"
 INSTALL_DIR="$(dirname "$0")"
 
-# --- APPIMAGE: use bundled Electron ---
-if [ -n "$APPIMAGE" ]; then
+# Use bundled electron if available (AppImage), otherwise use/download from ~/.local
+if [ -f "$INSTALL_DIR/electron/electron" ]; then
     ELECTRON_BIN="$INSTALL_DIR/electron/electron"
 fi
 
@@ -32,7 +32,7 @@ version_lt() {
 }
 
 # --- DOWNLOAD ELECTRON IF NOT EXISTS (non-AppImage only) ---
-if [ -z "$APPIMAGE" ] && [ ! -f "$ELECTRON_BIN" ]; then
+if [ ! -f "$ELECTRON_BIN" ]; then
     echo "[*] Electron $ELECTRON_VERSION not found. Downloading..."
 
     TMP_ZIP="/tmp/electron-$ELECTRON_VERSION.zip"

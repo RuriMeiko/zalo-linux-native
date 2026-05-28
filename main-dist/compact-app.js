@@ -21995,7 +21995,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                         resizable: !0,
                         backgroundColor: "#1f1f1f",
                         webPreferences: {
-                            devTools: !1,
+                            devTools: !0,
                             webSecurity: !0,
                             partition: "persist:zalo"
                         }
@@ -46753,7 +46753,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                                 contextIsolation: !0,
                                 sandbox: !0,
                                 webSecurity: !0,
-                                devTools: !1
+                                devTools: !0
                             },
                             useContentSize: !0,
                             width: 800,
@@ -51518,7 +51518,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                 resizable: !0,
                 backgroundColor: "#1f1f1f",
                 webPreferences: {
-                    devTools: !1,
+                    devTools: !0,
                     webSecurity: !0,
                     partition: "persist:zalo"
                 }
@@ -51733,7 +51733,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                             webSecurity: !0,
                             allowRunningInsecureContent: !1,
                             webgl: !0,
-                            devTools: !1,
+                            devTools: !0,
                             partition: "persist:zalo",
                             nodeIntegration: !1,
                             backgroundThrottling: !1,
@@ -107722,7 +107722,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                             minHeight: me.DEFAULT_MIN_HEIGHT,
                             childResourceURL: n
                         };
-                    Ae = m.createWithMultiWindow(i, o, yn, oe(), t), g(Ae), v(Ae.webContents), et.setMainWindow(Ae)
+                    Ae = m.createWithMultiWindow(i, o, yn, true, t), g(Ae), v(Ae.webContents), et.setMainWindow(Ae)
                 } catch (t) {
                     T.zsymb(22, "ff6Q4c", ["[FEA-MULTI] Something went wrong {}", "MCw0om"], t)
                 }
@@ -108276,7 +108276,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                                     label: "Thoát",
                                     click: e
                                 }];
-                                oe() && r.unshift({
+                                r.unshift({
                                     label: "Mở Zalo Logger",
                                     click: () => Ae.webContents.toggleDevTools()
                                 }), n = t.buildFromTemplate(r)
@@ -108291,7 +108291,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                                     label: "Thoát",
                                     click: e
                                 }];
-                                oe() && r.unshift({
+                                r.unshift({
                                     label: "Mở Zalo Logger",
                                     click: () => Ae.webContents.toggleDevTools()
                                 }), n = t.buildFromTemplate(r)
@@ -125605,7 +125605,7 @@ __ZaBUNDLENAME__ = "compact-app", __SCRIPT_TYPE__ = "utility-process",
                             contextIsolation: !0,
                             sandbox: !0,
                             webSecurity: !0,
-                            devTools: !1
+                            devTools: !0
                         },
                         useContentSize: !0,
                         width: 1250,

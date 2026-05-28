@@ -1,3 +1,39 @@
+// CLIPBOARD IMAGE PASTE FIX
+// Cleanup old temp files on startup
+try {
+    const _fs = require('fs'), _os = require('os'), _path = require('path');
+    _fs.readdirSync(_os.tmpdir()).filter(f => f.startsWith('zalo_clip_')).forEach(f => {
+        try { _fs.unlinkSync(_path.join(_os.tmpdir(), f)); } catch(_) {}
+    });
+} catch(_) {}
+window.addEventListener('DOMContentLoaded', () => {
+    async function tryPasteImage() {
+        if (!window.$zelectronNative || !window.$zelectronNative.getClipboardImagePNG) return;
+        try {
+            const b64 = window.$zelectronNative.getClipboardImagePNG();
+            if (!b64) return;
+            const binary = atob(b64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const file = new File([bytes], 'image.png', { type: 'image/png' });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const target = document.getElementById('dragOverlayInputbox');
+            if (!target) return;
+            target.style.display = 'block';
+            target.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt, bubbles: true }));
+            target.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true }));
+            target.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+        } catch(err) {}
+    }
+    let _lastPaste = 0;
+    document.addEventListener('paste', async (e) => {
+        const now = Date.now();
+        if (now - _lastPaste < 200) return;
+        _lastPaste = now;
+        await tryPasteImage();
+    }, true);
+});
 __ZaBUNDLENAME__ = "preload-render", __SCRIPT_TYPE__ = "preload",
     function(e) {
         var t = {};
@@ -5240,6 +5276,24 @@ __ZaBUNDLENAME__ = "preload-render", __SCRIPT_TYPE__ = "preload",
                             toJPEG: t => e.toJPEG(t),
                             toPNG: t => e.toPNG(t)
                         }
+                    },
+                    getClipboardImagePNG: () => {
+                        let e = r.clipboard.readImage();
+                        if (e.isEmpty()) { try { const buf = r.clipboard.readBuffer("image/png"); if (buf && buf.length > 0) { e = r.nativeImage.createFromBuffer(buf); } } catch(_) {} }
+                        if (e.isEmpty()) return null;
+                        return e.toPNG().toString('base64');
+                    },
+                    deleteFile: (p) => { try { require('fs').unlinkSync(p); } catch(_) {} },
+                    saveClipboardImageToTemp: () => {
+                        try {
+                            const _fs = require('fs'), _os = require('os'), _path = require('path');
+                            let e = r.clipboard.readImage();
+                            if (e.isEmpty()) { try { const buf = r.clipboard.readBuffer("image/png"); if (buf && buf.length > 0) { e = r.nativeImage.createFromBuffer(buf); } } catch(_) {} }
+                            if (e.isEmpty()) return null;
+                            const tmpPath = _path.join(_os.tmpdir(), "zalo_clip_" + Date.now() + ".png");
+                            _fs.writeFileSync(tmpPath, e.toPNG());
+                            return tmpPath;
+                        } catch(err) { return String(err); }
                     },
                     getClipboardText: () => r.clipboard.readText(),
                     writeTextToClipboard: (e, t) => {
