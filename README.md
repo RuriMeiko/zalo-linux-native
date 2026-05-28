@@ -4,6 +4,18 @@ A Linux port of Zalo, bringing the popular Vietnamese messaging application to t
 
 <img width="1280" height="799" alt="image" src="https://github.com/user-attachments/assets/7f3000e2-6d5d-4bc1-a4c1-d334f4d7a3e9" />
 
+## How It Works
+
+This is an unofficial port of the **Zalo macOS desktop client** to Linux — not a web wrapper. Calls are not supported yet.
+
+The port was created by:
+1. Extracting the `.dmg` from the macOS version
+2. Locating `app.asar` at `/Applications/Zalo.app/Contents/Resources/`
+3. Extracting it with `asar extract app.asar app`
+4. Running the extracted app with Electron 22.3.27 (`electron .`)
+
+> Note: Newer versions of Electron cause errors — v22.3.27 is required.
+
 ## Features
 
 ### ✅ Supported
