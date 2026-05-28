@@ -6,8 +6,13 @@ ELECTRON_VERSION="v22.3.27"
 ELECTRON_DIR="$HOME/.local/electron-$ELECTRON_VERSION"
 ELECTRON_BIN="$ELECTRON_DIR/electron"
 DOWNLOAD_URL="https://github.com/electron/electron/releases/download/$ELECTRON_VERSION/electron-$ELECTRON_VERSION-linux-x64.zip"
-VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-port-2026/master/version.txt"
+VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-2026/latest/version.txt"
 INSTALL_DIR="$(dirname "$0")"
+
+# --- APPIMAGE: use bundled Electron ---
+if [ -n "$APPIMAGE" ]; then
+    ELECTRON_BIN="$INSTALL_DIR/electron/electron"
+fi
 
 # --- SEMVER COMPARE ---
 # Returns 0 if $1 < $2
@@ -26,8 +31,8 @@ version_lt() {
     fi
 }
 
-# --- DOWNLOAD ELECTRON IF NOT EXISTS ---
-if [ ! -f "$ELECTRON_BIN" ]; then
+# --- DOWNLOAD ELECTRON IF NOT EXISTS (non-AppImage only) ---
+if [ -z "$APPIMAGE" ] && [ ! -f "$ELECTRON_BIN" ]; then
     echo "[*] Electron $ELECTRON_VERSION not found. Downloading..."
 
     TMP_ZIP="/tmp/electron-$ELECTRON_VERSION.zip"
@@ -54,12 +59,23 @@ if command -v curl >/dev/null 2>&1; then
 
     if [ -n "$REMOTE_VERSION" ] && version_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
         if command -v zenity >/dev/null 2>&1; then
-            zenity --question \
-                --title="Zalo Update Available" \
-                --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:       <b>$REMOTE_VERSION</b>\n\nUpdate now?" \
-                --ok-label="Update" \
-                --cancel-label="Skip" \
-                --width=320 2>/dev/null && bash "$INSTALL_DIR/update.sh"
+            if [ -n "$APPIMAGE" ]; then
+                # AppImage can't self-update — open releases page instead
+                zenity --question \
+                    --title="Zalo Update Available" \
+                    --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:    <b>$REMOTE_VERSION</b>\n\nOpen download page?" \
+                    --ok-label="Download" \
+                    --cancel-label="Skip" \
+                    --width=320 2>/dev/null \
+                && xdg-open "https://github.com/realdtn2/zalo-linux-2026/releases/tag/$REMOTE_VERSION" || true
+            else
+                zenity --question \
+                    --title="Zalo Update Available" \
+                    --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:    <b>$REMOTE_VERSION</b>\n\nUpdate now?" \
+                    --ok-label="Update" \
+                    --cancel-label="Skip" \
+                    --width=320 2>/dev/null && bash "$INSTALL_DIR/update.sh"
+            fi
         fi
     fi
 fi

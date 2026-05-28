@@ -2,11 +2,11 @@
 set -e
 
 # --- CONFIG ---
-REPO_URL="https://github.com/realdtn2/zalo-linux-port-2026"
+REPO_URL="https://github.com/realdtn2/zalo-linux-2026"
 INSTALL_DIR="$HOME/.local/share/zalo"
 TMP_DIR="/tmp/zalo-update-$$"
 FIFO="/tmp/zalo-update-$$.fifo"
-VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-port-2026/master/version.txt"
+VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-2026/latest/version.txt"
 
 # Files/folders that should NOT be copied from the freshly cloned repo.
 # Same logic as install.sh – adjust to your needs.
