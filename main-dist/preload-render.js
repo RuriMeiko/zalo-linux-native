@@ -8,14 +8,26 @@ try {
 } catch(_) {}
 window.addEventListener('DOMContentLoaded', () => {
     async function tryPasteImage() {
-        if (!window.$zelectronNative || !window.$zelectronNative.getClipboardImagePNG) return;
+        if (!window.$zelectronNative) return;
         try {
-            const b64 = window.$zelectronNative.getClipboardImagePNG();
-            if (!b64) return;
-            const binary = atob(b64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            const file = new File([bytes], 'image.png', { type: 'image/png' });
+            let file = null;
+            const b64 = window.$zelectronNative.getClipboardImagePNG && window.$zelectronNative.getClipboardImagePNG();
+            if (b64) {
+                const binary = atob(b64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                file = new File([bytes], 'image.png', { type: 'image/png' });
+            } else {
+                const filePath = window.$zelectronNative.getClipboardFilePath && window.$zelectronNative.getClipboardFilePath();
+                if (!filePath) return;
+                const ext = filePath.split('.').pop().toLowerCase();
+                const imageExts = ['png','jpg','jpeg','gif','webp','bmp','tiff','tif','avif','jxl'];
+                if (!imageExts.includes(ext)) return;
+                const res = await fetch('file://' + filePath);
+                const blob = await res.blob();
+                file = new File([blob], filePath.split('/').pop(), { type: blob.type || 'image/png' });
+            }
+            if (!file) return;
             const dt = new DataTransfer();
             dt.items.add(file);
             const target = document.getElementById('dragOverlayInputbox');
@@ -5282,6 +5294,16 @@ __ZaBUNDLENAME__ = "preload-render", __SCRIPT_TYPE__ = "preload",
                         if (e.isEmpty()) { try { const buf = r.clipboard.readBuffer("image/png"); if (buf && buf.length > 0) { e = r.nativeImage.createFromBuffer(buf); } } catch(_) {} }
                         if (e.isEmpty()) return null;
                         return e.toPNG().toString('base64');
+                    },
+                    getClipboardFilePath: () => {
+                        try {
+                            const { execSync } = require('child_process');
+                            const text = execSync('wl-paste --type text/uri-list 2>/dev/null', { timeout: 1000 }).toString().trim();
+                            if (!text) return null;
+                            const uri = text.split('\n')[0].trim();
+                            if (!uri.startsWith('file://')) return null;
+                            return decodeURIComponent(uri.replace('file://', ''));
+                        } catch(_) { return null; }
                     },
                     deleteFile: (p) => { try { require('fs').unlinkSync(p); } catch(_) {} },
                     saveClipboardImageToTemp: () => {

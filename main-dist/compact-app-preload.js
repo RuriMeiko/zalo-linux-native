@@ -5651,6 +5651,16 @@ __ZaBUNDLENAME__ = "compact-app-preload", __SCRIPT_TYPE__ = "preload",
                         if (e.isEmpty()) return null;
                         return e.toPNG().toString('base64');
                     },
+                    getClipboardFilePath: () => {
+                        try {
+                            const { execSync } = require('child_process');
+                            const text = execSync('wl-paste --type text/uri-list 2>/dev/null', { timeout: 1000 }).toString().trim();
+                            if (!text) return null;
+                            const uri = text.split('\n')[0].trim();
+                            if (!uri.startsWith('file://')) return null;
+                            return decodeURIComponent(uri.replace('file://', ''));
+                        } catch(_) { return null; }
+                    },
                     deleteFile: (p) => { try { require('fs').unlinkSync(p); } catch(_) {} },
                     saveClipboardImageToTemp: () => {
                         try {
