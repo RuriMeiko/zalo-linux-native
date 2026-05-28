@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # --- CONFIG ---
 REPO_URL="https://github.com/realdtn2/zalo-linux-2026"
@@ -8,9 +7,11 @@ TMP_DIR="/tmp/zalo-update-$$"
 FIFO="/tmp/zalo-update-$$.fifo"
 VERSION_URL="https://raw.githubusercontent.com/realdtn2/zalo-linux-2026/latest/version.txt"
 
-# Files/folders that should NOT be copied from the freshly cloned repo.
-# Same logic as install.sh – adjust to your needs.
-EXCLUDE_LIST=".git install.sh reverse-engineering generate-addon.py"
+# --- CLEANUP TRAP ---
+cleanup() {
+    rm -rf "$TMP_DIR" "$FIFO"
+}
+trap cleanup EXIT INT TERM
 
 # --- HELPERS ---
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -95,18 +96,24 @@ mkfifo "$FIFO"
 # --- RUN UPDATE IN BACKGROUND, WRITE TO FIFO ---
 (
     print_step "Fetching latest version from $REPO_URL..."
-    git clone --depth=1 "$REPO_URL" "$TMP_DIR"
+    if ! git clone --depth=1 "$REPO_URL" "$TMP_DIR"; then
+        echo "ERROR: git clone failed."
+        exit 1
+    fi
+
+    # Read EXCLUDE_LIST from the freshly cloned start.sh
+    EXCLUDE_LIST="$(grep -m1 '^EXCLUDE_LIST=' "$TMP_DIR/start.sh" | cut -d'"' -f2)"
 
     print_step "Updating app files in $INSTALL_DIR..."
-    cd "$TMP_DIR"
+    cd "$TMP_DIR" || exit 1
 
-    shopt -s dotglob
+    # dotglob is intentionally NOT set — avoids copying .git and other dotfiles
     for item in *; do
-        [[ "$item" == "." || "$item" == ".." ]] && continue
+        [ "$item" = "." ] || [ "$item" = ".." ] && continue
 
         skip=false
         for excluded in $EXCLUDE_LIST; do
-            if [ "$item" == "$excluded" ]; then
+            if [ "$item" = "$excluded" ]; then
                 echo "  SKIPPED: $item"
                 skip=true
                 break
@@ -123,8 +130,6 @@ mkfifo "$FIFO"
     # Make every shell script executable
     find "$INSTALL_DIR" -type f -name '*.sh' -exec chmod +x {} \;
 
-    rm -rf "$TMP_DIR"
-
     echo ""
     echo "============================================"
     echo "  Zalo updated: $LOCAL_VERSION → $REMOTE_VERSION"
@@ -134,17 +139,18 @@ mkfifo "$FIFO"
 ) > "$FIFO" 2>&1 &
 UPDATE_PID=$!
 
-# --- OPEN ZENITY IMMEDIATELY, READING FROM FIFO (blocks until FIFO writer exits) ---
-zenity --text-info \
+# --- OPEN ZENITY, READING FROM FIFO ---
+# If zenity fails to launch, kill the background process to avoid an indefinite hang
+if ! zenity --text-info \
     --title="Zalo Update" \
     --width=560 --height=400 \
     --ok-label="Close" \
-    2>/dev/null < "$FIFO"
+    2>/dev/null < "$FIFO"; then
+    kill "$UPDATE_PID" 2>/dev/null
+fi
 
 wait "$UPDATE_PID" 2>/dev/null
 UPDATE_EXIT=$?
-
-rm -f "$FIFO"
 
 if [ "$UPDATE_EXIT" -ne 0 ]; then
     zenity --error --title="Zalo Update" \

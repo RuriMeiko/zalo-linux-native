@@ -37,17 +37,30 @@ if [ ! -f "$ELECTRON_BIN" ]; then
 
     TMP_ZIP="/tmp/electron-$ELECTRON_VERSION.zip"
 
-    wget -O "$TMP_ZIP" "$DOWNLOAD_URL"
+    # Clean up TMP_ZIP on exit/interrupt
+    trap 'rm -f "$TMP_ZIP"' EXIT INT TERM
+
+    if ! wget -O "$TMP_ZIP" "$DOWNLOAD_URL"; then
+        echo "ERROR: Failed to download Electron."
+        exit 1
+    fi
 
     mkdir -p "$ELECTRON_DIR"
-    unzip -q "$TMP_ZIP" -d "$ELECTRON_DIR"
+
+    if ! unzip -q "$TMP_ZIP" -d "$ELECTRON_DIR"; then
+        echo "ERROR: Failed to extract Electron (zip may be corrupt). Removing and retrying next launch."
+        rm -f "$TMP_ZIP"
+        exit 1
+    fi
 
     if [ -d "$ELECTRON_DIR/electron-$ELECTRON_VERSION-linux-x64" ]; then
         mv "$ELECTRON_DIR"/electron-$ELECTRON_VERSION-linux-x64/* "$ELECTRON_DIR"
         rmdir "$ELECTRON_DIR/electron-$ELECTRON_VERSION-linux-x64"
     fi
 
-    rm "$TMP_ZIP"
+    rm -f "$TMP_ZIP"
+    trap - EXIT INT TERM
+
     chmod +x "$ELECTRON_BIN"
     echo "[*] Electron downloaded."
 fi

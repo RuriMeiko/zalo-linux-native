@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 ELECTRON_VERSION=$(grep -m1 'ELECTRON_VERSION=' start.sh | cut -d'"' -f2)
 APP_NAME=$(grep -m1 'APP_NAME=' install.sh | cut -d'"' -f2)
 ICON_SRC=$(grep -m1 'ICON_SRC=' install.sh | cut -d'"' -f2 | sed 's|\./||')
-EXCLUDE_LIST="$(grep -m1 'EXCLUDE_LIST=' install.sh | cut -d'"' -f2) build-appimage.sh build-appimage-debug.sh dist"
+EXCLUDE_LIST="$(grep -m1 'EXCLUDE_LIST=' install.sh | cut -d'"' -f2)"
 VERSION=$(cat version.txt 2>/dev/null | tr -d '[:space:]')
 
 APP_ID="${APP_NAME,,}"

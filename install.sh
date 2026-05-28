@@ -10,7 +10,7 @@ ICON_DEST="$HOME/.local/share/icons/zalo.png"
 
 # Files/folders in the current directory that should NOT be installed.
 # Add or remove entries as you like. Use exact names (no paths, no wildcards).
-EXCLUDE_LIST=".git install.sh reverse-engineering generate-addon.py"
+EXCLUDE_LIST=".git .github .gitignore install.sh reverse-engineering generate-addon.py dist build-appimage.sh README.md"
 
 # --- HELPERS ---
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -118,9 +118,9 @@ cat > "$DESKTOP_DIR/${APP_NAME}Update.desktop" <<DESK
 [Desktop Entry]
 Name=Update $APP_NAME
 Comment=Update Zalo to the latest version
-Exec=bash -c 'bash $INSTALL_DIR/update.sh; read -p "Press Enter to close..."'
+Exec=bash $INSTALL_DIR/update.sh
 Icon=$ICON_DEST
-Terminal=true
+Terminal=false
 Type=Application
 Categories=Network;InstantMessaging;
 DESK
