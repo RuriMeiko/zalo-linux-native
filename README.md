@@ -18,11 +18,11 @@ The port was created by:
 
 ## Features
 
-### ✅ Supported
+### ✅ Working
 - Message synchronization
 - Version check bypass (no outdated version warnings)
 
-### ❌ Unsupported
+### ❌ Non-working
 - Calling and video calling
 - Some miscellaneous features
 
