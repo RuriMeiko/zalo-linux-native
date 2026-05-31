@@ -71,9 +71,6 @@ Requires: `wget`, `unzip`
 **Description:**  
 A massive proprietary VoIP and WebRTC stack built around custom ZRTP-based encryption. Implemented through `zcall_mac.node` and responsible for all voice and video calling functionality.
 
-**Path Forward:**  
-Requires a complete protocol teardown and real-time network reverse-engineering effort. The module is currently bypassed using `binding-stub.js`, which returns no-op implementations to prevent application crashes during initialization.
-
 ---
 
 ### `db-cross-v4` (Backup Decryption Engine)
@@ -83,7 +80,7 @@ Requires a complete protocol teardown and real-time network reverse-engineering 
 **Description:**  
 Replaces the original macOS Mach-O binary. Intercepts backup restoration calls to decompress and decrypt proprietary ZDB4.0 backup containers using AES-256-CBC and LZMA2, enabling full chat history recovery.
 
-**Path Forward:**  
+**State:**  
 Fully reverse-engineered and reimplemented in C++. The Linux replacement is complete and currently active.
 
 ---
@@ -95,9 +92,6 @@ Fully reverse-engineered and reimplemented in C++. The Linux replacement is comp
 **Description:**  
 Responsible for decoding JPEG-XL image files. Depends on a large bundled ecosystem of macOS-specific dynamic libraries, including OpenCV, `highway`, and `brotli`.
 
-**Path Forward:**  
-Requires native Linux builds of the underlying open-source C++ dependencies along with a custom Node-API wrapper capable of processing the application's image buffers.
-
 ---
 
 ### `zimage` (Advanced Image Processing)
@@ -106,11 +100,6 @@ Requires native Linux builds of the underlying open-source C++ dependencies alon
 
 **Description:**  
 Performs computationally intensive image operations such as thumbnail generation, resizing, and image transformations using the bundled `libvips-cpp` library.
-
-**Path Forward:**  
-Either:
-- Install and interface with native Linux `libvips`, or
-- Replace functionality entirely using JavaScript-based solutions such as `sharp`.
 
 ---
 
@@ -121,9 +110,6 @@ Either:
 **Description:**  
 Generates image thumbnails from `.mp4` attachments. Functions as a native macOS wrapper around a statically linked FFmpeg component that extracts preview frames.
 
-**Path Forward:**  
-Can be replaced with a JavaScript implementation that invokes the host system's `ffmpeg` binary and returns generated thumbnails to the application.
-
 ---
 
 ### `file-utilities` (Fast Directory Sizing)
@@ -132,9 +118,6 @@ Can be replaced with a JavaScript implementation that invokes the host system's 
 
 **Description:**  
 A Rust-based NAPI-RS module used for high-performance recursive directory size calculations.
-
-**Path Forward:**  
-Can be reimplemented using an asynchronous recursive filesystem scanner built on Node.js `fs.promises`.
 
 ---
 
@@ -145,9 +128,6 @@ Can be reimplemented using an asynchronous recursive filesystem scanner built on
 **Description:**  
 Traverses the filesystem to locate files, index content, and discover backups.
 
-**Path Forward:**  
-Currently returns empty arrays through a stub implementation. Can be fully rewritten using standard Node.js filesystem APIs.
-
 ---
 
 ### `file-utils` (Low-Level File System Utilities)
@@ -156,9 +136,6 @@ Currently returns empty arrays through a stub implementation. Can be fully rewri
 
 **Description:**  
 Provides native wrappers around common filesystem operations such as moving, copying, and manipulating files.
-
-**Path Forward:**  
-A pure Node.js implementation using built-in filesystem APIs can provide complete feature parity.
 
 ---
 
@@ -169,9 +146,6 @@ A pure Node.js implementation using built-in filesystem APIs can provide complet
 **Description:**  
 A macOS-specific profiling module used to analyze V8 JavaScript engine performance.
 
-**Path Forward:**  
-Can be mapped directly to Node.js V8 profiling APIs and existing profiling tooling available on Linux.
-
 ---
 
 ### `zfile` (Disk Information)
@@ -180,9 +154,6 @@ Can be mapped directly to Node.js V8 profiling APIs and existing profiling tooli
 
 **Description:**  
 Retrieves disk usage statistics, storage capacity information, and available free space.
-
-**Path Forward:**  
-Can be implemented on Linux through a lightweight Node.js wrapper around standard system utilities such as `df`.
 
 ---
 
@@ -193,7 +164,7 @@ Can be implemented on Linux through a lightweight Node.js wrapper around standar
 **Description:**  
 The native database engine used to access local message shard databases (`.db` files).
 
-**Path Forward:**  
+**State:**  
 The original macOS binary has been replaced with a Linux ELF build (`node_sqlite3.node`) bundled within the application. Functionality is fully operational.
 
 ---
@@ -205,7 +176,7 @@ The original macOS binary has been replaced with a Linux ELF build (`node_sqlite
 **Description:**  
 Custom logging infrastructure utilizing an IPC transport layer.
 
-**Path Forward:**  
+**State:**  
 Implemented entirely in cross-platform JavaScript and requires no platform-specific porting work.
 
 ## Contributing
