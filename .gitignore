@@ -2,11 +2,6 @@ dist
 .claw
 .clawd-todos.json
 unnamed_addrs.txt
-strings.txt
-symbols.txt
-*.py
-split
-zcall-reversed
 ghidrecomp
-matched_addrs.txt
-analysis
+reverse-engineering
+*run_zcall_re.sh
