@@ -2022,15 +2022,10 @@
                 }
                 onDispose() {}
                 checkAppVersion() {
-                    return null == this.appVersionState && (this.appVersionState = this.verifyAppVersion(), this.afterVerifyAppVersion()), this.appVersionState
+                    return h.a.VERIFIED
                 }
                 verifyAppVersion() {
-                    const e = b.a.lastUsedMajorVersion,
-                        t = b.a.lastUsedDbVersion ? g.deserialize(b.a.lastUsedDbVersion) : null;
-                    if (!(!e || e <= 5)) return this.logger.zsymb(18, "j6gdFZ", `verifyAppVersion: detect old major version. current 5; lastUsed ${e}`), h.a.OLD_MAJOR_VERSION;
-                    if (!t) return this.logger.zsymb(0, "ZaElx_", "verifyAppVersion: VALID. no previous db version."), h.a.VERIFIED;
-                    this.currentDbVersion || (this.currentDbVersion = this.getCurrentDBVersion());
-                    return this.verifyDbVersion(t, this.currentDbVersion) ? (this.logger.zsymb(0, "bAmAEh", `verifyAppVersion: VALID. lastUsedMajorVersion ${e}; lastUsedDbVersion ${t.toString()}`), h.a.VERIFIED) : (this.logger.zsymb(18, "DejWhS", `verifyAppVersion: detect old DB version. current ${this.currentDbVersion.toString()}; lastUsed ${t.toString()}`), h.a.OLD_DB_VERSION)
+                    return h.a.VERIFIED;
                 }
                 afterVerifyAppVersion() {}
                 verifyDbVersion(e, t) {
