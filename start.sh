@@ -65,6 +65,7 @@ if [ ! -f "$ELECTRON_BIN" ]; then
     echo "[*] Electron downloaded."
 fi
 
+
 # --- VERSION CHECK ---
 if command -v curl >/dev/null 2>&1; then
     REMOTE_VERSION=$(curl -sf --max-time 5 "$VERSION_URL" || echo "")
@@ -95,4 +96,8 @@ fi
 
 # --- RUN APP ---
 echo "[*] Launching with Electron $ELECTRON_VERSION..."
-ELECTRON_ENABLE_LOGGING=1 "$ELECTRON_BIN" "$INSTALL_DIR"
+EXTRA_FLAGS=""
+if [ -f /etc/debian_version ]; then
+    EXTRA_FLAGS="--no-sandbox"
+fi
+ELECTRON_ENABLE_LOGGING=1 "$ELECTRON_BIN" $EXTRA_FLAGS "$INSTALL_DIR"

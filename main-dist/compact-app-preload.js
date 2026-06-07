@@ -5654,7 +5654,16 @@ __ZaBUNDLENAME__ = "compact-app-preload", __SCRIPT_TYPE__ = "preload",
                     getClipboardFilePath: () => {
                         try {
                             const { execSync } = require('child_process');
-                            const text = execSync('wl-paste --type text/uri-list 2>/dev/null', { timeout: 1000 }).toString().trim();
+                            const isWayland = !!process.env.WAYLAND_DISPLAY;
+                            let text = null;
+                            if (isWayland) {
+                                text = execSync('wl-paste --type text/uri-list 2>/dev/null', { timeout: 1000 }).toString().trim();
+                            } else {
+                                const x11cmds = ['xclip -selection clipboard -t text/uri-list -o', 'xsel -b -o'];
+                                for (const cmd of x11cmds) {
+                                    try { const t = execSync(cmd + ' 2>/dev/null', { timeout: 1000 }).toString().trim(); if (t) { text = t; break; } } catch(_) {}
+                                }
+                            }
                             if (!text) return null;
                             const uri = text.split('\n')[0].trim();
                             if (!uri.startsWith('file://')) return null;

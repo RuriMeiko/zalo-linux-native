@@ -18,23 +18,29 @@ print_step() { echo ""; echo ">>> $1"; }
 
 # --- DEPENDENCY INSTALL ---
 install_dependencies() {
-    print_step "Installing missing dependencies: wget unzip curl git zenity..."
+    # Add xclip for X11 clipboard support if on X11
+    local EXTRA=""
+    if [ "$XDG_SESSION_TYPE" = "x11" ] || ( [ -z "$WAYLAND_DISPLAY" ] && [ -n "$DISPLAY" ] ); then
+        EXTRA=" xclip"
+    fi
+    print_step "Installing missing dependencies: wget unzip curl git zenity$EXTRA..."
     if command_exists apt-get; then
-        sudo apt-get update -y && sudo apt-get install -y wget unzip curl git zenity
+        sudo apt-get update -y && sudo apt-get install -y wget unzip curl git zenity$EXTRA
     elif command_exists dnf; then
-        sudo dnf install -y wget unzip curl git zenity
+        sudo dnf install -y wget unzip curl git zenity$EXTRA
     elif command_exists yum; then
-        sudo yum install -y wget unzip curl git zenity
+        sudo yum install -y wget unzip curl git zenity$EXTRA
     elif command_exists pacman; then
-        sudo pacman -Sy --noconfirm wget unzip curl git zenity
+        sudo pacman -Sy --noconfirm wget unzip curl git zenity$EXTRA
     elif command_exists zypper; then
-        sudo zypper install -y wget unzip curl git zenity
+        sudo zypper install -y wget unzip curl git zenity$EXTRA
     elif command_exists apk; then
-        sudo apk add wget unzip curl git zenity
+        sudo apk add wget unzip curl git zenity$EXTRA
     elif command_exists xbps-install; then
-        sudo xbps-install -Sy wget unzip curl git zenity
+        sudo xbps-install -Sy wget unzip curl git zenity$EXTRA
     elif command_exists emerge; then
-        sudo emerge --ask=n net-misc/wget app-arch/unzip net-misc/curl dev-vcs/git gnome-extra/zenity
+        EMERGE_EXTRA=$([ -n "$EXTRA" ] && echo " x11-misc/xclip" || echo "")
+        sudo emerge --ask=n net-misc/wget app-arch/unzip net-misc/curl dev-vcs/git gnome-extra/zenity$EMERGE_EXTRA
     else
         echo "ERROR: No supported package manager found."
         echo "Please manually install 'wget', 'unzip', 'curl', 'git', and 'zenity', then re-run this script."
@@ -50,6 +56,20 @@ command_exists curl   || MISSING=1
 command_exists git    || MISSING=1
 command_exists zenity || MISSING=1
 [ "$MISSING" -eq 1 ] && install_dependencies
+
+# Install xclip on X11 if missing
+if { [ "$XDG_SESSION_TYPE" = "x11" ] || ( [ -z "$WAYLAND_DISPLAY" ] && [ -n "$DISPLAY" ] ); } && ! command_exists xclip; then
+    print_step "Installing xclip for X11 clipboard support..."
+    if command_exists apt-get; then sudo apt-get install -y xclip
+    elif command_exists dnf; then sudo dnf install -y xclip
+    elif command_exists yum; then sudo yum install -y xclip
+    elif command_exists pacman; then sudo pacman -Sy --noconfirm xclip
+    elif command_exists zypper; then sudo zypper install -y xclip
+    elif command_exists apk; then sudo apk add xclip
+    elif command_exists xbps-install; then sudo xbps-install -Sy xclip
+    elif command_exists emerge; then sudo emerge --ask=n x11-misc/xclip
+    fi
+fi
 
 # --- CLEAN PREVIOUS INSTALL ---
 print_step "Removing previous installation if exists..."
