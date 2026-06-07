@@ -101,8 +101,8 @@ mkfifo "$FIFO"
         exit 1
     fi
 
-    # Read EXCLUDE_LIST from the freshly cloned start.sh
-    EXCLUDE_LIST="$(grep -m1 '^EXCLUDE_LIST=' "$TMP_DIR/start.sh" | cut -d'"' -f2)"
+    # Read EXCLUDE_LIST from the freshly cloned install.sh
+    EXCLUDE_LIST="$(grep -m1 '^EXCLUDE_LIST=' "$TMP_DIR/install.sh" | cut -d'"' -f2)"
 
     print_step "Updating app files in $INSTALL_DIR..."
     cd "$TMP_DIR" || exit 1
