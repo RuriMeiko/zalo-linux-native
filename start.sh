@@ -67,31 +67,22 @@ fi
 
 
 # --- VERSION CHECK ---
-if command -v curl >/dev/null 2>&1; then
-    REMOTE_VERSION=$(curl -sf --max-time 5 "$VERSION_URL" || echo "")
-    LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "v0.0.0")
-
-    if [ -n "$REMOTE_VERSION" ] && version_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
-        if command -v zenity >/dev/null 2>&1; then
-            if [ -n "$APPIMAGE" ]; then
-                # AppImage can't self-update — open releases page instead
-                zenity --question \
-                    --title="Zalo Update Available" \
-                    --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:    <b>$REMOTE_VERSION</b>\n\nOpen download page?" \
-                    --ok-label="Download" \
-                    --cancel-label="Skip" \
-                    --width=320 2>/dev/null \
-                && xdg-open "https://github.com/realdtn2/zalo-linux-2026/releases/tag/$REMOTE_VERSION" || true
-            else
-                zenity --question \
-                    --title="Zalo Update Available" \
-                    --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:    <b>$REMOTE_VERSION</b>\n\nUpdate now?" \
-                    --ok-label="Update" \
-                    --cancel-label="Skip" \
-                    --width=320 2>/dev/null && bash "$INSTALL_DIR/update.sh"
-            fi
+if [ -n "$APPIMAGE" ]; then
+    if command -v curl >/dev/null 2>&1 && command -v zenity >/dev/null 2>&1; then
+        REMOTE_VERSION=$(curl -sf --max-time 5 "$VERSION_URL" || echo "")
+        LOCAL_VERSION=$(cat "$INSTALL_DIR/version.txt" 2>/dev/null || echo "v0.0.0")
+        if [ -n "$REMOTE_VERSION" ] && version_lt "$LOCAL_VERSION" "$REMOTE_VERSION"; then
+            zenity --question \
+                --title="Zalo Update Available" \
+                --text="A new version of Zalo is available.\n\nInstalled: <b>$LOCAL_VERSION</b>\nLatest:    <b>$REMOTE_VERSION</b>\n\nOpen download page?" \
+                --ok-label="Download" \
+                --cancel-label="Skip" \
+                --width=320 2>/dev/null \
+            && xdg-open "https://github.com/realdtn2/zalo-linux-2026/releases/tag/$REMOTE_VERSION" || true
         fi
     fi
+else
+    bash "$INSTALL_DIR/update.sh"
 fi
 
 # --- RUN APP ---

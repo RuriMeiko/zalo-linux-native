@@ -134,33 +134,17 @@ Categories=Network;InstantMessaging;
 StartupWMClass=Zalo
 DESK
 
-cat > "$DESKTOP_DIR/${APP_NAME}Update.desktop" <<DESK
-[Desktop Entry]
-Name=Update $APP_NAME
-Comment=Update Zalo to the latest version
-Exec=bash $INSTALL_DIR/update.sh
-Icon=$ICON_DEST
-Terminal=false
-Type=Application
-Categories=Network;InstantMessaging;
-DESK
-
 chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
-chmod +x "$DESKTOP_DIR/${APP_NAME}Update.desktop"
 
 if [ -d "$HOME/Desktop" ]; then
     cp "$DESKTOP_DIR/$APP_NAME.desktop"         "$HOME/Desktop/$APP_NAME.desktop"
-    cp "$DESKTOP_DIR/${APP_NAME}Update.desktop" "$HOME/Desktop/${APP_NAME}Update.desktop"
     chmod +x "$HOME/Desktop/$APP_NAME.desktop"
-    chmod +x "$HOME/Desktop/${APP_NAME}Update.desktop"
     if command_exists gio; then
         gio set "$HOME/Desktop/$APP_NAME.desktop"         metadata::trusted true 2>/dev/null || true
-        gio set "$HOME/Desktop/${APP_NAME}Update.desktop" metadata::trusted true 2>/dev/null || true
     fi
 fi
 
 command_exists gio && gio set "$DESKTOP_DIR/$APP_NAME.desktop"         metadata::trusted true 2>/dev/null || true
-command_exists gio && gio set "$DESKTOP_DIR/${APP_NAME}Update.desktop" metadata::trusted true 2>/dev/null || true
 command_exists update-desktop-database && update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 
 # --- DONE ---
@@ -169,6 +153,5 @@ echo "============================================"
 echo "  $APP_NAME installed successfully!"
 echo "  Location : $INSTALL_DIR"
 echo "  Launch   : $DESKTOP_DIR/$APP_NAME.desktop"
-echo "  Update   : $DESKTOP_DIR/${APP_NAME}Update.desktop"
 echo "============================================"
 echo ""
