@@ -71,7 +71,7 @@ Requires: `wget`, `unzip`
 **Description:**  
 A massive proprietary VoIP and WebRTC stack built around custom ZRTP-based encryption. Implemented through `zcall_mac.node` and responsible for all voice and video calling functionality.
 **State:**
-`zcall_mac.node` is a Mach-O binary and cannot run on Linux. The Linux binding now routes to the no-op stub (previously it threw and crashed `vcmac.js`), so the UI keeps calling visibly unavailable instead of erroring.
+`zcall_mac.node` is a Mach-O binary and cannot run on Linux. The Linux binding routes to a contract stub: device enumeration returns the native JSON-string contract (settings UI shows an empty device list instead of failing), and call setup **rejects** through the same path a macOS config-fetch failure uses, so the call window reports failure instead of hanging on "connecting". Signalling/ringing (WebSocket `voicecall/*`) is pure JS and unaffected — only media is unavailable. Binary analysis + rationale: `recon-zcall-protocol.md`; contract regression: `native/nativelibs/zcall/test-linux.js`.
 
 ---
 
