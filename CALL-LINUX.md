@@ -43,7 +43,7 @@ ZaloCall helper  ←— the real one is a proprietary Qt/C++ binary
 | file | role |
 |---|---|
 | `ZaloCall` | POSIX sh launcher — resolves a Node-capable runtime (spawning Electron via `ELECTRON_RUN_AS_NODE=1` through `/proc/$PPID/exe`, else bundled/sibling electron, else system node) and `exec`s `zcall-agent.js`. Exits 3 if no runtime. |
-| `zcall-agent.js` | Full call-v2 wire agent: two-socket model, `$` framing, AES-128-CBC, chunk reassembly + per-frame ACK. Implements the **control-plane** honestly: `native-ready`, device enumeration with the exact JSON-string contract, `update` (audio) → `response`, numeric `sendSignal` → deterministic `sendSignal 401` + `state free` + `end` echo (mirrors the macOS config-fetch-failure degrade), `killMe` silence + SIGINT exit 0. Media plane (audio/video I/O) is **not** implemented — the ZRTP VoIP stack is proprietary and absent; the agent never pretends otherwise (no `did-recv-video-frame` forge, no `200 OK` lie). |
+| `zcall-agent.js` | Full call-v2 wire agent: two-socket model, `$` framing, AES-128-CBC, chunk reassembly + per-frame ACK. Implements the **control-plane** honestly: `native-ready`, device enumeration with the exact JSON-string contract, `update` (audio) → `response`, `makeCall` → popup notice + `state free` + `end` within 300 ms (never hangs the UI gate; `ZALO_ZCALL_HOLD=ms` holds ringing for diagnostics), numeric `sendSignal` → deterministic `sendSignal 401` + `state free` + `end` echo (mirrors the macOS config-fetch-failure degrade), `killMe` silence + SIGINT exit 0. Logs to `~/.config/ZaloData/zcall-agent.log` (main.js pipes agent stderr away). Media plane (audio/video I/O) is **not** implemented — the ZRTP VoIP stack is proprietary and absent; the agent never pretends otherwise (no `did-recv-video-frame` forge, no `200 OK` lie). |
 | `test-wire.js` | Host emulator regression: `node test-wire.js` must print `WIRE-TEST ALL PASS`. Covers ready-gating, chunked-ACK round-trip, listDevice announce/response shapes, 401 end path, killMe silence + clean exit. Verified under both system Node 22 and Electron 22's Node 16.17 (`ELECTRON_RUN_AS_NODE=1`). |
 
 Launcher patches (this commit) add `process.platform === "linux"` branches to
@@ -63,6 +63,20 @@ their server handshake. Reimplementing the control plane buys **correct failure
 behavior** (ring, decline, timeout, device list, UI state) not media. When a
 real open VoIP bridge is ready it can replace `zcall-agent.js` without touching
 main.js — the wire contract above is the seam.
+
+### Why the partner's phone can never ring via this bridge (live-verified)
+
+`makeCall` reaches the agent carrying only `{partner:{id,name,avatar},
+type:1}` — **no token, no SDP, no session key**. While a call is held
+ringing, a hook on all 21 `$zsub.$zcall` methods in the renderer and a full
+capture of every bridge frame show the renderer emits **zero** signalling
+frames (`sendSignal 401/402/…`). On macOS those numeric WS frames — and the
+ZRTP offer and the call-server authentication — are generated *inside* the
+proprietary helper binary; the renderer only fire-and-forgets `makeCall` and
+consumes `callState`. Ringing a real phone therefore requires reimplementing
+VNG's obfuscated proprietary signalling/crypto from the Mach-O/PE binary —
+out of scope (and ToS/DMCA-encumbered). The bridge's honest contract: UI
+state always releases deterministically, and the user is told why.
 
 ## Known gaps (honest list)
 

@@ -248,6 +248,7 @@ function buildDeviceList() {
 // teardown notification stays the host's job.
 const NO_MEDIA_REASON = "media engine not implemented on linux (see CALL-LINUX.md)";
 let callActive = false;
+let callPartnerId = "";
 
 function sendToHost(msg) {
     const hex = encrypt(msg);
@@ -297,29 +298,36 @@ function handleHostMessage(msg) {
             return;
         }
         if (command === "makeCall") {
-            // Honest surface: tell the user via the renderer's popup request
-            // channel, then release the call gate deterministically so no
-            // window ever hangs on a missing media engine.
-            // (Diagnostics: ZALO_ZCALL_HOLD=ms holds ringing instead, used to
-            // verify the renderer emits NO signaling frames through the bridge
-            // -- call auth/WS live only inside the proprietary mac binary.)
+            // Honest surface: the ZRTP media engine is proprietary and absent,
+            // so the call cannot connect. Release the renderer gate
+            // deterministically (otherwise `callRunning` sticks and every call
+            // button locks forever after one click), then leave an in-chat
+            // trace via the update channel the renderer actually consumes.
+            // (Diagnostics: ZALO_ZCALL_HOLD=ms holds ringing instead; used to
+            // prove the renderer emits NO signaling frames through the bridge
+            // -- call auth/SDP live only inside the proprietary mac binary.)
             callActive = true;
-            log("makeCall received:",
-                JSON.stringify(data && data.partner && data.partner.map && data.partner.map(p => p.id)));
-            sendToHost({
-                type: "request", command: "popup",
-                data: {
-                    header: "Zalo Call",
-                    content: "Cuộc gọi chưa được hỗ trợ trên Linux (media engine ZRTP chưa port). " +
-                        "Xem CALL-LINUX.md.\nVoice/video calls are not supported on Linux yet."
-                }
-            });
+            const pd = (data && data.partner) || {};
+            callPartnerId = (Array.isArray(pd) && pd[0] && pd[0].id) || pd.id || "";
+            log("makeCall received:", JSON.stringify(callPartnerId || pd));
             const holdMs = Number(process.env.ZALO_ZCALL_HOLD || 0);
             if (holdMs > 0) {
                 sendToHost({ type: "update", command: "callState", data: { state: "ringing" } });
                 setTimeout(() => endCall("hold-expired"), holdMs);
             } else {
-                setTimeout(() => endCall(NO_MEDIA_REASON), 300);
+                // Release first; frames sent mid-teardown get swallowed.
+                setTimeout(() => {
+                    endCall(NO_MEDIA_REASON);
+                    setTimeout(() => {
+                        // "bubble" -> renderer writes a call message into the
+                        // conversation (role 1 = outgoing, duration 0 = no
+                        // connection), the same channel the mac engine uses.
+                        sendToHost({
+                            type: "update", command: "bubble",
+                            data: { role: 1, duration: 0, partnerId: callPartnerId }
+                        });
+                    }, 250);
+                }, 300);
             }
             return;
         }
