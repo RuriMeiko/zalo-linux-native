@@ -31,6 +31,16 @@ const stub = {
         getExtendData:       () => '{}',
         getActiveAudioCodecs: () => [],
         bindGetPeerId:       noop,
+        setConfig:           noop,
+        setMediaConfig:      noop,
+        setConfigServer:     noop,
+        setListServers:      noop,
+        updateCallerInfo:    noop,
+        setState:            noop,
+        testBuffer:          noop,
+        // vcmac.check() does `instance.test(123) == 123`; returning a falsy
+        // value keeps calling reported as unavailable instead of fake-enabled.
+        test:                () => 0,
     })
 };
 module.exports = stub;
