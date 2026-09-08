@@ -60,6 +60,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const net = require("net");
+const path = require("path");
 const os = require("os");
 const { execFileSync } = require("child_process");
 
@@ -71,7 +72,14 @@ const CAPTURE = process.env.ZALO_ZCALL_CAPTURE || null;
 const LOG = process.env.ZALO_ZCALL_LOG !== "0";
 
 function log(...a) {
-    if (LOG) console.error("[zcall-agent]", ...a);
+    if (!LOG) return;
+    const line = "[zcall-agent] " + a.map(x => typeof x === "string" ? x : JSON.stringify(x)).join(" ") + "\n";
+    try { console.error(line.trimEnd()); } catch (e) { /* headless */ }
+    // main.js pipes our stderr away; keep a local trace too.
+    try {
+        fs.appendFileSync(path.join(os.homedir(), ".config", "ZaloData", "zcall-agent.log"),
+            new Date().toISOString() + " " + line);
+    } catch (e) { /* best effort */ }
 }
 function capture(kind, payload) {
     if (!CAPTURE) return;
@@ -241,6 +249,14 @@ function buildDeviceList() {
 const NO_MEDIA_REASON = "media engine not implemented on linux (see CALL-LINUX.md)";
 let callActive = false;
 
+function sendToHost(msg) {
+    const hex = encrypt(msg);
+    capture("engine->host", msg);
+    if (hex.length > CHUNK) log("WARN: frame exceeds host chunk size; host Y() parses it whole anyway");
+    sendQueue.push(hex + "$");
+    pump();
+}
+
 function endCall(reason) {
     if (!callActive) return;
     callActive = false;
@@ -278,6 +294,33 @@ function handleHostMessage(msg) {
         if (command === "listDevice") {
             // H case "response": -> renderer channel "call-response-listDevice"
             sendToHost({ type: "response", command: "listDevice", data: buildDeviceList() });
+            return;
+        }
+        if (command === "makeCall") {
+            // Honest surface: tell the user via the renderer's popup request
+            // channel, then release the call gate deterministically so no
+            // window ever hangs on a missing media engine.
+            // (Diagnostics: ZALO_ZCALL_HOLD=ms holds ringing instead, used to
+            // verify the renderer emits NO signaling frames through the bridge
+            // -- call auth/WS live only inside the proprietary mac binary.)
+            callActive = true;
+            log("makeCall received:",
+                JSON.stringify(data && data.partner && data.partner.map && data.partner.map(p => p.id)));
+            sendToHost({
+                type: "request", command: "popup",
+                data: {
+                    header: "Zalo Call",
+                    content: "Cuộc gọi chưa được hỗ trợ trên Linux (media engine ZRTP chưa port). " +
+                        "Xem CALL-LINUX.md.\nVoice/video calls are not supported on Linux yet."
+                }
+            });
+            const holdMs = Number(process.env.ZALO_ZCALL_HOLD || 0);
+            if (holdMs > 0) {
+                sendToHost({ type: "update", command: "callState", data: { state: "ringing" } });
+                setTimeout(() => endCall("hold-expired"), holdMs);
+            } else {
+                setTimeout(() => endCall(NO_MEDIA_REASON), 300);
+            }
             return;
         }
         log("unhandled request command:", command);
