@@ -68,6 +68,26 @@ node --check main-dist/{main,compact-app}.js
 Real-app smoke procedure (isolated instance, device list + fail-fast call):
 `CALL-SMOKE.md`.
 
+## 3. Live wire-protocol capture (Windows engine under Wine, 2026-09-09)
+
+Media-plane ground truth for the next step (real ZRTC client) is now in
+`recon-zcall-wire.md`, captured from a connected 1-on-1 video call (1280x720,
+opus/48000/2, 31 700 datagrams via an LD_PRELOAD sendmsg/recvmsg shim + mitm):
+
+- **Server-relay ZRTC**: engine connects UDP to a session-allocated VNG gateway
+  (`171.244.25.109:4200`; prior capture `42.119.138.76:4200`), STUN reflexive probe
+  to `8.8.8.8:33433`. The full offer appears in plaintext in the engine's own
+  `call.log` (`[4,[client, codec, serverA, …, serverB, stun, …]]`).
+- Media = proprietary LE-16 framing (`0x7f00009a`/`0x7f00019a`) over **SRTP with
+  server-transported per-call keys** — keys ride inside `voicecall/*` HTTPS blobs
+  encrypted with the account session key `zpw_sek`, which this port's own login
+  already holds. No ZRTP cracking needed in relay mode (ZRTP magic only seen in the
+  direct-P2P fallback).
+- `voicecall-wpa.chat.zalo.me` signaling flow fully enumerated:
+  `requestcall → conf(poll) → request → answerack`, params/data = AES-GCM(`zpw_sek`).
+- Host↔engine pipe JSON contract confirmed live end-to-end — matches what
+  `qt-call-cap-linux` speaks.
+
 ## Honest gaps
 
 - Call media unavailable (above); group-call/share additionally need the ZaloCap
