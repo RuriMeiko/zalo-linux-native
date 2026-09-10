@@ -1,9 +1,30 @@
 # Native Linux port — current working checklist
 
-Updated 2026-09-09. Objective: a complete native Linux app, including working
+Updated 2026-09-10. Objective: a complete native Linux app, including working
 voice/video, with no Wine or Android emulator. This supersedes the stale
 `/tmp/port-checklist.md`. Do not count a passing stub test as a working feature.
 Do not publish a PR; finish native functionality before release claims.
+
+## Current call checkpoint (supersedes historical implementation notes below)
+
+- Native outgoing and opt-in incoming are wired into the desktop helper.
+  The installed app was restarted with the `b9ec2fb` trial on September 10;
+  later source changes are not proof that a running helper has reloaded them.
+- `node scripts/test-call-control.mjs` runs 12 deterministic suites, including
+  real driver/owner/session composition with mocked native/server/UI boundaries.
+  It covers cancellation during consent, answer and media in voice/video,
+  local end, native faults, no remote hangup echo and cleanup before errors.
+- Native H.264/PCM loopback evidence and deployment details are maintained in
+  `INTEGRATION-STATUS.md`. These do not prove two-account media acceptance.
+- Still open: first-incoming native identity bootstrap, true remote rejection,
+  full call controls/device switching, and current two-account voice/video QA.
+- The user has asked to be notified when the next test build is ready. Do not
+  repeatedly request manual testing while these implementation gaps remain.
+
+## Historical review and evidence
+
+The sections below preserve earlier checkpoints; statements that the agent
+has no incoming dispatcher or always ends outgoing calls describe old code.
 
 ## Review of existing implementation
 
