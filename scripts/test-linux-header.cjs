@@ -65,7 +65,7 @@ assert.equal(calls.at(-1), 'close-image-only');
 header.state.isMaximized = true;
 assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'));
 const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
-assert.ok(css.includes('#titleBar{position:relative;height:32px;min-height:32px'));
+assert.ok(css.includes('#titleBar{position:relative;left:0;width:100%;padding-left:0;height:32px;min-height:32px'));
 assert.ok(css.includes('width:24px;height:24px'));
 assert.ok(css.includes('svg{width:12px;height:12px;'));
 assert.ok(css.includes('-webkit-app-region:no-drag'));

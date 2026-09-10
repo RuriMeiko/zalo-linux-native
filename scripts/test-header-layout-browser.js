@@ -1,9 +1,11 @@
 (() => {
   const bar=document.querySelector('#titleBar'),buttons=[...bar.querySelectorAll('button')];
   const host=bar.closest('.media-viewer__title-bar'),viewer=!!host;
-  const rect=bar.getBoundingClientRect(),hostRect=(host||bar).getBoundingClientRect();
+  const shell=bar.closest('.fixture'),rect=bar.getBoundingClientRect();
+  const hostRect=(host||bar).getBoundingClientRect(),shellRect=shell.getBoundingClientRect();
+  const shellLeft=shellRect.left+shell.clientLeft,shellRight=shellLeft+shell.clientWidth;
   if(rect.height!==32 || hostRect.height!==32 || (viewer && rect.width!==hostRect.width) ||
-    buttons.length!==(viewer?3:4))
+    rect.left!==shellLeft || rect.right!==shellRight || buttons.length!==(viewer?3:4))
     throw new Error('Unexpected unified image header layout');
   for(const button of buttons) {
     const bounds=button.getBoundingClientRect();

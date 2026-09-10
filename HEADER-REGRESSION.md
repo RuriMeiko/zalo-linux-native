@@ -12,6 +12,9 @@ the first shared 38px revision too large; both now use the closer-to-original
 32px token, 13px semibold title, 24px buttons and 12px SVG symbols. The viewer
 host is explicitly full-width, non-shrinking and clipped to keep its controls
 inside the same row instead of overlapping the right sidebar.
+The Linux header also overrides the inherited macOS left and width reservations
+with exact edge-to-edge geometry; browser regression requires both header edges
+to match the fixture window.
 
 Verification uses the actual extracted header class with synthetic props and
 the shipped CSS, not account data. Generate HTML with:
