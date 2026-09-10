@@ -70,8 +70,8 @@ independently verified desktop/native caller identity mapping. Consent UI must
 close on its abort signal and must not start media. The media task must stop
 and join its camera/audio/render resources on abort; the owner deliberately
 does not release the native worker while that task is still running. Local
-decline currently cleans up locally only: pre-answer rejection signaling and
-native fault routing still need implementation before UI wiring is complete.
+decline currently cleans up locally only: pre-answer rejection signaling still
+needs implementation before UI wiring is complete.
 
 After successful native media start, local shutdown now sends desktop command
 409 (`sendEndCall(toId, callId)`) after the media task joins. Matching remote
@@ -79,6 +79,15 @@ cancel/end controls suppress this echo. The owner tests cover exactly one local
 end request and guaranteed native cleanup even if the end API rejects; the
 desktop signaling test checks the actual renderer method's 409 API mapping.
 This is synthetic verification, not evidence of remote-account call teardown.
+
+The owner also subscribes to classified `nativeFault` and payload-free
+`workerClosed` events. Either aborts outstanding consent/media and follows the
+same joined cleanup, without exposing native diagnostic strings. Tests inject
+both events during consent and active media and verify listener removal and
+ownership reuse. `test-worker.mjs` against the rebuilt home recovery runtime
+passes five real initialization/stop cycles and verifies exactly one
+payload-free event on orderly process shutdown. This does not yet demonstrate
+hardware unplug recovery or crash handling in the real desktop UI.
 
 - Connect incoming consent/UI and media ownership to the actual app, including
   verified native identity mapping and remote reject/end-call signaling.

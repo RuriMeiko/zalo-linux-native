@@ -33,7 +33,8 @@ function fixture() {
   const options={context:{nativeLocalId:123,video:true},callerId:'456',requestConsent:async()=>false,
     runMedia:async()=>{throw new Error('must not start media');}};
   return {worker,transport,events,options,run:extra=>runIncomingCall(worker,transport,message,{...options,...extra}),
-    clean(){assert.equal(worker.listenerCount('callEvent'),0);assert.equal(transport.listenerCount('control'),0);}};
+    clean(){for(const event of ['callEvent','nativeFault','workerClosed'])assert.equal(worker.listenerCount(event),0);
+      assert.equal(transport.listenerCount('control'),0);}};
 }
 {
   const f=fixture();
@@ -101,4 +102,17 @@ for(const apiFailure of [false,true]) {
   await assert.rejects(f.run({onPhase:()=>{throw new Error('UI unavailable');}}),/UI unavailable|canceled/);
   f.clean();await f.run();f.clean();
 }
-console.log('PASS incoming owner: consent timeout/late answer, exclusive ownership, remote cancel, media join before native stop, cleanup');
+for(const event of ['nativeFault','workerClosed'])for(const during of ['consent','media']) {
+  const f=fixture(),entered=defer();
+  const options=during==='consent'?{requestConsent:()=>{entered.resolve();return new Promise(()=>{});}}:
+    {requestConsent:async()=>true,runMedia:async(_worker,{signal})=>{
+      const stopped=defer();signal.addEventListener('abort',()=>stopped.resolve(),{once:true});
+      entered.resolve();await stopped.promise;f.events.push('media-joined');
+    }};
+  const outcome=assert.rejects(f.run(options),error=>error.message==='Incoming native media failed');
+  await entered.promise;f.worker.emit(event,'private diagnostics must not escape');await outcome;
+  assert.equal(f.events.filter(x=>x===409).length,during==='media'?1:0);
+  if(during==='media')assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));
+  f.clean();await f.run();f.clean();
+}
+console.log('PASS incoming owner: bounded consent, exclusive ownership, remote/local hangup, native fault/exit, joined media and listener cleanup');

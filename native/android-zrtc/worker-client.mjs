@@ -133,7 +133,12 @@ export class NativeWorker extends EventEmitter {
     });
     worker.#child.stdin.on('error', error => worker.#fail(error));
     worker.#child.on('error', error => worker.#fail(error));
-    worker.#child.on('close', (code, signal) => worker.#fail(new Error(`Native worker closed (${code ?? signal})`)));
+    worker.#child.on('close', (code, signal) => {
+      worker.#fail(new Error(`Native worker closed (${code ?? signal})`));
+      // An idle media owner may have no pending request to observe rejection.
+      // Expose a detachable lifecycle event without native diagnostic payloads.
+      worker.emit('workerClosed');
+    });
     worker.#child.stdio[3].setEncoding('utf8');
     worker.#child.stdio[3].on('data', chunk => worker.#receive(chunk));
     worker.#timer = setTimeout(() => worker.#fail(new Error('Native worker readiness timeout')), 10000);

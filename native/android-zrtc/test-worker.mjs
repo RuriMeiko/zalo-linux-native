@@ -8,6 +8,8 @@ assert.throws(() => encodeCommand(1, 'configure', {userId:-1}));
 assert.throws(() => encodeCommand(1, 'configure', {video:true}));
 assert.throws(() => encodeCommand(1, 'configure', {session:'x'.repeat(1024*1024)}));
 const worker = await NativeWorker.start(runtime);
+let closedEvents=0;
+worker.on('workerClosed',(...args)=>{assert.deepEqual(args,[]);closedEvents++;});
 try {
   let reply = await worker.request('status');
   assert.equal(reply.initialized, false); assert.equal(reply.callReady, false); assert.equal(reply.offline, true);
@@ -28,5 +30,6 @@ try {
   assert.ok(replies.every(r => r.code === 0 && r.offline && !r.callReady));
 } finally {
   assert.deepEqual(await worker.close(), {code:0, signal:null});
+  assert.equal(closedEvents,1,'publish one payload-free process-close event');
 }
 console.log('PASS persistent native worker: configuration, 5 init/stop cycles, queued replies, shutdown, validation');

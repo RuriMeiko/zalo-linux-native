@@ -43,6 +43,9 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     if(!mediaRunning)stopping??=session.stop().catch(error=>{failure??=error;});
   };
   const abort=()=>cancel();
+  const nativeFault=()=>{
+    failure??=new Error('Incoming native media failed');cancel();
+  };
   const control=event=>{
     if(!['answer_ack','cancel','endcall'].includes(event?.act))return;
     const envelope={type:'control',data:event};
@@ -64,6 +67,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
   const check=()=>{if(controller.signal.aborted)throw failure??new Error('Incoming call canceled');};
   try {
     session.on('phase',phase);transport.on('control',control);
+    worker.on('nativeFault',nativeFault);worker.on('workerClosed',nativeFault);
     signal?.addEventListener('abort',abort,{once:true});
     if(signal?.aborted)cancel();check();
     await session.control(message,context);check();
@@ -85,6 +89,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
   } finally {
     clearTimeout(ringTimer);controller.abort();
     signal?.removeEventListener('abort',abort);transport.off('control',control);
+    worker.off('nativeFault',nativeFault);worker.off('workerClosed',nativeFault);
     // Desktop command 409 is sendEndCall(toId, callId), not a ZRTC enum.
     // Do not echo a remote hangup or guess the pre-answer rejection grammar.
     // The media task has already joined before reaching this cleanup.
