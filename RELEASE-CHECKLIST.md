@@ -44,13 +44,29 @@ Do not substitute successful module tests for these end-to-end gates.
 - [x] Record upstream origin, predecessor author names and the inspected revision
   in [CREDITS.md](CREDITS.md).
 - [ ] Resolve component licensing before publishing extracted client assets or binaries.
-- [ ] Confirm independent project name, owner and visibility; create a new repository,
-  not an overwrite of the upstream repository or existing user work.
+- [x] Confirm independent project name, owner and visibility: GitHub repository
+  API on 2026-09-10 reports `RuriMeiko/zalo-linux-native`, public, `fork: false`.
+  The user-supplied destination is already independent; no deletion/recreation
+  or fork detachment is needed. Its default branch remains
+  `port/linux-native-modules`; remote `main` does not yet exist.
 - [ ] Authenticate the GitHub CLI locally; never put a token into chat or source files.
 - [ ] Inspect the exact staged file list and secret-scan the proposed publication.
 - [ ] Preserve applicable attribution/license notices and source provenance.
 - [ ] Push to the verified new remote; read back its commit and README to confirm.
 - [ ] Publish an accurately labelled release only when its acceptance gates pass.
 
-At the last check, `gh api user` reported that GitHub CLI was not authenticated.
-No new GitHub repository or independent release has been created by this step.
+The GitHub CLI token remains invalid, but SSH authenticated as `RuriMeiko`.
+A `git push --dry-run` of local `main` to the supplied repository succeeded on
+2026-09-10. This verifies the available SSH publication path without publishing
+the branch. It does not change the default branch, resolve redistribution
+permissions, or create a release. Actual publication is still pending.
+
+Pre-publication review found no matches for the checked private-key/GitHub-token
+and long session-key assignment patterns in the new native modules, scripts,
+viewer assets and recovery manifest. This is a limited pattern scan, not proof
+that the complete inherited repository history is free of personal data.
+In particular, the current integrated history introduces extracted viewer
+assets with unresolved redistribution permission. Removing them in a later
+commit would not remove them from the commits being pushed. Keep the current
+full integration local until permission is established, or prepare a reviewed
+source-only publication history that omits those assets from every new commit.

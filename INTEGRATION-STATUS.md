@@ -71,6 +71,13 @@ empty config avoids loading that broken file while retaining host-key checking.
 No credentials were displayed or changed. Authentication does not prove write
 permission to the final independent repository; no push has occurred.
 
+A subsequent public repository API check confirmed that the supplied
+`RuriMeiko/zalo-linux-native` repository already has `fork: false` and public
+visibility. SSH `push --dry-run main:main` succeeded; `main` remains unpublished.
+The remaining publication review includes extracted viewer assets in the local
+integration history (see `RELEASE-CHECKLIST.md`). The independent repository
+name no longer needs to block development or require destructive recreation.
+
 ### Incoming lifecycle owner checkpoint
 
 `native/android-zrtc/incoming-call-owner.mjs` now composes invitation setup,
