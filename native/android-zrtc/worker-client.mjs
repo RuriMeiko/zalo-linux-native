@@ -14,12 +14,16 @@ async function validateDevices(pcm) {
   }));
 }
 const HASH = 'c7e5f005fd5c12dc64d72008a1871638246899a9cf6b034dc13981c014caeefe';
-const OPS = {initialize:1, stop:2, status:3, shutdown:4, configure:5, makeCall:6, callEvent:7, incomingCall:8, audioCodecs:9, callState:10, extendData:11, updateCallerInfo:12, videoFrame:13, videoStats:14, videoSnapshot:15, callInfo:16};
+const OPS = {initialize:1, stop:2, status:3, shutdown:4, configure:5, makeCall:6, callEvent:7, incomingCall:8, audioCodecs:9, callState:10, extendData:11, updateCallerInfo:12, videoFrame:13, videoStats:14, videoSnapshot:15, callInfo:16, microphoneMute:17};
 const FIELDS = ['userId','partnerId','protocol','callId','clientVersion','session','settings','zrtcConfig','enableChangeZrtp','videoCall','supportVideoCall'];
 export function encodeCommand(id, operation, config = {}) {
   if (!Number.isInteger(id) || id < 1 || id > 0xffffffff || !OPS[operation]) throw new Error('Invalid worker command');
   const parts = [];
-  if (operation === 'configure') {
+  if (operation === 'microphoneMute') {
+    if(!config || Object.keys(config).length!==1 || typeof config.muted!=='boolean')
+      throw new Error('Microphone mute requires an explicit boolean');
+    const data=Buffer.alloc(4);data.writeUInt32LE(config.muted?1:0);parts.push(data);
+  } else if (operation === 'configure') {
     if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('Invalid configuration');
     for (const [key, value] of Object.entries(config)) {
       const field = FIELDS.indexOf(key);

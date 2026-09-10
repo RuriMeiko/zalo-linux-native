@@ -8,5 +8,6 @@ jobject zrtc_linux_context(void);
 void *zrtc_linux_audio_object(int recording);
 unsigned long zrtc_linux_audio_frames(int recording);
 unsigned long zrtc_linux_audio_failures(void);
+void zrtc_linux_audio_set_muted(int muted);
 jobject zrtc_linux_call_callback(ZrtcEventSink sink, void *opaque, int network_type);
 unsigned zrtc_linux_refs(jobject object);

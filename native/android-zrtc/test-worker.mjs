@@ -14,6 +14,7 @@ try {
   let reply = await worker.request('status');
   assert.equal(reply.initialized, false); assert.equal(reply.callReady, false); assert.equal(reply.offline, true);
   assert.equal((await worker.request('configure')).code, -22);
+  assert.equal((await worker.request('microphoneMute',{muted:true})).code,-107);
   reply = await worker.request('configure', {userId:123, partnerId:456, protocol:1, callId:789,
     clientVersion:1, session:'synthetic-session', settings:'{}', zrtcConfig:'{}'});
   assert.equal(reply.code, 0); assert.equal(reply.configured, true);

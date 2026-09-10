@@ -11,6 +11,9 @@
 #include <signal.h>
 #include <stdint.h>
 #include "pcm-bridge.h"
+#include "capture-gate.h"
+static ZrtcCaptureGate capture_gate = ZRTC_CAPTURE_GATE_INIT;
+void zrtc_linux_audio_set_muted(int muted) { zrtc_capture_gate_set(&capture_gate, muted); }
 
 typedef struct Handle {
     char *kind;
@@ -245,7 +248,11 @@ static void *audio_thread(void *arg) {
             if (!__atomic_load_n(&h->stopping, __ATOMIC_ACQUIRE)) audio_failed();
             break;
         }
-        if (h->recording) callback(&env, (jobject)h, (jint)h->capacity, h->native);
+        if (h->recording) {
+            zrtc_capture_gate_begin(&capture_gate, h->buffer, (size_t)h->capacity);
+            callback(&env, (jobject)h, (jint)h->capacity, h->native);
+            zrtc_capture_gate_end(&capture_gate);
+        }
         __atomic_add_fetch(&h->frames, 1, __ATOMIC_RELEASE);
     }
     attached = 0;

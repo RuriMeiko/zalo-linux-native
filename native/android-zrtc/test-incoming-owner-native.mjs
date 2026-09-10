@@ -57,6 +57,8 @@ try {
     transport.cancel=()=>{};
     const result=await runIncomingCall(worker,transport,message,{context:{nativeLocalId:123,video:true},callerId:'456',
       signal:controller.signal,requestConsent:async()=>true,runMedia:async(native,{signal})=>{
+        assert.equal((await native.request('microphoneMute',{muted:true})).code,0);
+        assert.equal((await native.request('microphoneMute',{muted:false})).code,0);
         const before=(await native.request('status')).pcmFrames;
         const baseline=JSON.parse((await native.request('videoStats')).data);
         for(let frame=0;frame<30;frame++) {
@@ -80,6 +82,7 @@ try {
     assert.deepEqual(result,{accepted:true,callReady:false});assert.deepEqual(sent,[407,402,409]);
     assert.equal(transport.listenerCount('control'),0);assert.equal(worker.listenerCount('callEvent'),0);
     assert.equal((await worker.request('callInfo')).code,-107);
+    assert.equal((await worker.request('microphoneMute',{muted:true})).code,-107);
     assert.equal((await worker.request('videoSnapshot')).code,-61);
     const stopped=(await worker.request('status')).pcmFrames;
     await delay(100);assert.deepEqual((await worker.request('status')).pcmFrames,stopped);

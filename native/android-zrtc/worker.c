@@ -222,6 +222,7 @@ static void stop(void) {
     }
     void (*native_stop)(void *, unsigned char) = sym("_ZN4zrtc4Peer4stopEb");
     native_stop((void *)(uintptr_t)peer, 1);
+    zrtc_linux_audio_set_muted(0);
     if (callback) {
         /* Keep our local reference until teardown. Original C1 adds exactly
            one global ref; original D1 releases it when the engine destroys
@@ -371,7 +372,7 @@ int main(int argc, char **argv) {
         uint32_t id = u32(frame), op = u32(frame + 4);
         int rc = 0, quit = 0;
         jstring reply_data = NULL;
-        if (op != 5 && op != 6 && op != 7 && op != 8 && op != 10 && op != 12 && op != 13 && length != 8) rc = -EINVAL;
+        if (op != 5 && op != 6 && op != 7 && op != 8 && op != 10 && op != 12 && op != 13 && op != 17 && length != 8) rc = -EINVAL;
         else switch (op) {
             case 1: {
                 if (initialized) { rc = -EALREADY; break; }
@@ -541,6 +542,12 @@ int main(int argc, char **argv) {
                 if(timestamp>INT64_MAX) {rc=-EINVAL;break;}
                 rc=linux_video_peer_submit(frame+28,length-28,(int)u32(frame+8),
                     (int)u32(frame+12),(int)u32(frame+16),(int64_t)timestamp);
+                break;
+            }
+            case 17: {
+                if(length!=12 || u32(frame+8)>1){rc=-EINVAL;break;}
+                if(!initialized || !__atomic_load_n(&call_request,__ATOMIC_ACQUIRE)){rc=-ENOTCONN;break;}
+                zrtc_linux_audio_set_muted((int)u32(frame+8));
                 break;
             }
             case 16: {
