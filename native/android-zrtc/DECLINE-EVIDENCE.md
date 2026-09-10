@@ -41,12 +41,32 @@ An inherited callsite is `vz.c1.e2` at `0x07851e` in `vz.p1`; searching only for
 then the plugin implementation's request field mapping. The second boolean's
 meaning and cancellation integer semantics remain unverified.
 
+Further tracing: `vz.p1.g` at `0x078474` obtains the integer from virtual
+`vz.c1.J()` before invoking cancellation. The implementation `vz.s0.J` at
+`0x0667cc` logs `getEndCallType` and derives its result from call state; it is
+not a fixed voice/video flag. It has distinct paths yielding 0 through 6,
+-1, and error-dependent values. The base-class implementation returning zero
+must not be substituted for the runtime override.
+
+In pinned `classes2.dex` (SHA-256
+`321a6596e6e2f08446607c0a724036cf163a19c8803021ee4473503f411e1ebc`),
+`pa.l.cancelCall` at `0x4f8328` serializes all four incoming integers in order
+into a binary request, then sets socket command **405** at `0x4f83c6`.
+This independently links Android cancellation to command 405, but still does
+not establish a specific user-decline callType for the desktop HTTP endpoint.
+
 The shipped desktop renderer separately maps command **405** to
 `sendCancelCall(toId, callId, callType)`. Its API builder uses
 `/api/voicecall/cancel`, `callerId`, `callId`, `callType`, fixed `status: 0` and
 client IMEI. Command **402** instead calls the answer endpoint with an explicit
 status. Android's four-integer cancellation interface cannot yet be assumed
 equivalent to the desktop's three-argument wrapper.
+
+`test-desktop-signaling.js` now exercises the shipped renderer's command 405
+dispatch and extracts the actual static API builder. With synthetic peer/call
+IDs and identity encryption it verifies endpoint, parameter names, fixed
+status zero and request code 11305. It performs no network request and does
+not assert that fixture callType zero means user rejection.
 
 ## Reproduce without private data
 

@@ -81,6 +81,27 @@ const vm=require('node:vm');
     assert.deepEqual(calls[1],{name:'sendRequestCall',args:['456','127.0.0.1:9','127.0.0.1:8','[]','{}','fixture',123]});
     await integrated.request(409,{toId:'456',callId:123});
     assert.deepEqual(calls[2],{name:'sendEndCall',args:['456',123]});
+    // Cancellation is 405, not an answer status. This verifies forwarding,
+    // not which callType is appropriate for a user's decline action.
+    await integrated.request(405,{toId:'456',callId:123,callType:0});
+    assert.deepEqual(calls[3],{name:'sendCancelCall',args:['456',123,0]});
+    const cancelStart=bundle.indexOf('                static sendCancelCall(');
+    const cancelEnd=bundle.indexOf('                static sendEndCall(',cancelStart);
+    assert.ok(cancelStart>=0 && cancelEnd>cancelStart);
+    const CancelAPI=vm.runInNewContext('(class {'+bundle.slice(cancelStart,cancelEnd)+'})',{
+        g:{b:{getVoiceCallDomain:()=> 'https://fixture.invalid'}},
+        r:{default:{encodeAES:text=>text}}, // synthetic identity encryption
+        w:{a:{getZaloClientID:()=> 'fixture-imei'}},
+    });
+    CancelAPI._getCommonParams=()=> 'fixture=1';
+    CancelAPI._get=(url,body,code)=>({url,body,code});
+    const canceled=CancelAPI.sendCancelCall('456',123,0);
+    const url=new URL(canceled.url);
+    assert.equal(url.pathname,'/api/voicecall/cancel');
+    assert.equal(canceled.code,11305);
+    assert.equal(canceled.body,null);
+    assert.deepEqual(JSON.parse(url.searchParams.get('params')),
+        {callerId:'456',callId:123,callType:0,status:0,imei:'fixture-imei'});
     const errors=[];
     renderer._sendToNative=m=>{errors.push(m);integrated.receive(m);};
     renderer.handleSendSignalError(401,{error_code:9},{callId:123});
