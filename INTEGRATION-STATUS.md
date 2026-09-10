@@ -18,7 +18,7 @@ The running installed Zalo application has not been replaced or restarted.
 - Desktop bundles and viewer assets: the previously verified, home-only
   recovery fixture. Only application code/assets were copied, never account
   profiles or call captures. Viewer provenance is retained in
-  `pc-dist/linux-extras/PROVENANCE.md`; publication permission is unresolved.
+  `pc-dist/linux-extras/PROVENANCE.md`; third-party notices are retained.
 
 Verified integrated bundle SHA-256 values:
 
@@ -74,8 +74,8 @@ permission to the final independent repository; no push has occurred.
 A subsequent public repository API check confirmed that the supplied
 `RuriMeiko/zalo-linux-native` repository already has `fork: false` and public
 visibility. SSH `push --dry-run main:main` succeeded; `main` remains unpublished.
-The remaining publication review includes extracted viewer assets in the local
-integration history (see `RELEASE-CHECKLIST.md`). The independent repository
+The viewer-specific publication concern has been resolved; third-party notices
+remain applicable (see `RELEASE-CHECKLIST.md`). The independent repository
 name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint

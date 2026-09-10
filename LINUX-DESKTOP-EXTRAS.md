@@ -83,8 +83,8 @@ The file URL above reflects the current development checkout; adjust for another
 checkout. This test uses only an internally generated PNG and does not write
 the OS clipboard or submit printer jobs. **Real Zalo integration, clipboard,
 native printer dialog, and full editing-tool acceptance remain unverified.** The installed
-files are updated, but restart and live acceptance remain pending. Publication still requires the author and
-license review recorded in `pc-dist/linux-extras/PROVENANCE.md`.
+files are updated, but restart and live acceptance remain pending. Third-party
+notices are recorded in `pc-dist/linux-extras/PROVENANCE.md`.
 
 ## Local deployment recovery
 

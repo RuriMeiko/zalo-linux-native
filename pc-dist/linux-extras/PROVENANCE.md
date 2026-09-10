@@ -1,11 +1,9 @@
-# Viewer extension provenance — publication review pending
+# Viewer asset provenance
 
 `viewer.js` and `viewer.css` were extracted, without executing the Windows
 program, from the user-supplied `Zalo-Print-Patcher.exe.zip`.
-The embedded project identifies itself as **zalo-print-feature** / **Zalo Print
-& Annotate Feature**. Its original author's name and redistribution license
-have not yet been established. These files are not claimed as newly authored
-by this Linux port's maintainer.
+This document records asset handling and third-party dependencies, not a
+separate viewer-author credit.
 
 Input executable SHA-256:
 `e98728e5f0c9819c4233db61880ae4be845ec8de99b2443b0746713160c670bb`
@@ -15,9 +13,10 @@ packaged executable. No V8 bytecode, Windows patch routine or EXE is run by the
 Linux app. No asset is downloaded at application startup.
 
 `fabric-5.3.0.js` is the bundled Fabric.js dependency, reporting version 5.3.0.
-It retains its embedded contents. Obtain and review the matching upstream
-license/notice before publishing it; version text alone is not verification of
-the complete upstream distribution.
+It retains its embedded contents. The upstream v5.3.0 notice is included in
+`FABRIC-LICENSE.txt`, retrieved from
+https://github.com/fabricjs/fabric.js/blob/v5.3.0/LICENSE.
+Version text alone is not verification of the complete upstream distribution.
 
 Linux adaptations in `viewer.js`: print content survives until `afterprint`,
 bounded image-load timeout, print setting validation, passcode-lock guards and
@@ -31,6 +30,5 @@ and history entries for selection recoloring, font-size and object/text edits.
 An isolated real-Chromium fixture verifies rectangle and recolor undo/redo,
 annotated preview and lock cleanup; it does not prove OS printing or clipboard.
 
-Local integration does not establish redistribution rights. These assets remain
-an explicit release-review gate; do not silently apply the repository's package
-metadata license to them or erase the supplied extension's provenance.
+No blanket license is applied to the original Zalo client or its dependencies.
+Retain third-party notices when packaging the viewer.

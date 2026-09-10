@@ -46,11 +46,9 @@ interface is a new Linux toolkit UI, or that proprietary binaries are open sourc
 
 ## License handling
 
-The supplied **Zalo Print & Annotate Feature / zalo-print-feature** viewer
-extension and its Fabric.js dependency retain separate provenance in
-[the viewer asset manifest](pc-dist/linux-extras/PROVENANCE.md). The original
-extension author's identity and redistribution permission still need to be
-established; the Linux adaptations do not imply original authorship.
+The viewer uses Fabric.js; its third-party notice is retained in
+[the viewer asset manifest](pc-dist/linux-extras/PROVENANCE.md) and
+[Fabric license](pc-dist/linux-extras/FABRIC-LICENSE.txt).
 
 No top-level license file was found in the inspected repository. A `license`
 field in application package metadata is not sufficient evidence of permission

@@ -65,8 +65,7 @@ Pre-publication review found no matches for the checked private-key/GitHub-token
 and long session-key assignment patterns in the new native modules, scripts,
 viewer assets and recovery manifest. This is a limited pattern scan, not proof
 that the complete inherited repository history is free of personal data.
-In particular, the current integrated history introduces extracted viewer
-assets with unresolved redistribution permission. Removing them in a later
-commit would not remove them from the commits being pushed. Keep the current
-full integration local until permission is established, or prepare a reviewed
-source-only publication history that omits those assets from every new commit.
+The viewer-specific publication concern has been resolved. No separate viewer
+author credit is requested. Fabric.js retains its upstream license notice;
+this does not relicense the proprietary client or establish binary-release
+readiness.
