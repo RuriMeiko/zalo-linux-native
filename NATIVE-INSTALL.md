@@ -62,3 +62,28 @@ the installed launcher passed `--check`, and its resolved helper path pointed
 inside the copied installation rather than the source checkout. No second Zalo
 instance was launched. Electron/native runtime still refer to the existing
 external installations; this does not prove a clean-machine package.
+# Optional Linux application menu entry
+
+After copying an installation, ensure `~/.local/share/applications` exists, then
+register the installed directory (not the source checkout):
+
+```sh
+node scripts/register-desktop.mjs /home/YOU/zalo-installed --check
+node scripts/register-desktop.mjs /home/YOU/zalo-installed
+```
+
+This creates only `~/.local/share/applications/zalo-linux-native.desktop` and
+does not launch the app. It uses the installation's `launch-installed.sh`, so
+Node must be available in the desktop session's PATH; Electron/runtime remain
+external. The generic `internet-chat` icon follows the desktop icon theme.
+An existing entry is never overwritten. To unregister, remove that specific
+`.desktop` file; do not remove the app or account profile. Installation paths
+containing percent, equals or control characters are rejected. Exec arguments
+are quoted according to the [freedesktop specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/exec-variables.html),
+not passed through a shell.
+
+`node scripts/test-register-desktop.mjs` exercises a synthetic home under the
+persistent recovery directory, including check-only, quoted space paths,
+no overwrite and symlink rejection. The generated entry passed
+`desktop-file-validate`. Actual menu appearance and launch in a clean desktop
+session remain acceptance checks; no real menu entry has been registered yet.
