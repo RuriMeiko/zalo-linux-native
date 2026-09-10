@@ -7,8 +7,9 @@ retains the image viewer's `onClose` callback rather than closing the main app.
 Browser regression testing found another problem after that fix: with the
 shipped stylesheets and an auto-sized media-viewer title container, the header
 collapsed to 2px while its buttons overflowed vertically. The first repair then
-made the viewer 46px tall while the main header remained 24px. Both now share a
-38px token, 14px semibold title, 28px buttons and 14px SVG symbols. The viewer
+made the viewer 46px tall while the main header remained 24px. Live review found
+the first shared 38px revision too large; both now use the closer-to-original
+32px token, 13px semibold title, 24px buttons and 12px SVG symbols. The viewer
 host is explicitly full-width, non-shrinking and clipped to keep its controls
 inside the same row instead of overlapping the right sidebar.
 
@@ -22,8 +23,8 @@ node scripts/test-linux-header.cjs --shared --html
 Save the stdout HTML in a local home-only fixture using the normal file-editing
 workflow, open it in an isolated browser session, then run
 `scripts/test-header-layout-browser.js` with `agent-browser eval --stdin`.
-The assertions check one shared 38px header token, contained 28px SVG buttons,
-14px title/icon sizing and full-width viewer clipping. Node tests additionally
+The assertions check one shared 32px header token, contained 24px SVG buttons,
+13px title/12px icon sizing and full-width viewer clipping. Node tests additionally
 exercise the real close callback and lock guards.
 
 The before/after screenshots from this check are retained locally (not tracked) under

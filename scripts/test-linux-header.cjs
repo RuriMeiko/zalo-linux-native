@@ -65,12 +65,12 @@ assert.equal(calls.at(-1), 'close-image-only');
 header.state.isMaximized = true;
 assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'));
 const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
-assert.ok(css.includes('#titleBar{position:relative;height:38px;min-height:38px'));
-assert.ok(css.includes('width:28px;height:28px'));
-assert.ok(css.includes('svg{width:14px;height:14px;'));
+assert.ok(css.includes('#titleBar{position:relative;height:32px;min-height:32px'));
+assert.ok(css.includes('width:24px;height:24px'));
+assert.ok(css.includes('svg{width:12px;height:12px;'));
 assert.ok(css.includes('-webkit-app-region:no-drag'));
-assert.ok(css.includes('#titleBar.image-show__title{height:38px;min-height:38px'));
-assert.ok(css.includes('.media-viewer .media-viewer__title-bar{position:relative;width:100%;height:38px;min-height:38px'));
+assert.ok(css.includes('#titleBar.image-show__title{height:32px;min-height:32px'));
+assert.ok(css.includes('.media-viewer .media-viewer__title-bar{position:relative;width:100%;height:32px;min-height:32px'));
 assert.ok(css.includes('overflow:hidden;background:#2e2e32'));
 const mainHtml = process.argv.includes('--main-html');
 if (process.argv.includes('--html') || mainHtml) {
