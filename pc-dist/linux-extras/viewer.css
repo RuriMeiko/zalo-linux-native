@@ -360,7 +360,7 @@
 .zpf-icon-btn .fi, .zpf-tool .fi { font-size: 18px; }
 
 /* ---- Nút Vẽ/In chèn trong toolbar viewer của Zalo ---- */
-.zpf-vbtn { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.zpf-vbtn { display: inline-flex!important; align-items: center; justify-content: center; flex:0 0 32px; width:32px; height:32px; padding:0; color:var(--icon-on-color,#fff)!important; background:transparent!important; cursor: pointer; }
 .zpf-tool svg, .zpf-vbtn svg { flex: none; }
 .zpf-vbtn .fi { font-size: 20px; line-height: 1; }
 

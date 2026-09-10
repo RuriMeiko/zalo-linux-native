@@ -14,7 +14,7 @@
     });
   }
   async function check() {
-    if (loading || !document.querySelector('.media-viewer__footer__child.image-action')) return;
+    if (loading || !document.querySelector('.media-viewer__footer__child.image-action, .media-viewer .image-action, .media-viewer__footer action-group')) return;
     loading = true;
     observer.disconnect();
     const css = document.createElement('link');

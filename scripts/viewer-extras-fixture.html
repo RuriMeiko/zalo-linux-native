@@ -23,6 +23,7 @@ document.querySelector('#open-viewer').onclick = () => {
   ctx.fillStyle = '#ce7e36'; ctx.fillRect(60, 260, 140, 80);
   const img = document.createElement('img'); img.className = 'zimg-el'; img.alt = 'Synthetic test image'; img.src = canvas.toDataURL();
   const toolbar = document.createElement('div'); toolbar.className = 'media-viewer__footer__child image-action';
+  toolbar.appendChild(document.createElement('action-group'));
   document.querySelector('#viewer').replaceChildren(img, toolbar);
 };
 </script>

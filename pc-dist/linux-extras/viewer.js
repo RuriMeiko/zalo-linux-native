@@ -989,7 +989,7 @@
     }, injectButtons = function() {
       const cont = document.querySelector(TOOLBAR_SEL);
       if (!cont) return;
-      const group = cont.querySelector(".action-group") || cont;
+      const group = cont.querySelector("action-group, .action-group") || cont;
       if (group.querySelector(".zpf-vbtn")) return;
       const drawBtn = mkViewerBtn("V\u1EBD / ch\xFA th\xEDch", "edit", function() {
         const s = currentImageSrc();
@@ -1025,7 +1025,7 @@
     };
     currentImageEl2 = currentImageEl, currentImageSrc2 = currentImageSrc, mkViewerBtn2 = mkViewerBtn, injectButtons2 = injectButtons, start2 = start;
     window.__ZALO_PRINT_FEATURE__ = true;
-    const TOOLBAR_SEL = ".media-viewer__footer__child.image-action";
+    const TOOLBAR_SEL = ".media-viewer__footer__child.image-action, .media-viewer .image-action, .media-viewer__footer action-group";
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
     else start();
   }

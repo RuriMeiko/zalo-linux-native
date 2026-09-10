@@ -4,6 +4,12 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const file = path.join(__dirname, '../pc-dist/linux-extras/viewer.js');
 const source = fs.readFileSync(file, 'utf8');
+const loader = fs.readFileSync(path.join(__dirname, '../pc-dist/linux-extras/loader.js'), 'utf8');
+for (const html of ['compact-app.html','popup-viewer.html'])
+  assert.ok(fs.readFileSync(path.join(__dirname, '../pc-dist', html), 'utf8').includes('<script src="linux-extras/loader.js"></script>'),
+    `${html} must load viewer actions directly`);
+assert.ok(loader.includes('.media-viewer__footer action-group'));
+assert.ok(source.includes('cont.querySelector("action-group, .action-group")'));
 const cut = source.indexOf('  // src/index.js');
 assert.ok(cut > 0);
 let locked = false, removed = 0, printed = 0, iframe, image;
