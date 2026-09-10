@@ -86,4 +86,8 @@ not passed through a shell.
 persistent recovery directory, including check-only, quoted space paths,
 no overwrite and symlink rejection. The generated entry passed
 `desktop-file-validate`. Actual menu appearance and launch in a clean desktop
-session remain acceptance checks; no real menu entry has been registered yet.
+session remain acceptance checks. On 2026-09-10 a real menu entry was registered
+for `~/.local/share/zalo-linux-native` (snapshot `e10acc3`, 13,382 files with
+verified hashes). Installed runtime/device preflight passed, the helper points
+inside the copied installation, and CDP is omitted. The installed copy was not
+launched, to leave the current app/call testing session undisturbed.

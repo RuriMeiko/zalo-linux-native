@@ -1,5 +1,21 @@
 # Full-app recovery integration — 2026-09-10
 
+## User-local installation and menu registered
+
+Source snapshot `e10acc3` was copied into the previously absent directory
+`~/.local/share/zalo-linux-native`: 13,382 tracked files. Installation hashes
+were checked during copy and independently read back against the manifest.
+The copied launcher resolves its helper within that installation, not the
+checkout. Its private config retains C922/HDMI and the external runtime, but
+omits CDP. Electron/runtime remain external; this is not a self-contained release.
+
+`~/.local/share/applications/zalo-linux-native.desktop` was registered with
+exclusive creation and passes `desktop-file-validate`. Installed
+`launch-installed.sh --check` passes actual runtime/device checks. No new app
+was launched; the running app was left alone. Actual menu appearance and
+launching this copy after quitting the old instance remain unverified.
+No account profile was copied, moved or inspected.
+
 ## Latest actual restart: source checkpoint `6ac64ba`
 
 This supersedes the deferred rollout and source-only deployment notes below.
