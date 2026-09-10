@@ -83,13 +83,13 @@ development entry point, not completion of incoming video UI or a video release.
 
 ## Explicit diagnostics and sandbox exception
 
-### Incoming GTK call trial
+### Incoming call trial and shared call window
 
 Set `"experimentalIncoming": true` in the local configuration to enable the
-new incoming dispatcher. `zenity` is required and checked before launch.
-The trial presents native GTK **Trả lời / Bỏ qua** controls, then a **Kết thúc**
-dialog once native media is started. Video additionally requires the video
-opt-in and selected camera above. Closing the active dialog cancels media and
+incoming dispatcher. The current main/helper use an isolated Electron call
+window for **Trả lời / Bỏ qua**, dialing and active controls; Zenity is no longer
+a prerequisite for this path. Video additionally requires the video
+opt-in and selected camera above. Closing the active window cancels media and
 sends the verified desktop end-call command. Passcode locking cancels incoming
 UI/media and blocks new incoming attempts while locked.
 
@@ -97,9 +97,16 @@ Current limitations: a new helper must first receive a validated outgoing 401
 configuration to learn its native local identity; do one outgoing setup first.
 This identity stays only in memory and is invalidated on account change.
 **Bỏ qua is local dismissal, not a verified remote rejection signal.** Incoming
-bootstrap, true reject/busy signaling, mute/device controls, and real-account
+bootstrap, true reject/busy signaling, device switching, and real-account
 voice/video acceptance remain open. This trial is not enabled by inherited
 environment variables and is not a claim that calling is fully covered.
+
+Mic state changes only after a native ACK. Camera off joins capture shutdown;
+on waits for a new native frame. The local preview comes from the same capture
+and clears when camera is off. Remote camera-state presentation still needs
+verification; the peer may retain the last image. Update main and helper
+together: inherited control/video/preview descriptors are assigned by main,
+not user configuration. See [call window evidence](native/android-zrtc/CALL-WINDOW.md).
 
 - `"cdpPort": 9222` enables loopback-only remote debugging. Omit in normal use.
 - `"noSandbox": true` explicitly disables the Electron sandbox if required by

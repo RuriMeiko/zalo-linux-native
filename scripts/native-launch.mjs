@@ -39,7 +39,8 @@ export function launchSpec(config,inherited=process.env) {
   const c=validateConfig(config),env={...inherited};
   for(const name of ['ELECTRON_RUN_AS_NODE','LD_PRELOAD','LD_AUDIT','ZALO_ZCALL_CAPTURE',
     'ZALO_ZCALL_SCHEMA_LOG','ZRTC_DEBUG_BACKTRACE','ZRTC_PCM_HOST','ZRTC_PCM_SOURCE','ZRTC_PCM_SINK',
-    'ZALO_ZCALL_NATIVE_VIDEO','ZALO_ZCALL_VIDEO_DEVICE','ZALO_ZCALL_NATIVE_INCOMING']) delete env[name];
+    'ZALO_ZCALL_NATIVE_VIDEO','ZALO_ZCALL_VIDEO_DEVICE','ZALO_ZCALL_NATIVE_INCOMING',
+    'ZALO_ZCALL_UI_PIPE','ZALO_ZCALL_VIDEO_PIPE','ZALO_ZCALL_PREVIEW_PIPE']) delete env[name];
   Object.assign(env,{ZCALL_USE_PROXY:'0',ZCALL_PROXY_AUTOSTART:'0',ZALO_ZCALL_LOG:'0',
     ZALO_ZCALL_NATIVE_SETUP:'1',ZALO_ZCALL_NATIVE_NETWORK:'1',ZALO_ZCALL_NATIVE_MEDIA:'1',
     ZALO_ZRTC_RUNTIME:c.runtime,ZALO_ZCALL_PCM_SOURCE:c.source,ZALO_ZCALL_PCM_SINK:c.sink,
@@ -54,7 +55,6 @@ export function launchSpec(config,inherited=process.env) {
 }
 export async function preflight(config) {
   const c=validateConfig(config);
-  if(c.experimentalIncoming)await exec('zenity',['--version'],{timeout:3000,maxBuffer:4096});
   for(const file of [c.electron,path.join(c.appDir,'bootstrap.js'),
     path.join(c.runtime,'bionic/linker64'),path.join(c.runtime,'results/zrtc-worker'),
     path.join(c.runtime,'results/pcm-host')]) {

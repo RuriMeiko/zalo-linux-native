@@ -1,18 +1,20 @@
-# Zalo Linux Port 2026
-> **Recovery checkpoint (2026-09-10):** the full upstream app tree and recovered
-> native sources are now integrated locally. Renderer signaling, header,
-> passcode bridge and viewer module tests pass on this tree. This is not a
-> verified release: real-account voice/video must be retested after recovery,
-> incoming-call UI wiring and redistribution review remain open. See
-> [integration evidence and remaining gates](INTEGRATION-STATUS.md).
+# Zalo Linux Native
+> **Development checkpoint (2026-09-10):** outgoing/incoming call owners now use
+> one Electron call window with remote video, local camera preview and acknowledged
+> mic/camera controls. The matching main/helper/runtime were deployed locally;
+> 19 control/lifecycle suites, isolated Electron UI tests and native tone-mute
+> tests pass. The newly deployed build still needs two-account acceptance.
+> This is **not a finished release**. See
+> [current evidence and remaining gates](INTEGRATION-STATUS.md).
 
 > **Independent-project transition (2026-09-09):** the current Linux-native
 > development builds on [realdtn2/zalo-linux-2026](https://github.com/realdtn2/zalo-linux-2026),
 > not a from-scratch implementation. See [credits and provenance](CREDITS.md),
 > [current status](PORT-CHECKLIST.md) and [publication checklist](RELEASE-CHECKLIST.md).
 > Native outgoing **voice was confirmed audible in both directions** in one
-> user-assisted test. Video capture reaches the native VideoSource, but **video
-> calls are not implemented end to end**. Existing installation/release links
+> user-assisted test, and the user later reported two-way video on a previous
+> trial. Those observations do not validate every control in the current build.
+> Existing installation/release links
 > below refer to the upstream project, not a new independent release.
 
 For explicit native voice startup with user-local runtime and device settings,

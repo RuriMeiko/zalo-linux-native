@@ -30,12 +30,14 @@ assert.equal(launchSpec({...config,experimentalIncoming:true},{}).env.ZALO_ZCALL
 assert.equal(launchSpec(config,{ZALO_ZCALL_NATIVE_INCOMING:'1'}).env.ZALO_ZCALL_NATIVE_INCOMING,undefined);
 const spec=launchSpec(config,{PATH:'/bin',ELECTRON_RUN_AS_NODE:'1',LD_PRELOAD:'bad',
   ZALO_ZCALL_CAPTURE:'/tmp/private',ZALO_ZCALL_SCHEMA_LOG:'/tmp/schema',ZCALL_USE_PROXY:'1',
-  ZALO_ZCALL_NATIVE_VIDEO:'1',ZALO_ZCALL_VIDEO_DEVICE:'/dev/video0'});
+  ZALO_ZCALL_NATIVE_VIDEO:'1',ZALO_ZCALL_VIDEO_DEVICE:'/dev/video0',
+  ZALO_ZCALL_UI_PIPE:'19',ZALO_ZCALL_VIDEO_PIPE:'20',ZALO_ZCALL_PREVIEW_PIPE:'21'});
 assert.deepEqual(spec.args,['/opt/test app']);
 assert.equal(spec.executable,config.electron);
 assert.equal(spec.env.ZCALL_USE_PROXY,'0');
 assert.equal(spec.env.ZALO_ZCALL_NATIVE_MEDIA,'1');
-for(const key of ['ELECTRON_RUN_AS_NODE','LD_PRELOAD','ZALO_ZCALL_CAPTURE','ZALO_ZCALL_SCHEMA_LOG','ZALO_ZCALL_NATIVE_VIDEO','ZALO_ZCALL_VIDEO_DEVICE'])
+for(const key of ['ELECTRON_RUN_AS_NODE','LD_PRELOAD','ZALO_ZCALL_CAPTURE','ZALO_ZCALL_SCHEMA_LOG','ZALO_ZCALL_NATIVE_VIDEO','ZALO_ZCALL_VIDEO_DEVICE',
+  'ZALO_ZCALL_UI_PIPE','ZALO_ZCALL_VIDEO_PIPE','ZALO_ZCALL_PREVIEW_PIPE'])
   assert.equal(Object.hasOwn(spec.env,key),false);
 assert.deepEqual(launchSpec({...config,noSandbox:true,cdpPort:9222},{}).args,
   ['--no-sandbox','--remote-debugging-address=127.0.0.1','--remote-debugging-port=9222',config.appDir]);

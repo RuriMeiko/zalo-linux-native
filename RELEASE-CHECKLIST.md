@@ -9,6 +9,8 @@ Status: development, not a complete native Linux release.
 - [x] Logitech C922 frames pass through original native VideoSource to an I420
   callback in a local test.
 - [ ] Native video encoder/send path, remote decode/display and video-call UI.
+  Implemented and locally deployed; synthetic H.264 and Electron UI checks pass.
+  Current-build two-account acceptance remains open, so this release gate stays unchecked.
 - [ ] Incoming call notification, answer/reject and verified incoming media.
 - [ ] Reliable call controls, microphone/speaker/camera selection, mute and hangup.
 - [ ] Device disconnect/reconnect and Bluetooth profile-change recovery.
@@ -48,18 +50,21 @@ Do not substitute successful module tests for these end-to-end gates.
   API on 2026-09-10 reports `RuriMeiko/zalo-linux-native`, public, `fork: false`.
   The user-supplied destination is already independent; no deletion/recreation
   or fork detachment is needed. Its default branch remains
-  `port/linux-native-modules`; remote `main` does not yet exist.
+  `port/linux-native-modules`. Read back with `git ls-remote --symref` on
+  2026-09-10: remote `main` exists at `a49188eaaabca79be3752489c3bf53e2dc18a748`.
+- [ ] Change GitHub default branch to `main` (pushing main does not do this).
 - [ ] Authenticate the GitHub CLI locally; never put a token into chat or source files.
 - [ ] Inspect the exact staged file list and secret-scan the proposed publication.
 - [ ] Preserve applicable attribution/license notices and source provenance.
-- [ ] Push to the verified new remote; read back its commit and README to confirm.
+- [x] Push development commits to the independent remote's `main`; remote hash
+  readback confirms publication. This is source publication, not a binary release.
 - [ ] Publish an accurately labelled release only when its acceptance gates pass.
 
-The GitHub CLI token remains invalid, but SSH authenticated as `RuriMeiko`.
-A `git push --dry-run` of local `main` to the supplied repository succeeded on
-2026-09-10. This verifies the available SSH publication path without publishing
-the branch. It does not change the default branch, resolve redistribution
-permissions, or create a release. Actual publication is still pending.
+The earlier GitHub CLI token check failed, but SSH publication works and
+development commits have been pushed repeatedly. The default branch is still
+the old branch as verified above; redistribution review and a validated binary
+release remain pending. Changing default-branch settings requires an authorized
+GitHub API/CLI or browser session, not an SSH Git push.
 
 Pre-publication review found no matches for the checked private-key/GitHub-token
 and long session-key assignment patterns in the new native modules, scripts,

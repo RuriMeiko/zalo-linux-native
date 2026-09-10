@@ -8,16 +8,20 @@ Do not publish a PR; finish native functionality before release claims.
 ## Current call checkpoint (supersedes historical implementation notes below)
 
 - Native outgoing and opt-in incoming are wired into the desktop helper.
-  The installed app was restarted with the `b9ec2fb` trial on September 10;
+  The installed app was restarted with source checkpoint `3f34275` on September 10;
   later source changes are not proof that a running helper has reloaded them.
-- `node scripts/test-call-control.mjs` runs 12 deterministic suites, including
+- `node scripts/test-call-control.mjs` runs 19 deterministic suites, including
   real driver/owner/session composition with mocked native/server/UI boundaries.
   It covers cancellation during consent, answer and media in voice/video,
   local end, native faults, no remote hangup echo and cleanup before errors.
 - Native H.264/PCM loopback evidence and deployment details are maintained in
   `INTEGRATION-STATUS.md`. These do not prove two-account media acceptance.
+- Shared call window, remote display, local preview, mic and camera toggles are
+  implemented and deployed. Native tone tests verify recording-ingress mute;
+  USB tests verify capture off/on. Neither substitutes for remote-account QA.
 - Still open: first-incoming native identity bootstrap, true remote rejection,
-  full call controls/device switching, and current two-account voice/video QA.
+  contact name/avatar presentation, device switching, screen sharing, remote
+  camera-state signaling, and current two-account voice/video QA.
 - The user has asked to be notified when the next test build is ready. Do not
   repeatedly request manual testing while these implementation gaps remain.
 
