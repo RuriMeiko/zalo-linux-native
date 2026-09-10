@@ -30,8 +30,11 @@ Do not substitute successful module tests for these end-to-end gates.
 
 - [ ] Remove developer-specific absolute paths from install and production launch.
   A separate JSON-configured development launcher is implemented and unit-tested
-  ([NATIVE-LAUNCH.md](NATIVE-LAUNCH.md)); installer/default-shortcut migration and
-  clean-machine verification remain open.
+  ([NATIVE-LAUNCH.md](NATIVE-LAUNCH.md)). The user-local development installer
+  ([NATIVE-INSTALL.md](NATIVE-INSTALL.md)) now verifies payload copies and passed
+  a full local copy/preflight with its helper resolved inside the installation.
+  Self-contained runtime acquisition, default-shortcut migration and clean-machine
+  verification remain open.
 - [ ] Make native runtime acquisition, pinned versions/hashes and build steps
   reproducible, with redistribution permission checked for each component.
 - [ ] Make normal launch select the verified native path without test-only env flags.

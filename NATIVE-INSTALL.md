@@ -55,3 +55,10 @@ On 2026-09-10, real-checkout `--check` validated 13,367 tracked payload files
 before the installer/docs themselves were committed. This is not clean-machine
 startup, native dependency acquisition, licensing review or voice/video acceptance.
 Those remain [release gates](RELEASE-CHECKLIST.md).
+
+After commit `3d2c354`, a full 13,370-file copy was created at
+`~/zalo-native-recovery/standalone-install-check/`. Copy/hash validation completed,
+the installed launcher passed `--check`, and its resolved helper path pointed
+inside the copied installation rather than the source checkout. No second Zalo
+instance was launched. Electron/native runtime still refer to the existing
+external installations; this does not prove a clean-machine package.
