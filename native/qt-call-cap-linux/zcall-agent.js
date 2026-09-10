@@ -412,13 +412,13 @@ function handleHostMessage(msg) {
             incomingAttempt.controller.abort();
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
             process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
-            let nativeLocalId;
-            try {nativeLocalId=nativeIdentity.resolve();}
-            catch {setupPhase('incoming-identity-unavailable');return;}
             callActive=true;
             const attempt={controller:new AbortController(),promise:null,
                 callId:String(data.data?.callId),callerId:String(data.data?.uidFrom)};incomingAttempt=attempt;
             attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(async({runIncomingDesktop})=>{
+                const {resolveIncomingIdentity}=await import('../android-zrtc/incoming-identity.mjs');
+                const nativeLocalId=await resolveIncomingIdentity(setupTransport,nativeIdentity,msg,
+                    {signal:attempt.controller.signal,videoEnabled,clientVersion:initInfo.clientVersion});
                 const peerName=await incomingName.resolve(data.data?.uidN,attempt.controller.signal);
                 return (
                 runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,

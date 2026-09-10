@@ -96,11 +96,15 @@ opt-in and selected camera above. Closing the active window cancels media and
 sends the verified desktop end-call command. Passcode locking cancels incoming
 UI/media and blocks new incoming attempts while locked.
 
-Current limitations: a new helper must first receive a validated outgoing 401
-configuration to learn its native local identity; do one outgoing setup first.
-This identity stays only in memory and is invalidated on account change.
+The deployed checkpoint still needs an outgoing configuration before first
+incoming use. New source now requests a separate authenticated 401 configuration
+automatically for the first incoming offer and verifies both native identities
+before creating a worker. It does not send an outgoing 416 invitation or reuse
+the probe's session for incoming media. This bootstrap requires matching helper
+deployment and real-server testing; do not assume the deployed app has it yet.
+Identity stays only in memory and is invalidated on account change.
 **Bỏ qua is local dismissal, not a verified remote rejection signal.** Incoming
-bootstrap, true reject/busy signaling, device switching, and real-account
+bootstrap acceptance, true reject/busy signaling, device switching, and real-account
 voice/video acceptance remain open. This trial is not enabled by inherited
 environment variables and is not a claim that calling is fully covered.
 

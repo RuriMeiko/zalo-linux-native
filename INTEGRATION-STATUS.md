@@ -6,9 +6,12 @@ carry the exact numeric requested `id`; late successes/errors are ignored.
 Used configuration IDs are not reused (bounded to 4,096 per connection).
 Command-only responses for other commands still require connection replacement
 after ambiguous cancellation/timeout. Regression tests cover both policies.
-This is a prerequisite for robust first-incoming identity acquisition, not an
-implementation or live verification of that bootstrap. No ID is inferred from
-the incoming recipient field without independent authenticated verification.
+First-incoming identity acquisition is now source-wired using a distinct 401
+probe: strict response mapping, matching recipient/caller native IDs and the
+current account ticket are required before remembering an identity or creating
+an incoming worker. Its fixture tests pass for voice/video, mismatches, account
+switch and cancellation/retry. This has not been deployed or tested against a
+real server while an incoming call is pending; it is not live acceptance.
 
 Latest deployed checkpoint (`3f34275`, 2026-09-10): unified call window is now wired to outgoing voice,
 outgoing video and incoming call owners via a dedicated control pipe; remote

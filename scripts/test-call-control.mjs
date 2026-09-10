@@ -12,6 +12,7 @@ const tests=[
   'native/qt-call-cap-linux/test-desktop-signaling.js',
   'native/qt-call-cap-linux/test-outgoing-setup.js',
   'native/android-zrtc/test-incoming-video-control.mjs',
+  'native/android-zrtc/test-incoming-identity.mjs',
   'native/android-zrtc/test-incoming-answer-session.mjs',
   'native/android-zrtc/test-incoming-call-owner.mjs',
   'native/android-zrtc/test-native-call-ui.mjs',
