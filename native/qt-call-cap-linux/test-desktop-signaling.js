@@ -13,7 +13,7 @@ const vm=require('node:vm');
     await assert.rejects(bridge.request(401,offer),/busy/);
     assert.equal(bridge.receive({type:'sendSignal',command:401,data:{}}),false);
     assert.equal(bridge.receive({type:'recvSignal',command:402,data:{}}),false);
-    const serverResponse={error_code:7,data:{fixture:true}};
+    const serverResponse={id:123,error_code:7,data:{fixture:true}};
     assert.equal(bridge.receive({type:'recvSignal',command:401,data:serverResponse}),true);
     assert.deepEqual(await first,serverResponse);
     let control;
@@ -41,7 +41,7 @@ const vm=require('node:vm');
     }
     const calls=[];
     let apiFailure=null;
-    const decoded={sessId:'fixture',servers:[],settings:{}};
+    const decoded={id:123,sessId:'fixture',servers:[],settings:{}};
     const decoderStart=bundle.indexOf('        kCOK: function(');
     const decoderEnd=bundle.indexOf('        kCR7:',decoderStart);
     assert.ok(decoderStart>=0 && decoderEnd>decoderStart);
@@ -127,10 +127,29 @@ const vm=require('node:vm');
     assert.equal(errors.length,0); // old engines do not opt into this extension
     renderer.handleUpdate(null,'linux-native-capabilities',{signalingErrors:true});
     apiFailure={error_code:9,error_message:'private',request:{responseURL:'secret'}};
-    await assert.rejects(integrated.request(401,offer),e=>e.code===9 && e.command===401);
-    assert.equal(JSON.stringify(errors[0]),JSON.stringify({type:'recvSignalError',command:401,data:{callId:123,errorCode:9}}));
+    await assert.rejects(integrated.request(401,{...offer,callId:124}),e=>e.code===9 && e.command===401);
+    assert.equal(JSON.stringify(errors[0]),JSON.stringify({type:'recvSignalError',command:401,data:{callId:124,errorCode:9}}));
     apiFailure=null;
-    assert.equal(await integrated.request(401,offer),decoded); // a real error reply permits retry
+    decoded.id=125;
+    assert.equal(await integrated.request(401,{...offer,callId:125}),decoded); // a real error reply permits a fresh-ID retry
     integrated.close();
+    {
+    const retry=new DesktopSignaling(()=>{}, {timeoutMs:20});
+    const canceled=retry.request(401,{...offer,callId:200});
+    const canceledResult=assert.rejects(canceled,/canceled/);retry.cancel(401);await canceledResult;
+    const replacement=retry.request(401,{...offer,callId:201});
+    assert.equal(retry.receive({type:'recvSignal',command:401,data:{id:200,fromId:1}}),false);
+    assert.equal(retry.receive({type:'recvSignal',command:401,data:{id:'201',fromId:1}}),false);
+    assert.equal(retry.receive({type:'recvSignalError',command:401,data:{callId:200,errorCode:1}}),false);
+    assert.equal(retry.receive({type:'recvSignal',command:401,data:{id:201,fromId:123}}),true);
+    assert.deepEqual(await replacement,{id:201,fromId:123});
+    await assert.rejects(retry.request(401,{...offer,callId:200}),/reused/);
+    await assert.rejects(retry.request(401,{...offer,callId:202}),/timeout/);
+    const afterTimeout=retry.request(401,{...offer,callId:203});
+    assert.equal(retry.receive({type:'recvSignal',command:401,data:{id:202}}),false);
+    retry.receive({type:'recvSignal',command:401,data:{id:203}});assert.deepEqual(await afterTimeout,{id:203});
+    retry.close();
+    console.log('PASS 401 retry: cancellation/timeout recovery, stale success/error rejection, strict response ID, retired-ID rejection');
+    }
     console.log('PASS desktop signaling boundary: exact host frames, response/control grammar, no false success, timeout isolation, close');
 })().catch(e=>{console.error(e);process.exitCode=1;});

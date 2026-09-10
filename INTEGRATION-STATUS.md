@@ -1,5 +1,15 @@
 # Full-app recovery integration — 2026-09-10
 
+Latest signaling source fix: canceled/timed-out configuration command 401 can
+be retried on the same helper using a fresh call ID. Success responses must
+carry the exact numeric requested `id`; late successes/errors are ignored.
+Used configuration IDs are not reused (bounded to 4,096 per connection).
+Command-only responses for other commands still require connection replacement
+after ambiguous cancellation/timeout. Regression tests cover both policies.
+This is a prerequisite for robust first-incoming identity acquisition, not an
+implementation or live verification of that bootstrap. No ID is inferred from
+the incoming recipient field without independent authenticated verification.
+
 Latest deployed checkpoint (`3f34275`, 2026-09-10): unified call window is now wired to outgoing voice,
 outgoing video and incoming call owners via a dedicated control pipe; remote
 video frames render in that same window. Electron fixture with synthetic video,

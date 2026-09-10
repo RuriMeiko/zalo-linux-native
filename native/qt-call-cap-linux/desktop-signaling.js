@@ -1,7 +1,8 @@
 "use strict";
 // Renderer handleSendSignal/handleRecvSignal owns authenticated HTTPS. No
 // account session key crosses this boundary. Numeric commands are not ZRTC
-// enum ordinals. Responses carry only command, so allow one request per command.
+// enum ordinals. Most responses carry only command; 401 additionally carries
+// its call ID. Allow one request per command and correlate 401 explicitly.
 const {EventEmitter} = require('events');
 const FIELDS = Object.freeze({
     401:['calleeId','callId','codec','type'],
@@ -19,6 +20,7 @@ class DesktopSignaling extends EventEmitter {
             throw new TypeError('Invalid signaling transport');
         this.send=send; this.timeoutMs=timeoutMs; this.pending=new Map();
         this.expired=new Set(); this.closed=false;
+        this.configurationIds=new Set();
     }
     request(command,data) {
         if(this.closed) return Promise.reject(new Error('Signaling transport closed'));
@@ -37,19 +39,26 @@ class DesktopSignaling extends EventEmitter {
                 return Promise.reject(new Error('Missing or invalid signaling field: '+key));
             payload[key]=data[key];
         }
+        if(command===401) {
+            const id=String(payload.callId);
+            if(!/^[1-9][0-9]{0,9}$/.test(id) || Number(id)>0x7fffffff ||
+                this.configurationIds.has(id) || this.configurationIds.size>=4096)
+                return Promise.reject(new Error('Invalid, reused or exhausted configuration ID'));
+            this.configurationIds.add(id);
+        }
         return new Promise((resolve,reject)=>{
             const timer=setTimeout(()=>{
                 this.pending.delete(command);
-                // A late command-only response cannot safely be assigned to
-                // another call. Require a fresh IPC connection after timeout.
-                this.expired.add(command);
+                // Late command-only responses require a fresh connection.
+                // A 401 retry is safe only with a fresh, never-reused call ID.
+                if(command!==401)this.expired.add(command);
                 reject(new Error('Signaling response timeout'));
             },this.timeoutMs);
             this.pending.set(command,{resolve,reject,timer,callId:String(payload.callId)});
             try { this.send({type:'sendSignal',command,data:payload}); }
             catch(error) {
                 clearTimeout(timer);this.pending.delete(command);
-                this.expired.add(command);reject(error);
+                if(command!==401)this.expired.add(command);reject(error);
             }
         });
     }
@@ -64,6 +73,10 @@ class DesktopSignaling extends EventEmitter {
         if(!['recvSignal','recvSignalError'].includes(message.type) || !Number.isInteger(message.command)) return false;
         const entry=this.pending.get(message.command);
         if(!entry) return false;
+        // Unlike older command-only replies, 401 carries the requested ID.
+        // Never consume a replacement request with a canceled call's config.
+        if(message.command===401 && message.type==='recvSignal' &&
+            (!Number.isInteger(message.data?.id) || String(message.data.id)!==entry.callId))return false;
         if(message.type==='recvSignalError') {
             if(!message.data || String(message.data.callId)!==entry.callId) return false;
             this.pending.delete(message.command);clearTimeout(entry.timer);
@@ -89,9 +102,9 @@ class DesktopSignaling extends EventEmitter {
         const entry=this.pending.get(command);
         if(!entry) return false;
         this.pending.delete(command);clearTimeout(entry.timer);
-        // Do not reuse on this IPC connection: the host may still return a
-        // command-only success for this canceled request.
-        this.expired.add(command);
+        // Retire command-only requests on this connection. 401 has an ID and
+        // can be retried, but configurationIds prevents reuse of an old ID.
+        if(command!==401)this.expired.add(command);
         entry.reject(new Error('Signaling request canceled'));return true;
     }
 }

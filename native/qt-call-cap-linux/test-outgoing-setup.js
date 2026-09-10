@@ -7,11 +7,11 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
     const frames=[];let consumed=0;
     const signaling=new DesktopSignaling(msg=>{
       frames.push(msg);
-      if(['success','consumer-error'].includes(mode)) queueMicrotask(()=>signaling.receive({type:'recvSignal',command:401,data:{fromId:123}}));
+      if(['success','consumer-error'].includes(mode)) queueMicrotask(()=>signaling.receive({type:'recvSignal',command:401,data:{id:789,fromId:123}}));
       if(mode==='error') queueMicrotask(()=>signaling.receive({type:'recvSignalError',command:401,data:{callId:789,errorCode:7}}));
     },{timeoutMs:30});
     const setup=new OutgoingSetup(signaling,{callId:()=>789,onConfig:async(config,ctx)=>{
-      consumed++;assert.deepEqual(config,{fromId:123});assert.equal(ctx.callId,789);
+      consumed++;assert.deepEqual(config,{id:789,fromId:123});assert.equal(ctx.callId,789);
       if(mode==='consumer-error') throw new Error('Invalid native config');
       return {callReady:false};
     }});
