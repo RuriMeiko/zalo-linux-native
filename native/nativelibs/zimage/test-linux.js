@@ -10,6 +10,7 @@ if (process.platform !== 'linux') { console.log('SKIP: linux-only'); process.exi
 // --- stub electron.nativeImage (decode/resize/encode control flow) ---
 const dims = { w: 64, h: 64 };
 let resizeCalls = 0;
+let lastResize;
 const NI = {
     createFromBuffer(buf) {
         if (!buf || !buf.length) throw new Error('empty');
@@ -18,6 +19,7 @@ const NI = {
             getSize: () => ({ width: dims.w, height: dims.h }),
             resize: ({ width, height }) => {
                 resizeCalls++;
+                lastResize = { width, height };
                 return {
                     isEmpty: () => false,
                     getSize: () => ({ width, height }),
@@ -57,6 +59,13 @@ Module._load = function (request, parent, isMain) {
     const c = await lib.Image.thumbnail(png, 32, 32, 'jpeg', 90);
     assert.ok(Buffer.isBuffer(c), 'small source still encodes');
     assert.strictEqual(resizeCalls, 0, 'no resize for smaller source');
+
+    dims.w = 80; dims.h = 40;
+    await lib.Image.thumbnail(png, 20, 20, 'png', 80);
+    assert.deepStrictEqual(lastResize, { width: 20, height: 10 }, 'landscape preserves ratio');
+    dims.w = 40; dims.h = 80;
+    await lib.Image.thumbnail(png, 20, 20, 'png', 80);
+    assert.deepStrictEqual(lastResize, { width: 10, height: 20 }, 'portrait preserves ratio');
 
     console.log('ALL zimage LINUX TESTS PASS');
 })().catch((e) => {

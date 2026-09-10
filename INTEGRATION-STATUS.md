@@ -1,5 +1,14 @@
 # Full-app recovery integration — 2026-09-10
 
+New image-module source fix: a real Electron 22 synthetic fixture failed for an
+80×40 PNG constrained to 20×20 (the old code distorted it to the square bounds).
+NativeImage resizing now receives explicitly proportional dimensions instead
+of Sharp's unsupported `fit` option. The same real fixture passes landscape,
+portrait, rectangular bounds, no enlargement, PNG/JPEG decode and invalid input;
+mocked contract tests pass too. No account, image files or app windows were used.
+The running app/installed copy have not been updated for this change. Broader
+format/alpha parity and actual application thumbnail acceptance are not proven.
+
 Real Electron lock evidence: `test-single-instance-electron.mjs` launched two
 different synthetic installation directories against one isolated profile.
 The first acquired the lock; the second was denied and the first received

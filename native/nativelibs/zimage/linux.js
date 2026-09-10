@@ -62,7 +62,13 @@ function thumbnailWithNativeImage(nativeImage, buffer, width, height, format, qu
             let out = img;
             // fit:'inside' == sharp default; skip work when already small enough
             if (size.width > w || size.height > h) {
-                out = img.resize({ width: w, height: h, fit: 'inside' });
+                // Electron nativeImage does not implement Sharp's `fit` option.
+                // Supplying both raw bounds stretches non-square source images.
+                const scale = Math.min(w / size.width, h / size.height, 1);
+                out = img.resize({
+                    width: Math.max(1, Math.round(size.width * scale)),
+                    height: Math.max(1, Math.round(size.height * scale)),
+                });
             }
             const enc = pickEncoder(format);
             const q = Math.max(1, Math.min(100, Math.round(Number(quality) || 80)));

@@ -8,18 +8,18 @@ Do not publish a PR; finish native functionality before release claims.
 ## Current call checkpoint (supersedes historical implementation notes below)
 
 - Native outgoing and opt-in incoming are wired into the desktop helper.
-  The installed app was restarted with source checkpoint `3f34275` on September 10;
+  The installed app was restarted with source checkpoint `6ac64ba` on September 10;
   later source changes are not proof that a running helper has reloaded them.
 - `node scripts/test-call-control.mjs` runs 25 deterministic suites, including
   real driver/owner/session composition with mocked native/server/UI boundaries.
   It covers cancellation during consent, answer and media in voice/video,
   local end, native faults, no remote hangup echo and cleanup before errors.
   Pre-owner identity/name failures now show a generic bounded error; cancellation
-  suppresses this notification. This latest change is source-tested, not deployed.
+  suppresses this notification. This call change was included in that restart.
 - Outgoing voice/video now opens a cancellable preparation stage before the 401
   response, keeping it through native network startup. It joins the UI stage
-  before handing over to dialing; unit and composed pipe tests pass. Requires
-  matched helper/window deployment and real UI/live-call acceptance.
+  before handing over to dialing; unit, composed pipe and isolated Electron
+  tests pass. Deployed at `6ac64ba`; live-call acceptance remains open.
 - Native H.264/PCM loopback evidence and deployment details are maintained in
   `INTEGRATION-STATUS.md`. These do not prove two-account media acceptance.
 - Shared call window, remote display, local preview, mic and camera toggles are
@@ -32,6 +32,15 @@ Do not publish a PR; finish native functionality before release claims.
   repeatedly request manual testing while these implementation gaps remain.
 
 ## Historical review and evidence
+
+Current image-module finding: real Electron 22 reproduced distorted nativeImage
+thumbnails because `fit: inside` is a Sharp option, not implemented by this
+Electron resize path. The source now calculates proportional dimensions before
+resizing. `native/nativelibs/zimage/test-electron.cjs` passes PNG/JPEG landscape,
+portrait, unequal bounds, no-enlargement and invalid-input cases with synthetic
+pixels. This fix is not yet deployed; WebP/GIF parity, transparency and actual
+in-app thumbnail workflows remain open. The old mocked-only row below is
+historical, not the current evidence ceiling.
 
 The sections below preserve earlier checkpoints; statements that the agent
 has no incoming dispatcher or always ends outgoing calls describe old code.
