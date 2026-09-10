@@ -13,6 +13,7 @@ assert.ok(moduleStart > 0 && end > start);
 const calls = [];
 const react = {Component: class {}, Fragment: 'fragment', createElement: (type, props, ...children) => ({type, props: props || {}, children})};
 const context = {
+  window: {$zenv: {isPreloaded: true}},
   r: {a: react}, o: {a: 'fragment'}, a: {a: Object.assign}, S: false,
   f: {b: value => value}, I: {a: 'account-extra', c: 'existing-menu'},
   A: {default: {logAction() {}}}, l: {default: {stopKeepingAlive() {calls.push('stop-activity');}}},
@@ -48,4 +49,22 @@ assert.equal(buttons()[1].props.disabled, true);
 header.props.loginMode = false;
 header.props.isPopupWindow = true;
 assert.equal(buttons().length, 3);
+header.props.isPopupWindow = false;
+header.props.className = 'image-show__title MediaViewer';
+header.props.title = 'Ảnh kiểm thử';
+header.props.onClose = () => calls.push('close-image-only');
+header.props.status.isAppLock = false;
+assert.equal(buttons().length, 3, 'image viewer must retain all window controls without lock button');
+assert.ok(flatten(header.render()).some(node => node.children.includes('Ảnh kiểm thử')));
+for (const button of buttons()) {
+  assert.equal(button.children[0].type, 'svg', 'window symbols must not depend on font glyphs');
+  assert.equal(button.children[0].props.viewBox, '0 0 16 16');
+}
+buttons().find(button => button.props['aria-label'] === 'Đóng cửa sổ').props.onClick({stopPropagation() {}});
+assert.equal(calls.at(-1), 'close-image-only');
+header.state.isMaximized = true;
+assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'));
+const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
+assert.ok(css.includes('width:30px;height:30px'));
+assert.ok(css.includes('-webkit-app-region:no-drag'));
 console.log(`PASS ${shared ? 'shared/login' : 'compact'} Linux header: account title, controls, existing passcode/lock actions, login/locked/popup guards`);
