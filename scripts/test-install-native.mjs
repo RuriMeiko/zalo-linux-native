@@ -4,6 +4,7 @@ import {mkdir,mkdtemp,writeFile,readFile,stat,symlink,lstat} from 'node:fs/promi
 import {homedir} from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {verifyInstallation} from './verify-installation.mjs';
 const source='/home/test/source',destination='/home/test/installed',home='/home/test';
 const config={appDir:source,electron:'/opt/electron/electron',runtime:'/home/test/runtime',source:'mic',sink:'speaker'};
@@ -27,7 +28,9 @@ const fixtureSource=path.join(fixture,'source'),fixtureDestination=path.join(fix
 const selected=files.filter(f=>p.files.includes(f));
 for(const file of selected) {
   const target=path.join(fixtureSource,file);await mkdir(path.dirname(target),{recursive:true});
-  await writeFile(target,`fixture only: ${file}\n`,{mode:0o644,flag:'wx'});
+  const contents=file==='scripts/verify-installation.mjs'?await readFile(new URL('./verify-installation.mjs',import.meta.url)):
+    file==='scripts/native-launch.mjs'?'// synthetic launcher target\n':`fixture only: ${file}\n`;
+  await writeFile(target,contents,{mode:0o644,flag:'wx'});
 }
 const plan=installPlan({...args,source:fixtureSource,destination:fixtureDestination,home:homedir(),files:selected});
 await inspectInstallation(plan);
@@ -48,6 +51,13 @@ assert.ok(!Object.hasOwn(installedConfig,'cdpPort'),'Installer must not enable d
 assert.deepEqual(await verifyInstallation(fixtureDestination,{requireGenerated:true}),
   {fileCount:selected.length+2,generatedIntegrity:true});
 assert.match(await readFile(path.join(fixtureDestination,'launch-installed.sh'),'utf8'),/verify-installation\.mjs.*--require-generated/);
+const installedLauncher=await readFile(path.join(fixtureDestination,'launch-installed.sh'),'utf8');
+assert.ok(installedLauncher.includes(`ZALO_INSTALLED_NODE='${process.execPath}'`));
+assert.ok(!/(^|\s)node\s/.test(installedLauncher),'Installed launcher must not depend on PATH lookup for Node');
+assert.ok(!/\bdirname\b/.test(installedLauncher),'Installed launcher must not depend on dirname from PATH');
+const withoutPath=spawnSync('/bin/bash',[path.join(fixtureDestination,'launch-installed.sh')],{
+  cwd:'/',env:{PATH:'/nonexistent'},encoding:'utf8',timeout:5000});
+assert.equal(withoutPath.status,0,withoutPath.stderr);assert.match(withoutPath.stdout,/PASS installed payload integrity/);
 await assert.rejects(copyInstallation(plan),/already exists/);
 await symlink(path.join(fixtureSource,'bootstrap.js'),path.join(fixtureSource,'native','linked.js'));
 const unsafe={...plan,destination:path.join(fixture,'rejected'),files:[...selected,'native/linked.js']};

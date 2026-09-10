@@ -1,5 +1,15 @@
 # Full-app recovery integration — 2026-09-10
 
+New-install launcher source now pins the absolute Node executable used during
+installation, validates it is executable, and uses it for both manifest checking
+and native launch. This removes dependence on desktop-session PATH/NVM setup and
+fails with a bounded recovery instruction if that external runtime disappears.
+Installer tests assert no bare `node` lookup remains. Existing registered snapshot
+`529aa91` predates this launcher change and has not yet been replaced.
+The generated launcher also avoids external `dirname`; a real `/bin/bash` fixture
+with `PATH=/nonexistent` completed manifest verification and its synthetic target.
+All 20 account-free regression commands subsequently passed.
+
 Desktop registration now calls the complete installation verifier before any
 menu write. Read-only `--check` accepts an existing entry only when it is a
 canonical regular file whose contents exactly match; mismatch and write-mode

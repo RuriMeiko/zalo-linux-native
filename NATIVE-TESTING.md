@@ -12,6 +12,9 @@ image encoder boundaries, bundled header/viewer/privacy checks and installer/
 integrity-verifier/menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped
 test prevents an overall PASS. Run outside a restricted subprocess sandbox if
 it prevents the entrypoint tests from executing Bash/Node normally.
+The installer fixture executes its generated launcher with `PATH=/nonexistent`;
+success proves it uses the recorded absolute Node path and Bash builtins rather
+than relying on interactive NVM initialization, `node`, or `dirname` lookup.
 
 Filesystem fixtures use unique directories in `~/zalo-native-recovery`.
 The file-utilities test no longer deletes fixed `/tmp/fu-*` paths. The trash

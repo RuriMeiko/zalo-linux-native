@@ -59,7 +59,10 @@ export async function copyInstallation(input) {
         throw new Error('Payload changed during installation');
     }
     const configText=JSON.stringify(plan.config,null,2)+'\n';
-    const launcherText='#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"\nnode "$ZALO_INSTALLED_DIR/scripts/verify-installation.mjs" "$ZALO_INSTALLED_DIR" --require-generated\nexec node "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n';
+    const nodePath=process.execPath;
+    if(!path.isAbsolute(nodePath) || /[\0\r\n]/.test(nodePath) || !(await lstat(nodePath)).isFile())throw new Error('Node executable is unavailable');
+    const quotedNode="'"+nodePath.replaceAll("'","'\\''")+"'";
+    const launcherText=`#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "\${BASH_SOURCE[0]%/*}" && pwd -P)"\nZALO_INSTALLED_NODE=${quotedNode}\nif [[ ! -x "$ZALO_INSTALLED_NODE" ]]; then\n    echo 'Installed Node.js runtime is unavailable; recreate this installation.' >&2\n    exit 1\nfi\n"$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/verify-installation.mjs" "$ZALO_INSTALLED_DIR" --require-generated\nexec "$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n`;
     await writeFile(path.join(plan.destination,'launch.json'),configText,{flag:'wx',mode:0o600});
     await writeFile(path.join(plan.destination,'launch-installed.sh'),launcherText,
       {flag:'wx',mode:0o755});

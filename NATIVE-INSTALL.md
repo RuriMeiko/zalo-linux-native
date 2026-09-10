@@ -39,6 +39,11 @@ its inspected hash before the completion marker is written. Every installed
 launch first runs `scripts/verify-installation.mjs --require-generated`, which
 streams all listed files and verifies regular-file type, canonical path, mode and
 hash. A mismatch blocks startup; it is not automatically overwritten or repaired.
+The generated launcher records the absolute Node executable used by the installer,
+checks that it remains executable, and uses it for verification and launch. Menu
+startup therefore does not depend on an interactive shell initializing NVM or a
+particular PATH. If that external Node installation is removed, recreate the app
+installation with the replacement Node; the launcher never silently switches runtimes.
 No marker means the copy did not complete. Partial directories are kept for
 inspection; there is no automatic deletion, overwrite or rollback of your files.
 The runtime and Electron paths remain external and are not portable by merely
