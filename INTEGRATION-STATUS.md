@@ -1,5 +1,15 @@
 # Full-app recovery integration — 2026-09-10
 
+Real Electron lock evidence: `test-single-instance-electron.mjs` launched two
+different synthetic installation directories against one isolated profile.
+The first acquired the lock; the second was denied and the first received
+`second-instance`. After terminating/joining the first, a replacement acquired
+the same lock. All fixture children exited; no production profile, migration,
+window or media was used. Fixture retained at
+`~/zalo-native-recovery/instance-fixture-a1XGw4`. This verifies Electron 22's
+cross-directory lock with an explicitly shared profile, not the full Zalo
+migration-before-lock path or actual menu activation of the installed copy.
+
 Latest source-only bootstrap fix: compact startup no longer requests the
 single-instance lock a second time after denial. The actual bootstrap is
 executed in a VM fixture for acquired/denied normal/compact paths; each acquires
