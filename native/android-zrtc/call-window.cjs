@@ -1,5 +1,6 @@
 'use strict';
 const path=require('node:path');
+const {peerName:normalizePeerName}=require('./call-presentation.cjs');
 // One window per call. The owner closes it only after media shutdown; changing
 // dialog stages or waiting for a mute ACK must not destroy the window.
 module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
@@ -64,7 +65,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
       });
     },
     clearVideo(source='remote'){if(window && !disposed)window.webContents.send('linux-call-video-clear',source);},
-    async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true}={}) {
+    async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true,peerName=''}={}) {
       if(disposed || pending || !['consent','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
       await ensure();
@@ -79,7 +80,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
         try {
           window.webContents.send('linux-call-state',++revision,{kind,video:video===true,
             muted:muted===true,muteControl:muteControl===true,cameraControl:video && cameraControl===true,
-            cameraEnabled:cameraEnabled===true,startedAt});
+            cameraEnabled:cameraEnabled===true,peerName:normalizePeerName(peerName),startedAt});
           window.show();
         } catch {settle(new Error('Call window unavailable'));}
       });

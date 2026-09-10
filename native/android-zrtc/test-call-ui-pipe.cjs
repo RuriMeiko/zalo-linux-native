@@ -4,8 +4,10 @@ const {EventEmitter}=require('node:events');
 const {createCallUIClient}=require('./call-ui-pipe.cjs');
 const {createVideoPipeSink}=require('./video-pipe.cjs');
 const attach=require('./desktop-call-window.cjs');
-function pair(){let a,b;
-  a=new Duplex({read(){},write(chunk,_encoding,done){b.push(Buffer.from(chunk));done();},destroy(error,done){b.push(null);done(error);}});
+function pair(fragment=false){let a,b;
+  a=new Duplex({read(){},write(chunk,_encoding,done){
+    if(fragment)for(const byte of chunk)b.push(Buffer.from([byte]));else b.push(Buffer.from(chunk));done();
+  },destroy(error,done){b.push(null);done(error);}});
   b=new Duplex({read(){},write(chunk,_encoding,done){a.push(Buffer.from(chunk));done();},destroy(error,done){a.push(null);done(error);}});
   return [a,b];
 }
@@ -30,15 +32,16 @@ function act(window,action){const state=window.messages.filter(m=>m[0]==='linux-
 }
 const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalled');process.exit(1);},10000);
 (async()=>{
-  const [clientStream,hostStream]=pair(),[videoClient,videoHost]=pair();
+  const [clientStream,hostStream]=pair(true),[videoClient,videoHost]=pair();
   const [previewClient,previewHost]=pair();
   const host=attach(hostStream,videoHost,{BrowserWindow:Window,ipcMain},{locked:false},previewHost);
   const preview=createVideoPipeSink(previewClient);
   const client=createCallUIClient(clientStream),video=createVideoPipeSink(videoClient);
   const dialingAbort=new AbortController();
-  const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true});
+  const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true,peerName:'Liên hệ thử tiếng Việt 🎥'});
   const aborted=assert.rejects(dialing,/canceled/);await turn();
   assert.equal(windows.length,1,'Dialing opens before any frame');
+  assert.equal(windows[0].messages.at(-1)[2].peerName,'Liên hệ thử tiếng Việt 🎥','Fragmented UTF-8 must preserve names');
   dialingAbort.abort();await aborted;
   const signal=new AbortController().signal;
   let active=client.dialog('active',{signal,video:true,muteControl:true,muted:false});await turn();
@@ -58,6 +61,7 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   await video.clear();assert.ok(!windows[0].destroyed,'Frame clear cannot destroy controls before owner cleanup');
   await client.clear();assert.ok(windows[0].destroyed);
   const consent=client.dialog('consent',{signal});await turn();act(windows[1],'answer');assert.equal(await consent,true);
+  assert.equal(windows[1].messages.filter(m=>m[0]==='linux-call-state').at(-1)[2].peerName,'','New call must not retain previous contact name');
   active=client.dialog('active',{signal,muteControl:true});const locked=assert.rejects(active,/unavailable/);await turn();
   host.setLocked(true);await locked;assert.ok(windows[1].destroyed);
   await client.clear();await assert.rejects(client.dialog('dialing',{signal}),/unavailable/);

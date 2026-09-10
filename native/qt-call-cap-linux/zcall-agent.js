@@ -316,7 +316,8 @@ if(setupEnabled) {
     const {DesktopSignaling}=require('./desktop-signaling');
     const {OutgoingSetup}=require('./outgoing-setup');
     setupTransport=new DesktopSignaling(sendToHost);
-    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),onConfig:async(config,{callId,calleeId,video,current,signal,context})=>{
+    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),onConfig:async(config,{callId,calleeId,video,peerName,current,signal,context})=>{
+        const outgoingDialog=(kind,options)=>nativeCallDialog(kind,{...options,peerName});
         const {callerResponse}=await import('../android-zrtc/caller-response.mjs');
         let mapped;
         try {
@@ -365,7 +366,7 @@ if(setupEnabled) {
                                 const media=JSON.parse(state.data);
                                 if(!media.videoCall || !media.canTransferMedia || media.codecId!==4)throw new Error('Peer did not negotiate native H.264 video');
                                 current();owner.current();await onAnswered();return answer;
-                            }}),nativeCallDialog);
+                            }}),outgoingDialog);
                 }
                 if(mediaEnabled) {
                     const {withOutgoingVoiceUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');
@@ -375,7 +376,7 @@ if(setupEnabled) {
                                 const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
                                     {calleeId,signal:voiceSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});
                                 current();owner.current();await onAnswered();return answer;
-                            }}),nativeCallDialog);
+                            }}),outgoingDialog);
                 }
                 return await inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal,onPhase:setupPhase});
             }

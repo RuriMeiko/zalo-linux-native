@@ -21,6 +21,7 @@ function controls() {
 }
 window.linuxCall.subscribe((id,next)=>{
   revision=id;state=next;busy=false;
+  get('name').textContent=state.peerName || 'Cuộc gọi Zalo';
   const incoming=state.kind==='consent',active=state.kind==='active',error=state.kind==='error';
   get('status').textContent=incoming?(state.video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'):
     state.kind==='dialing'?'Đang đổ chuông':error?'Cuộc gọi bị gián đoạn':state.muted?'Mic đã tắt':'Đang trong cuộc gọi';

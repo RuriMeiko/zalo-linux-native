@@ -20,6 +20,7 @@ const tests=[
   'native/android-zrtc/test-local-preview.mjs',
   'native/android-zrtc/test-outgoing-voice-ui.mjs',
   'native/android-zrtc/test-call-window.cjs',
+  'native/android-zrtc/test-call-presentation.mjs',
   'native/android-zrtc/test-call-ui-pipe.cjs',
   'native/android-zrtc/test-video-media-session.mjs',
   'native/android-zrtc/test-incoming-desktop.mjs',

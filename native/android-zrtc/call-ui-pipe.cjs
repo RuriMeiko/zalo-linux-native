@@ -1,13 +1,17 @@
 'use strict';
-// Small, account-free control protocol on an inherited duplex pipe. Video
+const {StringDecoder}=require('node:string_decoder');
+const {peerName}=require('./call-presentation.cjs');
+// Small control protocol on an inherited duplex pipe. Only a bounded display
+// name is included, never account credentials or contact identifiers. Video
 // pixels remain on their separate bounded/backpressured binary pipe.
 function channel(stream,receive,onClose) {
   let buffer='',closed=false;
+  const decoder=new StringDecoder('utf8');
   const fail=()=>{if(closed)return;closed=true;buffer='';onClose();};
   stream.on('error',fail);stream.on('close',fail);stream.on('end',fail);
   stream.on('data',chunk=>{
     if(closed)return;
-    buffer+=chunk.toString('utf8');
+    buffer+=decoder.write(chunk);
     if(buffer.length>4096){fail();stream.destroy();return;}
     while(buffer.includes('\n')) {
       const end=buffer.indexOf('\n'),line=buffer.slice(0,end);buffer=buffer.slice(end+1);
@@ -47,7 +51,7 @@ function createCallUIClient(stream) {
       options.signal?.addEventListener('abort',abort,{once:true});
       try {pipe.send({id,type,...(type==='dialog'?{kind,video:options.video===true,
         muted:options.muted===true,muteControl:options.muteControl===true,
-        cameraControl:options.cameraControl===true,cameraEnabled:options.cameraEnabled!==false}:{})});}
+        cameraControl:options.cameraControl===true,cameraEnabled:options.cameraEnabled!==false,peerName:peerName(options.peerName)}:{})});}
       catch {finish(new Error('Call UI pipe closed'));}
       if(type==='clear' && pending)pending.timer=setTimeout(()=>pipe.close(),5000);
       else if(kind==='error' && pending)pending.timer=setTimeout(abort,15000);
@@ -74,7 +78,8 @@ function attachCallUIHost(stream,createWindow,{locked=false}={}) {
       if(closed || locked || task.controller.signal.aborted)throw Error();
       host??=createWindow();
       return host.dialog(message.kind,{signal:task.controller.signal,video:message.video,
-        muted:message.muted,muteControl:message.muteControl,cameraControl:message.cameraControl,cameraEnabled:message.cameraEnabled});
+        muted:message.muted,muteControl:message.muteControl,cameraControl:message.cameraControl,cameraEnabled:message.cameraEnabled,
+        peerName:peerName(message.peerName)});
     }).then(value=>reply('result',value),()=>reply('error'));
     function reply(type,value) {
       if(pending!==task)return;pending=null;

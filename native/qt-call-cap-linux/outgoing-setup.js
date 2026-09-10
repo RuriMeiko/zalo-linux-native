@@ -1,5 +1,6 @@
 "use strict";
 const {randomInt}=require('crypto');
+const {peerName:normalizePeerName}=require('../android-zrtc/call-presentation.cjs');
 
 // First leg of outgoing setup. Authenticated HTTPS stays in the renderer.
 // onConfig must validate/apply the decoded response; a 401 response is never
@@ -21,6 +22,7 @@ class OutgoingSetup {
             return Promise.reject(new Error('Only one-to-one voice setup is supported'));
         const callId=this.callId();
         const calleeId=data.partner[0].id,type=data.type,video=type===3;
+        const peerName=normalizePeerName(data.partner[0].name);
         if(!Number.isInteger(callId) || callId<1 || callId>0x7fffffff)
             return Promise.reject(new Error('Invalid outgoing call ID'));
         const generation=++this.generation;
@@ -34,7 +36,7 @@ class OutgoingSetup {
                 calleeId,callId,codec:'[]',type,
             });
             current();this.onPhase('received-config');current();
-            const result=await this.onConfig(config,{callId,calleeId,video,current,signal:this.abort.signal,context});
+            const result=await this.onConfig(config,{callId,calleeId,video,peerName,current,signal:this.abort.signal,context});
             current();return result;
         });
         return this.active.finally(()=>{this.active=null;});

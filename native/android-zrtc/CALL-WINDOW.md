@@ -24,7 +24,7 @@ This is deployment evidence, not live two-account acceptance.
 - `node native/android-zrtc/test-call-ui-pipe.cjs`: real duplex protocol and
   composed host (mock Electron) verify pre-frame dialing, shared video display,
   controls, cancellation ACK, reuse after clear, lock and disconnect teardown.
-- `node scripts/test-call-control.mjs`: now includes 19 lifecycle suites.
+- `node scripts/test-call-control.mjs`: now includes 20 lifecycle suites.
 - Real Electron 22 fixture `test-call-window-electron.cjs`, operated through
   agent-browser on loopback CDP port 9234: Answer → mute → unmute → End passed.
   This fixture now exercises both control and binary video pipes, with a
@@ -56,11 +56,28 @@ This is deployment evidence, not live two-account acceptance.
   `~/zalo-native-recovery/call-window-local-preview.png`. The real USB device
   test also passed with preview conversion and clear-before-off assertions.
 
+## Contact presentation checkpoint
+
+Outgoing requests already contain `partner[0].name`, populated by the desktop
+renderer from `getMiniInfo(...).dName`. The setup owner now snapshots a bounded
+plain-text display name per call and carries it only on the local control pipe.
+It is not used for signaling identity or added to the 401 API payload, argv,
+logs, profiles or files. The renderer uses `textContent`, not markup. Control
+and directional override characters are stripped; names are limited to 80
+Unicode code points. Missing names fall back to the generic call label.
+
+The control decoder now preserves multibyte UTF-8 split across pipe chunks.
+Tests cover Vietnamese/emoji split one byte at a time, snapshot immutability,
+and no previous name retained in a subsequent unnamed call. These changes are
+source-only pending helper reload; live contact-name presentation is not yet
+verified. Incoming name lookup and avatars remain incomplete.
+
 ## Remaining before live acceptance
 
 - Test actual two-account signaling/media on the deployed matching main/helper.
 - Check local preview and video latency in actual two-account calls after deployment.
-- Real contact name/avatar with bounded, non-logging, account-scoped transport.
+- Incoming contact name and avatars with bounded, non-logging, account-scoped transport;
+  verify outgoing name on the real window after helper reload.
 - Camera off/on is now wired to joined capture shutdown/restart. Validate it
   during a real video call, including remote presentation: the peer may retain
   the last image until camera-state signaling is implemented/verified. No new
