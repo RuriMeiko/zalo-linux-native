@@ -65,13 +65,21 @@ assert.equal(calls.at(-1), 'close-image-only');
 header.state.isMaximized = true;
 assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'));
 const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
-assert.ok(css.includes('width:24px;height:24px'));
-assert.ok(css.includes('svg{width:12px;height:12px;'));
+assert.ok(css.includes('#titleBar{position:relative;height:38px;min-height:38px'));
+assert.ok(css.includes('width:28px;height:28px'));
+assert.ok(css.includes('svg{width:14px;height:14px;'));
 assert.ok(css.includes('-webkit-app-region:no-drag'));
-assert.ok(css.includes('#titleBar.image-show__title{height:46px;min-height:46px'));
-assert.ok(css.includes('.media-viewer .media-viewer__title-bar{height:46px;min-height:46px'));
-if (process.argv.includes('--html')) {
+assert.ok(css.includes('#titleBar.image-show__title{height:38px;min-height:38px'));
+assert.ok(css.includes('.media-viewer .media-viewer__title-bar{position:relative;width:100%;height:38px;min-height:38px'));
+assert.ok(css.includes('overflow:hidden;background:#2e2e32'));
+const mainHtml = process.argv.includes('--main-html');
+if (process.argv.includes('--html') || mainHtml) {
   header.state.isMaximized = false;
+  if (mainHtml) {
+    delete header.props.className;
+    delete header.props.title;
+    delete header.props.onClose;
+  }
   const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
   const render = node => {
     if (node == null || typeof node === 'boolean') return '';
@@ -88,6 +96,7 @@ if (process.argv.includes('--html')) {
   process.stdout.write('<!doctype html><meta charset="utf-8"><title>Header regression fixture</title>' +
     cssFiles.map(name => `<link rel="stylesheet" href="file://${root}/pc-dist/${name}">`).join('') +
     '<style>body{margin:0;background:#222;color:white}.fixture{width:800px;margin:40px auto;border:1px solid #555}.fixture-content{height:160px;display:grid;place-items:center}</style>' +
-    '<div class="fixture media-viewer"><div class="media-viewer__title-bar">' + render(header.render()) +
-    '</div><div class="fixture-content">Ảnh kiểm thử — không có dữ liệu tài khoản</div></div>');
+    (mainHtml ? '<div class="fixture">' + render(header.render()) :
+      '<div class="fixture media-viewer"><div class="media-viewer__title-bar">' + render(header.render()) + '</div>') +
+    '<div class="fixture-content">Giao diện kiểm thử — không có dữ liệu tài khoản</div></div>');
 } else console.log(`PASS ${shared ? 'shared/login' : 'compact'} Linux header: account title, controls, existing passcode/lock actions, login/locked/popup guards`);

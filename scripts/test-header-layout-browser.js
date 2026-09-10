@@ -1,14 +1,19 @@
 (() => {
   const bar=document.querySelector('#titleBar'),buttons=[...bar.querySelectorAll('button')];
-  const rect=bar.getBoundingClientRect();
-  if(rect.height!==46 || buttons.length!==3)throw new Error('Unexpected image header layout');
+  const host=bar.closest('.media-viewer__title-bar'),viewer=!!host;
+  const rect=bar.getBoundingClientRect(),hostRect=(host||bar).getBoundingClientRect();
+  if(rect.height!==38 || hostRect.height!==38 || (viewer && rect.width!==hostRect.width) ||
+    buttons.length!==(viewer?3:4))
+    throw new Error('Unexpected unified image header layout');
   for(const button of buttons) {
     const bounds=button.getBoundingClientRect();
-    if(bounds.width!==24 || bounds.height!==24 || bounds.top<rect.top || bounds.bottom>rect.bottom ||
+    if(bounds.width!==28 || bounds.height!==28 || bounds.top<rect.top || bounds.bottom>rect.bottom ||
       bounds.left<rect.left || bounds.right>rect.right)throw new Error('Window button escapes header');
     if(!button.querySelector('svg'))throw new Error('Missing SVG window symbol');
   }
   const title=bar.querySelector('.title-name');
-  if(getComputedStyle(title).color!=='rgb(246, 245, 244)')throw new Error('Image title contrast regressed');
-  return 'PASS rendered image header: 46px bar, contained 24px SVG controls, light title';
+  const titleStyle=getComputedStyle(title);
+  if(titleStyle.color!=='rgb(246, 245, 244)' || titleStyle.fontSize!=='14px')
+    throw new Error('Image title typography regressed');
+  return `PASS rendered ${viewer?'image':'main'} header: shared 38px bar, contained 28px controls, 14px title`;
 })();
