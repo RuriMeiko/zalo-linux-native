@@ -133,10 +133,14 @@ function makeResizeQA(thumbImpl) {
             fs.writeFileSync(outputPath, out);
             return out;
         };
+        const task = run();
         if (typeof callback === 'function') {
-            run().then((r) => callback(null, r), (e) => callback(e));
+            return task.then((result) => {
+                callback(null, result);
+                return result;
+            }, (error) => { callback(error); });
         }
-        return run().catch(() => {});
+        return task;
     };
 }
 

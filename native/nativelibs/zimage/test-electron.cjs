@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const {app,nativeImage}=require('electron');
 const fs=require('node:fs'),path=require('node:path');
 const parent=path.join(app.getPath('home'),'zalo-native-recovery');fs.mkdirSync(parent,{recursive:true});
-app.setPath('userData',fs.mkdtempSync(path.join(parent,'zimage-fixture-')));
+const fixture=fs.mkdtempSync(path.join(parent,'zimage-fixture-'));
+app.setPath('userData',fixture);
 app.disableHardwareAcceleration();
 app.whenReady().then(async()=>{
   const {Image}=await require('./index.js')(null);
@@ -19,6 +20,20 @@ app.whenReady().then(async()=>{
     assert.deepEqual(nativeImage.createFromBuffer(output).getSize(),expected,`${format} ${width}x${height} inside ${boundW}x${boundH}`);
   }
   await assert.rejects(Image.thumbnail(Buffer.from('not an image'),20,20,'png',80));
+  const input=path.join(fixture,'synthetic-input.png'),output=path.join(fixture,'synthetic-output.png');
+  fs.writeFileSync(input,nativeImage.createFromBitmap(Buffer.alloc(8*4*4,255),{width:8,height:4}).toPNG());
+  let callbacks=0;
+  await Image.resizeQA(input,output,4,4,80,null,(error,result)=>{
+    assert.ifError(error);assert.ok(Buffer.isBuffer(result));callbacks++;
+  });
+  assert.equal(callbacks,1);
+  assert.deepEqual(nativeImage.createFromBuffer(fs.readFileSync(output)).getSize(),{width:4,height:2});
+  await assert.rejects(Image.resizeQA(input,fixture,4,4,80));
+  await Image.resizeQA(path.join(fixture,'missing.png'),output,4,4,80,null,error=>{
+    assert.equal(error.code,'ENOENT');callbacks++;
+  });
+  assert.equal(callbacks,2);
   console.log('PASS real Electron zimage: landscape/portrait/rectangular bounds, no enlargement, PNG/JPEG decode and invalid input');
+  console.log('PASS real zimage files: callback output decode, write failure rejection and missing-input callback; synthetic files retained under home');
   app.exit(0);
 }).catch(error=>{console.error(error.message);app.exit(1);});

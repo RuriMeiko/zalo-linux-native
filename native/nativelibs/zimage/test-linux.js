@@ -33,8 +33,10 @@ const NI = {
     }
 };
 const orig = Module._load;
+let fakeFilesystem;
 Module._load = function (request, parent, isMain) {
     if (request === 'electron') return { nativeImage: NI };
+    if (request === 'fs' && fakeFilesystem) return fakeFilesystem;
     return orig.apply(this, arguments);
 };
 
@@ -66,6 +68,24 @@ Module._load = function (request, parent, isMain) {
     dims.w = 40; dims.h = 80;
     await lib.Image.thumbnail(png, 20, 20, 'png', 80);
     assert.deepStrictEqual(lastResize, { width: 10, height: 20 }, 'portrait preserves ratio');
+
+    let reads = 0, writes = 0, callbacks = 0;
+    fakeFilesystem = {
+        readFileSync() { reads++; return png; },
+        writeFileSync(_path, contents) { writes++; assert.ok(Buffer.isBuffer(contents)); },
+    };
+    await lib.Image.resizeQA('/fixture/input.png', '/fixture/output.png', 20, 20, 80, null, (error, result) => {
+        assert.ifError(error); assert.ok(Buffer.isBuffer(result)); callbacks++;
+    });
+    assert.deepStrictEqual({ reads, writes, callbacks }, { reads: 1, writes: 1, callbacks: 1 }, 'callback API must run once');
+    const failure = new Error('fixture write failure');
+    fakeFilesystem.writeFileSync = () => { writes++; throw failure; };
+    await assert.rejects(lib.Image.resizeQA('/fixture/in', '/fixture/out', 20, 20, 80), error => error === failure);
+    await lib.Image.resizeQA('/fixture/in', '/fixture/out', 20, 20, 80, null, error => {
+        assert.strictEqual(error, failure); callbacks++;
+    });
+    assert.deepStrictEqual({ reads, writes, callbacks }, { reads: 3, writes: 3, callbacks: 2 });
+    fakeFilesystem = undefined;
 
     console.log('ALL zimage LINUX TESTS PASS');
 })().catch((e) => {

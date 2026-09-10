@@ -1,5 +1,14 @@
 # Full-app recovery integration — 2026-09-10
 
+Additional zimage file-API fix: `resizeQA` previously ran its entire read/resize/
+write operation twice when given a callback and swallowed Promise-only failures.
+It now creates one operation; callback mode reports once, Promise-only mode
+rejects on failure. Mock filesystem counters verify exactly one read/write;
+the real Electron fixture writes/decodes a synthetic proportional thumbnail,
+checks directory-as-output rejection and missing-input error callback. Both
+test suites pass. No actual Zalo image/account was used; source is not yet
+deployed and broader viewer/format parity remains incomplete.
+
 New image-module source fix: a real Electron 22 synthetic fixture failed for an
 80×40 PNG constrained to 20×20 (the old code distorted it to the square bounds).
 NativeImage resizing now receives explicitly proportional dimensions instead
