@@ -54,6 +54,9 @@ silently adds `--no-sandbox`. An existing installation is not migrated by
 editing this checkout; its launcher remains unchanged until explicitly updated.
 The inherited installer/AppImage pipeline is not yet validated for this entry
 point and must not be presented as a ready native distribution.
+For a non-overwriting copy into a new home directory, see the
+[development installer](NATIVE-INSTALL.md). It keeps Electron/runtime external
+and does not change the app you already have running.
 
 `bash update.sh --check` only queries the independent repository's `main` hash
 and prints the local Git revision when available. It does not install updates,
