@@ -8,7 +8,7 @@ for(const cmd of [`${electron}\0--type=renderer\0${app}\0`,`${electron} --type=r
   assert.equal(isRunningApp(cmd,electron,app),false);
 assert.equal(isRunningApp(`${electron} ${app}\0`,'/usr/bin/bash',app),false);
 const config={appDir:'/opt/test app',electron:'/opt/electron/electron',runtime:'/opt/runtime',
-  source:'bluez_input.11:22:33:44:55:66',sink:'bluez_output.11_22_33_44_55_66.1'};
+  source:'bluez_input.fixture:duplex',sink:'bluez_output.fixture_duplex.1'};
 for(const value of [null,[],{...config,unknown:1},{...config,appDir:'relative'},
   {...config,source:'out.monitor'},{...config,sink:'$(touch nope)'},{...config,cdpPort:922},
   {...config,cdpPort:'9222'},{...config,noSandbox:'true'},{...config,source:'bad\nname'}])

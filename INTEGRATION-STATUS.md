@@ -1,5 +1,30 @@
 # Full-app recovery integration — 2026-09-10
 
+## Current authoritative deployment: `d3c9c88`
+
+The registered user-local installation was recoverably replaced from clean
+checkpoint `d3c9c88`. The previous complete snapshot is retained at
+`~/zalo-native-recovery/installed-dec0ed2-before-d3c9c88`; no account profile
+was moved or inspected. The current installed verifier passes all 13,401
+manifest entries. Strict runtime, Logitech camera, webcam microphone and HDMI
+speaker preflight passed before installation. Launcher, Electron main and the
+native call helper were then verified alive from
+`~/.local/share/zalo-linux-native`.
+
+This checkpoint keeps the unified incoming/outgoing voice/video window, NV21
+camera conversion, acknowledged mic/camera controls and authenticated reject/
+hangup signaling. It additionally restores viewer Edit/Print actions with Zalo
+toolbar styling, presents bounded contact names/avatars, treats correlated peer
+decline/end as normal call completion, and removes the competing 401 identity
+probe that live testing showed was disconnecting the first incoming call after
+a restart. All 25 call-control suites and all 20 aggregate regression commands
+pass. Cold incoming, current-build rejection, remote camera state, device
+reconnect and complete two-account voice/video controls still require live
+acceptance; this is not a self-contained binary release.
+
+Sections below are retained as chronological evidence and may describe older
+source-only or deployed checkpoints. They do not supersede this section.
+
 New-install launcher source now pins the absolute Node executable used during
 installation, validates it is executable, and uses it for both manifest checking
 and native launch. This removes dependence on desktop-session PATH/NVM setup and
@@ -253,9 +278,9 @@ USB capture tests verify preview cleanup. Live acceptance remains pending. See
 `native/android-zrtc/CALL-WINDOW.md`; the historical deployment notes below
 must not be read as deployment evidence for the latest source.
 
-Development checkout: `/home/rurimeiko/zalo-linux-native`.
+Development checkout used for this test: `~/zalo-linux-native`.
 This is a Git worktree: its shared Git database remains in
-`/home/rurimeiko/zalo-native-recovery/.git`. Both directories are persistent
+`~/zalo-native-recovery/.git`. Both directories are persistent
 home directories; retain both until a standalone clone/backup is verified.
 On 2026-09-10, with the user's explicit approval, the installed application was
 restarted with the incoming/voice/video trial at `b9ec2fb`. The main bundle was
@@ -468,7 +493,7 @@ payload-free event on orderly process shutdown. This does not yet demonstrate
 hardware unplug recovery or crash handling in the real desktop UI.
 
 `node native/android-zrtc/test-incoming-owner-native.mjs
-/home/rurimeiko/zalo-native-recovery/runtime` also passes against the real
+~/zalo-native-recovery/runtime` also passes against the real
 rebuilt native worker. Three complete owner cycles each perform explicit
 synthetic consent, mocked 407/402/ACK, native media start, at least 20 newly
 encoded and decoded H.264 frames, exact 480x360 I420 pixel verification, silent

@@ -8,8 +8,8 @@ Do not publish a PR; finish native functionality before release claims.
 ## Current call checkpoint (supersedes historical implementation notes below)
 
 - Native outgoing and opt-in incoming are wired into the desktop helper.
-  The installed app was restarted with source checkpoint `6ac64ba` on September 10;
-  later source changes are not proof that a running helper has reloaded them.
+  The installed app and native helper were restarted from manifest-verified
+  source checkpoint `d3c9c88` on September 10.
 - `node scripts/test-call-control.mjs` runs 25 deterministic suites, including
   real driver/owner/session composition with mocked native/server/UI boundaries.
   It covers cancellation during consent, answer and media in voice/video,
@@ -19,15 +19,18 @@ Do not publish a PR; finish native functionality before release claims.
 - Outgoing voice/video now opens a cancellable preparation stage before the 401
   response, keeping it through native network startup. It joins the UI stage
   before handing over to dialing; unit, composed pipe and isolated Electron
-  tests pass. Deployed at `6ac64ba`; live-call acceptance remains open.
+  tests pass. This is deployed; current-build live-call acceptance remains open.
 - Native H.264/PCM loopback evidence and deployment details are maintained in
   `INTEGRATION-STATUS.md`. These do not prove two-account media acceptance.
 - Shared call window, remote display, local preview, mic and camera toggles are
   implemented and deployed. Native tone tests verify recording-ingress mute;
   USB tests verify capture off/on. Neither substitutes for remote-account QA.
-- Still open: live verification of the corrected cold first-incoming identity path,
-  device switching, screen sharing, remote
-  camera-state signaling, and current two-account voice/video QA.
+- Contact name/avatar presentation and remote decline/end handling are source-
+  wired and deployed. The first incoming call after restart no longer issues a
+  competing 401 configuration request.
+- Still open: live verification of that corrected cold first-incoming path,
+  device switching, screen sharing, remote camera-state signaling, device
+  reconnect/profile recovery, and complete current-build two-account voice/video QA.
 - The user has asked to be notified when the next test build is ready. Do not
   repeatedly request manual testing while these implementation gaps remain.
 
@@ -81,7 +84,7 @@ has no incoming dispatcher or always ends outgoing calls describe old code.
 - [x] Fix diagnostic lifecycle: load JNI globals, stop engine workers before destruction.
 - [x] Fix recording argument order and re-cache native PCM buffers after each stop; 3 restart cycles pass.
 - [x] Supply voice-only initialization without pretending an EGL/video backend exists.
-- [ ] Implement typed call callbacks and authenticated session/config transport.
+- [x] Implement typed call callbacks and authenticated session/config transport.
 - [x] Port all 17 typed JNI callback events; test real wrappers and transient reference reclamation.
 - [x] Add persistent native worker and bounded command protocol; configure native CallConfig and apply it on init.
 - [x] Port enable-change-ZRTP JNI config setter: strict boolean TLV, native memory readback, 4 alternating real init/stop cycles, invalid raw boolean rejected without mutation. Full online server switching remains unfinished.
@@ -95,14 +98,14 @@ has no incoming dispatcher or always ends outgoing calls describe old code.
 - [ ] Handle device opening failure/device loss in persistent worker; validate physical device selection.
 - [x] Reject missing/removed Pulse device names before stream startup; 3 removed-null-sink attempts return ENODEV with zero frames and no helper children.
 - [x] Audit desktop signaling grammar; implement/test sendSignal→renderer API→recvSignal transport boundary without extracting account keys.
-- [ ] Wire desktop signaling transport into native call-session coordinator; consume live config and control events.
+- [x] Wire desktop signaling transport into native call-session coordinator; consume live config and control events.
 - [x] Map decoded legacy desktop CallConfig to native configuration/caller/callee commands; verify against actual vcmac wrapper and 5 native offline attempts.
 - [x] Trace desktop response decoder; add opt-in sanitized API error replies and test actual renderer/decoder paths.
 - [x] Add incoming-session coordinator through readiness/407 ACK/ringing/local stop; test missing readiness, server error, cancellation and timeout.
 - [x] Add opt-in desktop control envelope decoder and IncomingSession.control; 3 real offline native attempts with duplicate/stale/parallel cancellation tests. Requires separately verified native local identity; not enabled in installed bridge.
 - [ ] Implement incoming/outgoing/accept/hangup and recover failed calls.
-- [x] User-assisted bidirectional voice test, 2026-09-09 14:32 ICT: CDP clicked voice call in Nguyễn Ngọc Thu Hà conversation; live 401/416, peer answer, original JNI codec update, 408 ACK and native media started. User explicitly confirmed “nghe dc âm thanh 2 chiều”. UGREEN Bluetooth source and sink used, no Wine/emulator.
-- [x] CDP UI smoke: 2026-09-09 13:43:48 ICT, clicked voice-call button in Nguyễn Ngọc Thu Hà conversation; real helper captured request/makeCall. This proves UI dispatch only, not server signaling or ringing.
+- [x] User-assisted bidirectional voice test, 2026-09-09 14:32 ICT: CDP clicked voice call for the user-selected test contact; live 401/416, peer answer, original JNI codec update, 408 ACK and native media started. User explicitly confirmed “nghe dc âm thanh 2 chiều”. A Bluetooth source and sink were used, with hardware identifiers omitted from publication; no Wine/emulator.
+- [x] CDP UI smoke: 2026-09-09 13:43:48 ICT, clicked the voice-call button for the user-selected test contact; real helper captured request/makeCall. This proves UI dispatch only, not server signaling or ringing.
 - [x] Live 401 roundtrip via the actual UI/renderer/bridge: 13:49:33 and 13:51:13 ICT. Response contains native uint32 fromId/toId, id, settings/zrtc_config/session/servers. Corrected response.id → CallConfig.callId and verified request correlation on the second attempt.
 - [x] Live CDP retry at 13:56:56 ICT: authenticated 401 config passed normalization and real native initialize, producing configured-offline.
 - [x] Add explicit worker network mode; real engine sends 2 UDP packets/76 bytes to a loopback test server and stops cleanly. Fixed libevent signal-wakeup socketpair denial. Offline defaults remain unchanged.
@@ -182,7 +185,7 @@ isVideoCall=false. Dynamic ZRTP switching remains gated, not silently disabled.
 
 `native/android-zrtc/`: `compat-jni.c`, `pcm-bridge.c`, `pcm-host.c`,
 `call-boundary.c`, `run-call-check.sh`, `test-pcm.mjs` and the earlier loader probe.
-Runtime/artifacts: `/home/rurimeiko/.cache/zrtc-native-21.12.01/`.
+Runtime/artifacts: user-local `~/.cache/zrtc-native-21.12.01/`.
 
 Diagnostic lifecycle fixed: call real `JNI_OnLoad`, and `Peer::stop(true)` before
 destruction. With the optional Linux voice adaptation, `initialize` now returns

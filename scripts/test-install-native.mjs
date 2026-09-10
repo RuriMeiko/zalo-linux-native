@@ -9,11 +9,12 @@ import {verifyInstallation} from './verify-installation.mjs';
 const source='/home/test/source',destination='/home/test/installed',home='/home/test';
 const config={appDir:source,electron:'/opt/electron/electron',runtime:'/home/test/runtime',source:'mic',sink:'speaker'};
 const files=['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/verify-installation.mjs','native/qt-call-cap-linux/zcall-agent.js',
-  'CREDITS.md','reverse-engineering/account-capture.json','.git/config','launch.json'];
+  'CREDITS.md','PUBLICATION-AUDIT-ALLOWLIST.json','reverse-engineering/account-capture.json','.git/config','launch.json'];
 const args={source,destination,home,config,files};
 const p=installPlan(args);
 assert.equal(p.config.appDir,destination);assert.equal(config.appDir,source);
 assert.ok(p.files.includes('CREDITS.md'));
+assert.ok(p.files.includes('PUBLICATION-AUDIT-ALLOWLIST.json'));
 for(const excluded of ['reverse-engineering/account-capture.json','.git/config','launch.json'])assert.ok(!p.files.includes(excluded));
 for(const bad of [home,source,source+'/nested','/tmp/install','relative','/home/test/../test/installed'])
   assert.throws(()=>installPlan({...args,destination:bad}));

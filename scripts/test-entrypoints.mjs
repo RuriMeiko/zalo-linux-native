@@ -10,6 +10,12 @@ for(const name of ['start.sh','update.sh']) {
   assert.ok(!script.includes('realdtn2/'));
   assert.ok(!/\b(rm|sudo|wget|unzip|mkfifo)\b/.test(script));
 }
+const schema=readFileSync(root+'scripts/test-native-call-schema.sh','utf8');
+assert.equal(spawnSync('/bin/bash',['-n',root+'scripts/test-native-call-schema.sh']).status,0);
+assert.ok(!schema.includes('/home/'+'rurimeiko/'));
+assert.ok(!schema.includes('/tmp/'));
+const schemaUsage=spawnSync('/bin/bash',[root+'scripts/test-native-call-schema.sh'],{encoding:'utf8'});
+assert.equal(schemaUsage.status,1);assert.match(schemaUsage.stderr,/Usage:/);
 const start=readFileSync(root+'start.sh','utf8');
 assert.ok(start.includes('scripts/native-launch.mjs" "$@"'));
 assert.ok(!start.includes('update.sh'));

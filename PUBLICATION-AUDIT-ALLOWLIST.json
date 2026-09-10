@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "path": "main-dist/preload-sqlite.js",
+      "rule": "google-api-key",
+      "sha256": "45a8f0fd4780b99ac65bd7e58e52ba45e0e550228eb73d30a672152968a6243b",
+      "reason": "Inherited duplicate of the desktop client's Google Maps browser identifier; component redistribution review remains open."
+    },
+    {
+      "path": "pc-dist/compact-app-pc.e08d0d44f38873747a6b.js",
+      "rule": "google-api-key",
+      "sha256": "45a8f0fd4780b99ac65bd7e58e52ba45e0e550228eb73d30a672152968a6243b",
+      "reason": "Inherited duplicate of the desktop client's Google Maps browser identifier; component redistribution review remains open."
+    },
+    {
+      "path": "pc-dist/lazy/default-login-main-startup-shared-worker-znotification.9e3e92e88644da772301.js",
+      "rule": "google-api-key",
+      "sha256": "45a8f0fd4780b99ac65bd7e58e52ba45e0e550228eb73d30a672152968a6243b",
+      "reason": "Inherited duplicate of the desktop client's Google Maps browser identifier; component redistribution review remains open."
+    },
+    {
+      "path": "pc-dist/search-worker.e08d0d44f38873747a6b.js",
+      "rule": "google-api-key",
+      "sha256": "45a8f0fd4780b99ac65bd7e58e52ba45e0e550228eb73d30a672152968a6243b",
+      "reason": "Inherited duplicate of the desktop client's Google Maps browser identifier; component redistribution review remains open."
+    },
+    {
+      "path": "pc-dist/zd-worker.e08d0d44f38873747a6b.js",
+      "rule": "aws-access-key",
+      "sha256": "fb009a358432fdc303707870a46b22fb8f0541c4bffab8ac932676c0c3580727",
+      "reason": "False positive inside encoded compiled payload, not a configuration or string literal."
+    },
+    {
+      "path": "pc-dist/zd-worker.e08d0d44f38873747a6b.js",
+      "rule": "aws-access-key",
+      "sha256": "4064f5bab5666eee4a478304eaf54392cb42d982f06224559109c0b11a911485",
+      "reason": "False positive inside encoded compiled payload, not a configuration or string literal."
+    }
+  ]
+}

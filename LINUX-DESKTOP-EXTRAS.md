@@ -23,8 +23,8 @@ An application passcode is not a claim of encrypted local storage.
 with isolated boundary stubs. This covers dispatch and rendering structure,
 not actual compositor controls or passcode verification.
 
-These changes have been copied into the installed application files at
-`/home/rurimeiko/.local/share/zalo` on 2026-09-09, with all three changed bundles
+These changes were copied into the test installation at
+`~/.local/share/zalo` on 2026-09-09, with all three changed bundles
 and five added assets verified against the development checkout. The existing
 running processes have **not been restarted**, so this does not establish that
 the new header is active. Both compact and shared/login header classes pass
@@ -88,14 +88,14 @@ notices are recorded in `pc-dist/linux-extras/PROVENANCE.md`.
 
 ## Local deployment recovery
 
-The exact changes to the three existing installed bundles are recorded in
-`/home/rurimeiko/.local/state/zalo-native-test/desktop-extras-20260909.patch`.
+The exact changes to the three existing installed bundles are recorded locally in
+`~/.local/state/zalo-native-test/desktop-extras-20260909.patch`.
 Reverse applicability was checked successfully after installation. From the
 installed app directory, after quitting Zalo, recovery is:
 
 ```sh
-git apply --reverse --check /home/rurimeiko/.local/state/zalo-native-test/desktop-extras-20260909.patch
-git apply --reverse /home/rurimeiko/.local/state/zalo-native-test/desktop-extras-20260909.patch
+git apply --reverse --check ~/.local/state/zalo-native-test/desktop-extras-20260909.patch
+git apply --reverse ~/.local/state/zalo-native-test/desktop-extras-20260909.patch
 ```
 
 This restores only the modified existing bundles; it does not touch profiles,

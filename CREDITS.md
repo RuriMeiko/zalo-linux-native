@@ -5,6 +5,13 @@ This Linux-native continuation is developed from the existing
 Making an independent repository does not erase that origin or transfer the
 ownership of earlier work to the new maintainer.
 
+The continuation is published at
+[RuriMeiko/zalo-linux-native](https://github.com/RuriMeiko/zalo-linux-native).
+GitHub API verification on 2026-09-10 reports it as a public standalone
+repository (`fork: false`, no parent) with `main` as the default branch. This is
+a repository-hosting fact, not a claim that the carried code was written from
+scratch.
+
 ## Earlier work
 
 - **realdtn2 / realdtn**: upstream repository, initial macOS-client extraction
@@ -23,14 +30,15 @@ ownership of earlier work to the new maintainer.
   codec libraries, FFmpeg and the Linux multimedia stack retain their own
   copyright notices and license conditions.
 
-The upstream base for this continuation is
-`00dd2503aa54669508770537774b7ae00540a032`, fetched from
-`RuriMeiko/zalo-linux-native`, branch `port/linux-native-modules`.
+The integration base retained in this continuation is
+`00dd2503aa54669508770537774b7ae00540a032`, formerly developed on branch
+`port/linux-native-modules` before the independent repository moved to `main`.
 The full-app integration retains that commit and its ancestors; recovered work
 is added on top, without rewriting earlier authors.
 The initial local commit is `09999c3` (author `realdtn2`, subject `original`).
-These identify the inspected source history; they do not establish that every
-local commit exists in the upstream remote.
+Current history inspection retains 23 commits authored as `realdtn`, 15 as
+`realdtn2`, and their original author metadata; those commits were not squashed
+or rewritten during the independent-project transition.
 
 ## New Linux-native work and limits
 
@@ -58,8 +66,6 @@ to the tree, or publish a binary release until component permissions and notices
 have been reviewed. Attribution is required provenance, not a substitute for
 redistribution permission.
 
-For an independent repository, preserve available commit history and authors
-for material being carried forward, or include a precise source manifest and
-upstream revision for a source-only continuation. Keep this file visible in the
-README and shipped documentation. Record the new repository URL only after it
-actually exists.
+The independent repository preserves available commit history and author
+metadata for material carried forward. Keep this file visible in the README and
+shipped documentation whenever the project is copied or packaged.

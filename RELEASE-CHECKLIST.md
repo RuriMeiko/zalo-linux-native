@@ -12,6 +12,9 @@ Status: development, not a complete native Linux release.
   Implemented and locally deployed; synthetic H.264 and Electron UI checks pass.
   Current-build two-account acceptance remains open, so this release gate stays unchecked.
 - [ ] Incoming call notification, answer/reject and verified incoming media.
+  Notification, answer and incoming media have two-account evidence. Reject now
+  sends desktop command 405 for voice/video; current-build remote confirmation
+  is the remaining sub-gate.
 - [ ] Reliable call controls, microphone/speaker/camera selection, mute and hangup.
 - [ ] Device disconnect/reconnect and Bluetooth profile-change recovery.
 - [ ] Unified Ghostty-inspired header, account title, window controls and
@@ -35,8 +38,8 @@ Do not substitute successful module tests for these end-to-end gates.
   a full local copy/preflight with its helper resolved inside the installation.
   New installs additionally verify their manifest, generated config and launcher
   before every start. The registered copy was recoverably replaced at snapshot
-  `529aa91`; its 13,401 entries and device/runtime preflight pass. Actual menu
-  launch and clean-machine acceptance remain open.
+  `d3c9c88`; its 13,401 entries and device/runtime preflight pass. The registered
+  launcher starts main/helper from that copy. Clean-machine acceptance remains open.
   Self-contained runtime acquisition, default-shortcut migration and clean-machine
   verification remain open.
 - [ ] Make native runtime acquisition, pinned versions/hashes and build steps
@@ -63,8 +66,18 @@ Do not substitute successful module tests for these end-to-end gates.
   `19a76cd6399fa8e29e1826914e99fb1f07502473`. Old branches/history were not deleted.
 - [x] Verify GitHub CLI authorization: repository API returned `admin: true`;
   no token was displayed, entered into chat or written into source files.
-- [ ] Inspect the exact staged file list and secret-scan the proposed publication.
-- [ ] Preserve applicable attribution/license notices and source provenance.
+- [x] Inspect the exact staged file list and secret-scan the proposed publication.
+  `scripts/audit-publication.mjs` now fails closed on unreadable/oversized tracked
+  files and reports only path/rule, never matched values. Run both full-tree and
+  `--staged` modes immediately before the publication commit. Reviewed inherited
+  client identifiers/compiled-payload false positives are pinned by value hash and
+  path in `PUBLICATION-AUDIT-ALLOWLIST.json`; the original values are not copied
+  into the allowlist. Full-tree mode passed 13,438 tracked files with six
+  hash-reviewed inherited matches; staged mode passed the exact 18-file
+  publication set. Git history remains a separate review surface.
+- [x] Preserve applicable attribution/license notices and source provenance:
+  original Git author metadata is retained, CREDITS records the predecessor and
+  independent repository, and the Fabric notice/license remains shipped.
 - [x] Push development commits to the independent remote's `main`; remote hash
   readback confirms publication. This is source publication, not a binary release.
 - [ ] Publish an accurately labelled release only when its acceptance gates pass.

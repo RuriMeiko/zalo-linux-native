@@ -1,8 +1,8 @@
 # Portable native voice launcher (development)
 
-This launches the experimentally verified native voice path without Wine or
-an emulator. It is not yet a self-contained installer or a working video-call
-release. It requires the patched desktop client, the Linux helper with
+This launches the experimental native voice/video path without Wine or an
+emulator. It is not yet a self-contained or released package. It requires the
+patched desktop client, the Linux helper with
 `ZALO_ZCALL_AGENT_PATH` support, and the pinned runtime described in
 [native/android-zrtc/README.md](native/android-zrtc/README.md).
 
@@ -96,22 +96,24 @@ development entry point, not completion of incoming video UI or a video release.
 
 Set `"experimentalIncoming": true` in the local configuration to enable the
 incoming dispatcher. The current main/helper use an isolated Electron call
-window for **Trả lời / Bỏ qua**, dialing and active controls; Zenity is no longer
+window for **Trả lời / Từ chối**, dialing and active controls; Zenity is no longer
 a prerequisite for this path. Video additionally requires the video
 opt-in and selected camera above. Closing the active window cancels media and
 sends the verified desktop end-call command. Passcode locking cancels incoming
 UI/media and blocks new incoming attempts while locked.
 
-The deployed checkpoint still needs an outgoing configuration before first
-incoming use. New source now requests a separate authenticated 401 configuration
-automatically for the first incoming offer and verifies both native identities
-before creating a worker. It does not send an outgoing 416 invitation or reuse
-the probe's session for incoming media. This bootstrap requires matching helper
-deployment and real-server testing; do not assume the deployed app has it yet.
-Identity stays only in memory and is invalidated on account change.
-**Bỏ qua is local dismissal, not a verified remote rejection signal.** Incoming
-bootstrap acceptance, true reject/busy signaling, device switching, and real-account
-voice/video acceptance remain open. This trial is not enabled by inherited
+On the first incoming offer, the helper binds the bounded native recipient in
+Zalo's authenticated renderer control to the current desktop account ticket.
+A cached identity must match. It deliberately does not start a parallel 401:
+live testing showed that the old probe competed with and disconnected the real
+incoming call after a cold restart. Matching main/helper deployment is required;
+the manifest-verified installation at `d3c9c88` includes both. Identity stays
+only in memory and is invalidated on account change.
+**Từ chối** sends desktop command 405 to `/api/voicecall/cancel` with callType 0
+for voice or 1 for video, then tears down native ringing. Static bundle extraction
+and deterministic composition tests cover the payload; current two-account
+confirmation remains open. Device switching and complete real-account
+voice/video/control acceptance also remain open. This trial is not enabled by inherited
 environment variables and is not a claim that calling is fully covered.
 
 Mic state changes only after a native ACK. Camera off joins capture shutdown;

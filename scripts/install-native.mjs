@@ -12,7 +12,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const payload=['bootstrap.js','package.json','version.txt','libs','main-dist','pc-dist','native','scripts',
   'start.sh','update.sh','CREDITS.md','README.md','NATIVE-LAUNCH.md','NATIVE-INSTALL.md','NATIVE-TESTING.md',
   'INTEGRATION-STATUS.md','LINUX-DESKTOP-EXTRAS.md','CALL-LINUX.md','CALL-SMOKE.md','HEADER-REGRESSION.md',
-  'RELEASE-CHECKLIST.md','PORT-CHECKLIST.md'];
+  'RELEASE-CHECKLIST.md','PORT-CHECKLIST.md','PUBLICATION-AUDIT-ALLOWLIST.json'];
 export function installPlan({source,destination,home=homedir(),config,files}) {
   const c=validateConfig(config);
   const under=(parent,child)=>{const r=path.relative(parent,child);return !!r && r!=='..' && !r.startsWith('../') && !path.isAbsolute(r);};

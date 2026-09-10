@@ -1,25 +1,30 @@
 # Zalo Linux Native
-> **Development checkpoint (2026-09-10):** outgoing/incoming call owners now use
-> one Electron call window with remote video, local camera preview and acknowledged
-> mic/camera controls. The matching main/helper/runtime were deployed locally;
-> 19 control/lifecycle suites, isolated Electron UI tests and native tone-mute
-> tests pass. The newly deployed build still needs two-account acceptance.
+> **Development checkpoint (2026-09-10):** outgoing/incoming call owners use one
+> Electron call window with remote video, local camera preview and acknowledged
+> mic/camera controls. Incoming **Từ chối** now sends the authenticated desktop
+> cancel request for voice/video before local teardown. Snapshot `d3c9c88` is
+> installed and running from the verified user-local copy; 25 call-control suites
+> and all 20 aggregate regression commands pass. It includes the corrected NV21
+> camera path, contact name/avatar presentation, normalized remote decline/end,
+> and a cold-start incoming path that no longer creates a competing 401 call.
+> Current two-account confirmation remains a release gate.
 > This is **not a finished release**. See
 > [current evidence and remaining gates](INTEGRATION-STATUS.md).
 
-> **Independent-project transition (2026-09-09):** the current Linux-native
-> development builds on [realdtn2/zalo-linux-2026](https://github.com/realdtn2/zalo-linux-2026),
+> **Independent project:** this repository is
+> [RuriMeiko/zalo-linux-native](https://github.com/RuriMeiko/zalo-linux-native),
+> a public standalone GitHub repository (`fork: false`, default branch `main`).
+> Development builds on [realdtn2/zalo-linux-2026](https://github.com/realdtn2/zalo-linux-2026),
 > not a from-scratch implementation. See [credits and provenance](CREDITS.md),
 > [current status](PORT-CHECKLIST.md) and [publication checklist](RELEASE-CHECKLIST.md).
 > Native outgoing **voice was confirmed audible in both directions** in one
 > user-assisted test, and the user later reported two-way video on a previous
 > trial. Those observations do not validate every control in the current build.
-> Existing installation/release links
-> below refer to the upstream project, not a new independent release.
+> No binary release is claimed yet.
 
-For explicit native voice startup with user-local runtime and device settings,
-see [NATIVE-LAUNCH.md](NATIVE-LAUNCH.md). This development launcher does not run
-the inherited upstream updater.
+For native voice/video startup with user-local runtime and device settings, see
+[NATIVE-LAUNCH.md](NATIVE-LAUNCH.md). This development launcher does not run the
+inherited upstream updater.
 
 ⚠️ **Work in Progress** - This project is under active development.
 A Linux port of Zalo, bringing the popular Vietnamese messaging application to the Linux platform.
@@ -28,7 +33,11 @@ A Linux port of Zalo, bringing the popular Vietnamese messaging application to t
 
 ## How It Works
 
-This is an unofficial port of the **Zalo macOS desktop client** to Linux — not a web wrapper. The experimental native voice path is documented in [native/android-zrtc](native/android-zrtc/README.md); default installation is not yet a verified distribution of that path.
+This is an unofficial port of the **Zalo macOS desktop client** to Linux — not a
+web wrapper. The experimental native call path is documented in
+[native/android-zrtc](native/android-zrtc/README.md). It runs the existing ZRTC
+engine in a Linux/Bionic worker and connects it to PulseAudio, V4L2 and the
+desktop signaling/UI; it does not use Wine or an Android emulator.
 
 The port was created by:
 1. Extracting the `.dmg` from the macOS version
@@ -40,40 +49,20 @@ The port was created by:
 
 ## Installation
 
-**Native development checkout:** prepare the runtime and local JSON config in
-[NATIVE-LAUNCH.md](NATIVE-LAUNCH.md), then use `bash start.sh --check` before
-launching. Startup does not download dependencies or run an updater. The
-historical installer/AppImage instructions below are retained for upstream
-context; they are **not verified installation instructions for this native
-continuation**. No independent binary release is available from this checkpoint.
+Clone the independent repository and prepare the external runtime, Electron 22
+and explicit device configuration described in [NATIVE-LAUNCH.md](NATIVE-LAUNCH.md):
 
-### Option 1: Install script
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/realdtn2/zalo-linux-2026.git
-   cd zalo-linux-2026
-   ```
-2. **Run the install script**:
-   ```bash
-   ./install.sh
-   ```
-
-### Option 2: AppImage
-Download the latest AppImage from the [Releases](https://github.com/realdtn2/zalo-linux-2026/releases/latest) page, then:
 ```bash
-chmod +x Zalo-*.AppImage
-./Zalo-*.AppImage
+git clone https://github.com/RuriMeiko/zalo-linux-native.git
+cd zalo-linux-native
+bash start.sh --check
+bash start.sh
 ```
-No installation needed — fully self-contained, just run it.
 
-### Building the AppImage yourself
-```bash
-git clone https://github.com/realdtn2/zalo-linux-2026.git
-cd zalo-linux-2026
-./build-appimage.sh
-# output: dist/Zalo-<version>-x86_64.AppImage
-```
-Requires: `wget`, `unzip`
+For a manifest-verified copy and optional desktop-menu entry, follow
+[NATIVE-INSTALL.md](NATIVE-INSTALL.md). Startup does not download dependencies,
+rewrite the checkout or run an updater. This is still a development installation,
+not a self-contained package or released AppImage.
 
 ## Usage
 
@@ -85,22 +74,27 @@ Requires: `wget`, `unzip`
 ./start.sh
 ```
 
-**Update the application**:
-- Update through the desktop launcher or app launcher
-- Or manually run:
+**Check for a newer source revision without modifying files**:
 ```bash
-./update.sh
+bash update.sh --check
 ```
 ## Features
 
 ### `zcall` (Audio & Video Calling)
 
-**Status:** Experimental native outgoing voice verified; video and complete call UI unfinished.
+**Status:** Experimental native voice/video with incoming/outgoing UI is deployed;
+voice was confirmed audible both ways and one video trial displayed both peers.
+Current-build two-account controls/rejection and packaging remain release gates.
 
 **Description:**  
 A massive proprietary VoIP and WebRTC stack built around custom ZRTP-based encryption. Implemented through `zcall_mac.node` and responsible for all voice and video calling functionality.
-**Earlier implementation (retained as historical context, superseded for the opt-in native voice path):**
-`zcall_mac.node` is a Mach-O binary and cannot run on Linux. Call **signalling/ringing** (WebSocket `voicecall/*`) is pure JS and fully working. The Linux binding routes to a contract stub (device enumeration returns the native JSON-string contract; call setup rejects through the same path a macOS config-fetch failure uses), and `native/qt-call-cap-linux/` ships a real call-v2 **wire-protocol bridge**: a Node agent + POSIX launcher that speaks the actual two-socket `$`-framed AES protocol (chunking, per-frame ACK, `native-ready`, `listDevice`, `update`, deterministic `sendSignal 401` end, `killMe` discipline), verified against a host emulator under both Node 22 and Electron 22's Node 16 (`node native/qt-call-cap-linux/test-wire.js`). **Media (voice/video I/O) still requires VNG's proprietary ZRTP-variant stack and is not implemented** — the bridge fails calls fast and correctly instead of hanging. Binary analysis + rationale: `recon-zcall-protocol.md`; protocol invariants: `CALL-LINUX.md`; contract regression: `native/nativelibs/zcall/test-linux.js`.
+`zcall_mac.node` is a Mach-O binary and cannot run on Linux. The native path
+replaces it with a Linux helper plus a bounded Bionic worker around the pinned
+Android x86_64 ZRTC engine. The helper owns authenticated desktop signaling,
+PulseAudio PCM, Logitech/V4L2 camera capture, H.264 frame transport and the
+dedicated call window. Architecture, evidence and remaining limitations are in
+[CALL-LINUX.md](CALL-LINUX.md), [PORT-CHECKLIST.md](PORT-CHECKLIST.md) and
+[INTEGRATION-STATUS.md](INTEGRATION-STATUS.md).
 
 ---
 
@@ -225,4 +219,6 @@ This is an active work-in-progress project. Contributions are welcome! Please:
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on the [GitHub Issues](https://github.com/realdtn2/zalo-linux-2026/issues) page.
+For issues, questions, or suggestions, please open an issue on the
+[independent project's GitHub Issues](https://github.com/RuriMeiko/zalo-linux-native/issues)
+page. The predecessor repository remains credited above and in [CREDITS.md](CREDITS.md).

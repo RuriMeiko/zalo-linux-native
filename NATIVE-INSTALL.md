@@ -98,8 +98,8 @@ node scripts/register-desktop.mjs /home/YOU/zalo-installed
 
 This creates only `~/.local/share/applications/zalo-linux-native.desktop` and
 does not launch the app. It uses the installation's `launch-installed.sh`, so
-Node must be available in the desktop session's PATH; Electron/runtime remain
-external. The generic `internet-chat` icon follows the desktop icon theme.
+the launcher uses the absolute Node executable pinned at install time;
+Electron/runtime remain external. The generic `internet-chat` icon follows the desktop icon theme.
 Before either mode, the complete installed payload/config/launcher manifest is
 verified. `--check` accepts an existing menu entry only when its canonical file
 and contents exactly match the desired entry. Write mode never overwrites an
@@ -117,8 +117,13 @@ symlink rejection. The generated entry passed
 session remain acceptance checks. On 2026-09-10 a real menu entry was registered
 for `~/.local/share/zalo-linux-native`. It was subsequently replaced recoverably
 with snapshot `529aa91`: the old `e10acc3` directory is retained at
-`~/zalo-native-recovery/installed-e10acc3-before-529aa91`. The new manifest has
-13,401 verified entries, generated-file integrity is enabled, installed
-runtime/device preflight passes, the helper points inside the copy, and CDP is
-omitted. The installed copy was not launched, to leave the current app/call
-testing session undisturbed.
+`~/zalo-native-recovery/installed-e10acc3-before-529aa91`. It was later replaced
+again at checkpoint `fede1b0`; the immediately previous snapshot remains at
+`~/zalo-native-recovery/installed-8fa66c5-before-fede1b0`. The installation was
+subsequently advanced to `d3c9c88`; its immediately previous complete copy is
+retained at `~/zalo-native-recovery/installed-dec0ed2-before-d3c9c88`. The current
+manifest has 13,401 verified entries, generated-file integrity is enabled,
+installed runtime/device preflight passes, and the running helper resolves
+inside the installed copy. The local testing configuration explicitly enables
+`noSandbox`; installer defaults do not add it. CDP is omitted from the current
+installed configuration.

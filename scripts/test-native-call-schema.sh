@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-app_dir=/home/rurimeiko/.local/share/zalo
-electron_bin=/home/rurimeiko/.local/electron-v22.3.27/electron
-schema_dir=/home/rurimeiko/.local/state/zalo-native-test
+if (($# < 2 || $# > 3)); then
+    printf '%s\n' 'Usage: scripts/test-native-call-schema.sh APP_DIR ELECTRON_BIN [SCHEMA_DIR]' >&2
+    exit 1
+fi
+app_dir=$1
+electron_bin=$2
+schema_dir=${3:-${XDG_STATE_HOME:-${HOME:?}/.local/state}/zalo-native-test}
+if [[ "$app_dir" != /* || "$electron_bin" != /* || "$schema_dir" != /* ||
+      "$app_dir$electron_bin$schema_dir" == *$'\n'* || "$app_dir$electron_bin$schema_dir" == *$'\r'* ]]; then
+    printf '%s\n' 'App, Electron and schema paths must be absolute and single-line.' >&2
+    exit 1
+fi
+if [[ ! -d "$app_dir" || ! -x "$electron_bin" ]]; then
+    printf '%s\n' 'App directory or Electron executable is unavailable.' >&2
+    exit 1
+fi
 mkdir -p "$schema_dir"
 chmod 700 "$schema_dir"
 unset ZALO_ZCALL_CAPTURE
