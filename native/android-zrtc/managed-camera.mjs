@@ -23,7 +23,7 @@ export function createManagedCamera() {
   return {
     async run(native,settings,camera=runCamera) {
       if(bound)throw new Error('Camera controller already used');
-      bound=true;worker=native;options={device:settings.device,timestampOriginNs:process.hrtime.bigint()};signal=settings.signal;capture=camera;
+      bound=true;worker=native;options={device:settings.device,preview:settings.preview,timestampOriginNs:process.hrtime.bigint()};signal=settings.signal;capture=camera;
       const stopped=new Promise(resolve=>stopRun=resolve);
       signal.addEventListener('abort',stop,{once:true});
       try {

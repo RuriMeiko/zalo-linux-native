@@ -84,8 +84,8 @@ function attachCallUIHost(stream,createWindow,{locked=false}={}) {
   return {
     dispose:()=>pipe.close(),
     setLocked(value){if(typeof value!=='boolean')throw new TypeError('Call lock must be boolean');locked=value;if(value)clear();},
-    render(frame){if(closed || locked || !host)throw new Error('Call display unavailable');return host.render(frame);},
-    clearVideo(){return host?.clearVideo();}
+    render(frame,source){if(closed || locked || !host)throw new Error('Call display unavailable');return host.render(frame,source);},
+    clearVideo(source){return host?.clearVideo(source);}
   };
 }
 module.exports={createCallUIClient,attachCallUIHost};

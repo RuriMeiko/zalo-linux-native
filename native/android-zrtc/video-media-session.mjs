@@ -1,6 +1,6 @@
 import {runCamera} from './camera-pump.mjs';
 import {runRemoteVideo} from './remote-video-pump.mjs';
-export async function runVideoMedia(worker,{device,signal,sink,cameraControl},camera=runCamera,remote=runRemoteVideo) {
+export async function runVideoMedia(worker,{device,signal,sink,cameraControl,preview},camera=runCamera,remote=runRemoteVideo) {
   if(signal.aborted)return;
   const controller=new AbortController(),abort=()=>controller.abort();
   signal.addEventListener('abort',abort,{once:true});
@@ -16,7 +16,7 @@ export async function runVideoMedia(worker,{device,signal,sink,cameraControl},ca
   }).catch(error=>{if(!controller.signal.aborted)failure=error;controller.abort();});
   try {
     await Promise.all([
-      guard(()=>cameraControl?cameraControl.run(worker,{device,signal:controller.signal},camera):camera(worker,{device,signal:controller.signal})),
+      guard(()=>cameraControl?cameraControl.run(worker,{device,preview,signal:controller.signal},camera):camera(worker,{device,preview,signal:controller.signal})),
       guard(()=>remote(worker,{signal:controller.signal,render:sink.render,clear:sink.clear}))
     ]);
     if(failure)throw failure;

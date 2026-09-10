@@ -5,7 +5,7 @@ import {callDialog,activeCallControls} from './native-call-ui.mjs';
 import {runVideoMedia} from './video-media-session.mjs';
 import {createManagedCamera} from './managed-camera.mjs';
 export async function runIncomingDesktop(transport,message,{nativeLocalId,clientVersion,runtime,pcm,
-  videoEnabled=false,device,sink,signal,onPhase=()=>{}},
+  videoEnabled=false,device,sink,preview,signal,onPhase=()=>{}},
   {startWorker=NativeWorker.start,owner=runIncomingCall,dialog=callDialog,videoMedia=runVideoMedia}={}) {
   let params;
   if(typeof message?.data?.data?.params!=='string' || Buffer.byteLength(message.data.data.params)>65536)
@@ -46,7 +46,7 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
         try {
           await Promise.all([
             guard(()=>activeCallControls(native,{video,signal:mediaAbort.signal,cameraControl},dialog)),
-            ...(video?[guard(()=>videoMedia(native,{device,sink,signal:mediaAbort.signal,cameraControl}))]:[])
+            ...(video?[guard(()=>videoMedia(native,{device,sink,preview,signal:mediaAbort.signal,cameraControl}))]:[])
           ]);
           if(failure)throw failure;
         } finally {options.signal.removeEventListener('abort',stopMedia);mediaAbort.abort();}

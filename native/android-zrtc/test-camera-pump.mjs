@@ -46,6 +46,12 @@ assert.ok(kills.includes('SIGTERM'));
 await assert.rejects(runCamera(worker,{device:'/dev/video0',frameLimit:1,stallMs:100},capture([],{stall:true})),/stalled/);
 await assert.rejects(runCamera({request:async()=>({code:-1})},{device:'/dev/video0',frameLimit:1},capture([Buffer.alloc(bytes)])),/rejected camera/);
 assert.equal((await runCamera(worker,{device:'/dev/video0',frameLimit:1},capture([Buffer.alloc(bytes)]))).frames,1);
+let previewPixels,cleared=false;
+await runCamera(worker,{device:'/dev/video0',frameLimit:1,preview:{
+  async render(frame){assert.equal(frame.width,160);assert.equal(frame.height,120);previewPixels=frame.pixels;assert.ok(previewPixels.some(v=>v!==0));},
+  async clear(){cleared=true;}
+}},capture([Buffer.alloc(bytes,128)]));
+assert.ok(cleared);assert.ok(previewPixels.every(v=>v===0),'Temporary preview pixels must be erased after render ACK');
 let release,entered;
 const requested=new Promise(resolve=>{entered=resolve;});
 const heldWorker={request:()=>{entered();return new Promise(resolve=>{release=()=>resolve({code:0});});}};

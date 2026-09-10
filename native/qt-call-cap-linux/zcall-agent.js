@@ -276,6 +276,13 @@ const mediaEnabled=process.env.ZALO_ZCALL_NATIVE_MEDIA==='1';
 // Outgoing camera transport only; remote video rendering remains incomplete.
 const videoEnabled=process.env.ZALO_ZCALL_NATIVE_VIDEO==='1' && networkEnabled && mediaEnabled;
 let nativeVideoSink;
+let nativePreviewSink;
+function getNativePreviewSink() {
+    if(process.env.ZALO_ZCALL_PREVIEW_PIPE!=='5')throw new Error('Native preview pipe unavailable');
+    if(!nativePreviewSink)nativePreviewSink=require('../android-zrtc/video-pipe.cjs').createVideoPipeSink(
+        new (require('net').Socket)({fd:5,readable:true,writable:true}));
+    return nativePreviewSink;
+}
 let nativeCallUI;
 function getNativeCallUI() {
     if(process.env.ZALO_ZCALL_UI_PIPE!=='4')throw new Error('Native call UI pipe unavailable');
@@ -346,7 +353,7 @@ if(setupEnabled) {
                     const {withOutgoingCallUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');
                     const {runVideoMedia}=await import('../android-zrtc/video-media-session.mjs');
                     return await withOutgoingCallUI(worker,{signal,video:true,
-                        runMedia:(mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,device,sink:videoSink})},
+                        runMedia:(mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,device,sink:videoSink,preview:getNativePreviewSink()})},
                         ({signal:videoSignal,onAnswered,beforeCleanup})=>
                         inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,onPhase:setupPhase,beforeCleanup,
                             onAnswer:async(control,owner)=>{
@@ -414,6 +421,7 @@ function handleHostMessage(msg) {
                     pcm:{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK},
                     videoEnabled,device:process.env.ZALO_ZCALL_VIDEO_DEVICE,
                     sink:videoEnabled?getNativeVideoSink():null,
+                    preview:videoEnabled?getNativePreviewSink():null,
                     signal:attempt.controller.signal,onPhase:phase=>{
                         setupPhase('incoming-'+phase);
                         if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});

@@ -4,10 +4,10 @@ const path=require('node:path');
 // dialog stages or waiting for a mute ACK must not destroy the window.
 module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
   let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false;
-  let framePending,frameSerial=0;
+  const framePending=new Map();let frameSerial=0;
   const painted=(event,id,ok)=>{
-    if(!window || event.sender!==window.webContents || id!==framePending?.id)return;
-    const task=framePending;framePending=null;clearTimeout(task.timer);
+    if(!window || event.sender!==window.webContents || !framePending.has(id))return;
+    const task=framePending.get(id);framePending.delete(id);clearTimeout(task.timer);
     if(ok===true)task.resolve();else task.reject(new Error('Call video rendering failed'));
   };
   ipcMain.on('linux-call-painted',painted);
@@ -49,20 +49,21 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
     return loading;
   };
   return {
-    async render(frame) {
+    async render(frame,source='remote') {
+      if(!['remote','local'].includes(source))throw new Error('Invalid video source');
       if(disposed || !loading)throw new Error('Call display unavailable');
       await loading;
-      if(disposed || !window || framePending)throw new Error('Call display unavailable');
+      if(disposed || !window || [...framePending.values()].some(task=>task.source===source))throw new Error('Call display unavailable');
       return new Promise((resolve,reject)=>{
         const id=++frameSerial;
-        framePending={id,resolve,reject,timer:setTimeout(()=>{
-          framePending=null;reject(new Error('Call video renderer timeout'));
-        },4000)};
-        try {window.webContents.send('linux-call-frame',id,{...frame,sequence:frame.sequence.toString()});}
-        catch {clearTimeout(framePending.timer);framePending=null;reject(new Error('Call video unavailable'));}
+        const task={source,resolve,reject,timer:setTimeout(()=>{
+          framePending.delete(id);reject(new Error('Call video renderer timeout'));
+        },4000)};framePending.set(id,task);
+        try {window.webContents.send('linux-call-frame',id,{...frame,source,sequence:frame.sequence.toString()});}
+        catch {clearTimeout(task.timer);framePending.delete(id);reject(new Error('Call video unavailable'));}
       });
     },
-    clearVideo(){if(window && !disposed)window.webContents.send('linux-call-video-clear');},
+    clearVideo(source='remote'){if(window && !disposed)window.webContents.send('linux-call-video-clear',source);},
     async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true}={}) {
       if(disposed || pending || !['consent','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
@@ -87,7 +88,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
       if(disposed)return;disposed=true;settle(new Error('Call window closed'));
       ipcMain.removeListener('linux-call-action',action);
       ipcMain.removeListener('linux-call-painted',painted);
-      if(framePending){clearTimeout(framePending.timer);framePending.reject(new Error('Call window closed'));framePending=null;}
+      for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
       if(window && !window.isDestroyed())window.destroy();window=null;
     }
   };

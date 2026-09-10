@@ -1,10 +1,11 @@
 // Linux V4L2 -> FFmpeg NV12 -> one outstanding native frame request.
 // The caller owns the worker and must await this pump before stopping it.
 import {spawn} from 'node:child_process';
+import {previewFrame} from './local-preview.mjs';
 const owners=new WeakSet();
 const width=640,height=480,frameBytes=width*height*3/2;
 function aborted() {const error=new Error('Camera capture canceled');error.name='AbortError';return error;}
-export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,onReady=()=>{},timestampOriginNs=process.hrtime.bigint()}={},spawnCapture=spawn) {
+export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,onReady=()=>{},timestampOriginNs=process.hrtime.bigint(),preview}={},spawnCapture=spawn) {
   if(!worker || typeof worker.request!=='function')throw new TypeError('Native worker required');
   if(typeof device!=='string' || !/^\/dev\/video[0-9]+$/.test(device))throw new TypeError('Explicit V4L2 device required');
   if(frameLimit!==undefined && (!Number.isInteger(frameLimit) || frameLimit<1 || frameLimit>18000))
@@ -13,6 +14,7 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
   if(frameLimit===undefined && !signal)throw new TypeError('Continuous capture requires cancellation');
   if(!Number.isInteger(stallMs) || stallMs<100 || stallMs>30000)throw new TypeError('Invalid camera stall timeout');
   if(typeof onReady!=='function')throw new TypeError('Invalid camera readiness callback');
+  if(preview && (typeof preview.render!=='function' || typeof preview.clear!=='function'))throw new TypeError('Invalid preview sink');
   if(typeof timestampOriginNs!=='bigint' || timestampOriginNs<0n || timestampOriginNs>process.hrtime.bigint())throw new TypeError('Invalid camera timestamp origin');
   if(signal?.aborted)throw aborted();
   if(owners.has(worker))throw new Error('Camera pump already active for worker');
@@ -53,6 +55,10 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
         const pixels=pending.subarray(0,frameBytes);pending=pending.subarray(frameBytes);
         const result=await worker.request('videoFrame',{pixels,width,height,rotation:0,timestampNs:process.hrtime.bigint()-origin});
         if(result.code!==0)throw new Error('Native worker rejected camera frame');
+        if(preview && !signal?.aborted) {
+          const frame=previewFrame(pixels,width,height,process.hrtime.bigint()-origin+1n);
+          try {await preview.render(frame);}finally {frame.pixels.fill(0);}
+        }
         frames++;if(frames===1 && !signal?.aborted)onReady();arm();
       }
     }
@@ -73,6 +79,7 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
   } finally {
     clearTimeout(watchdog);signal?.removeEventListener('abort',stop);
     stop();if(closed)await closed;
-    clearTimeout(killTimer);owners.delete(worker);
+    clearTimeout(killTimer);
+    try {if(preview)await preview.clear();}finally {owners.delete(worker);}
   }
 }

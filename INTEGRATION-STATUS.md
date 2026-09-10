@@ -7,8 +7,10 @@ Answer → mute → unmute → End passed through both pipes. This is not a new 
 two-account acceptance result and is not deployed to the running app yet.
 Camera off/on now controls capture shutdown/restart; three real USB camera
 cycles passed with mock native ACK, and Electron control tests passed. Native
-two-account camera-off presentation, local preview and contact presentation
-remain unverified/incomplete. See
+two-account camera-off presentation and contact presentation remain unverified/incomplete.
+Local preview is now wired from the existing capture to a separate bounded pipe;
+Electron fixtures verify hide on camera-off without hiding remote video, and
+USB capture tests verify preview cleanup. This is still not deployed/live acceptance. See
 `native/android-zrtc/CALL-WINDOW.md`; the historical deployment notes below
 must not be read as deployment evidence for the latest source.
 

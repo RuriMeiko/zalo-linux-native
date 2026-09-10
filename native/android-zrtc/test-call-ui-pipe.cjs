@@ -31,7 +31,9 @@ function act(window,action){const state=window.messages.filter(m=>m[0]==='linux-
 const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalled');process.exit(1);},10000);
 (async()=>{
   const [clientStream,hostStream]=pair(),[videoClient,videoHost]=pair();
-  const host=attach(hostStream,videoHost,{BrowserWindow:Window,ipcMain},{locked:false});
+  const [previewClient,previewHost]=pair();
+  const host=attach(hostStream,videoHost,{BrowserWindow:Window,ipcMain},{locked:false},previewHost);
+  const preview=createVideoPipeSink(previewClient);
   const client=createCallUIClient(clientStream),video=createVideoPipeSink(videoClient);
   const dialingAbort=new AbortController();
   const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true});
@@ -43,6 +45,10 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   await video.render({format:'I420',width:2,height:2,sequence:1n,pixels:Buffer.alloc(6,128)});
   assert.equal(windows.length,1,'Video renders in the existing call window');
   assert.ok(windows[0].messages.some(m=>m[0]==='linux-call-frame'));
+  await preview.render({format:'I420',width:2,height:2,sequence:1n,pixels:Buffer.alloc(6,70)});
+  assert.ok(windows[0].messages.some(m=>m[0]==='linux-call-frame' && m[2].source==='local'));
+  await preview.clear();assert.ok(windows[0].messages.some(m=>m[0]==='linux-call-video-clear' && m[1]==='local'));
+  assert.equal(windows.length,1,'Local preview must not open another window');
   act(windows[0],'toggle');assert.equal(await active,'toggle');
   active=client.dialog('active',{signal,video:true,muteControl:true,muted:true,cameraControl:true,cameraEnabled:true});await turn();
   act(windows[0],'camera');assert.equal(await active,'camera');
@@ -57,7 +63,7 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   await client.clear();await assert.rejects(client.dialog('dialing',{signal}),/unavailable/);
   host.setLocked(false);await client.clear();
   active=client.dialog('active',{signal,muteControl:true});const disconnected=assert.rejects(active,/closed/);await turn();
-  host.dispose();await disconnected;video.close();client.close();
+  host.dispose();await disconnected;video.close();preview.close();client.close();
   assert.equal(ipcMain.listenerCount('linux-call-action'),0);assert.equal(ipcMain.listenerCount('linux-call-painted'),0);
   // Oversize/unrecognized protocol input must fail closed without opening UI.
   const [bad,receiver]=pair();let created=0;

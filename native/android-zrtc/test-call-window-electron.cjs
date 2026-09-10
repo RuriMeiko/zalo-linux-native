@@ -11,7 +11,11 @@ app.whenReady().then(async()=>{
     return [a,b];
   }
   const [controlClient,controlHost]=pair(),[videoClient,videoHost]=pair();
-  const host=require('./desktop-call-window.cjs')(controlHost,videoHost,{BrowserWindow,ipcMain},{locked:false});
+  const [previewClient,previewHost]=pair();
+  const host=require('./desktop-call-window.cjs')(controlHost,videoHost,{BrowserWindow,ipcMain},{locked:false},previewHost);
+  const preview=require('./video-pipe.cjs').createVideoPipeSink(previewClient);
+  let previewSequence=0n;
+  const renderPreview=()=>preview.render({format:'I420',width:2,height:2,sequence:++previewSequence,pixels:Buffer.from([200,100,70,160,100,180])});
   const client=require('./call-ui-pipe.cjs').createCallUIClient(controlClient);
   const video=require('./video-pipe.cjs').createVideoPipeSink(videoClient),controller=new AbortController();
   const timeout=setTimeout(()=>{controller.abort();host.dispose();app.exit(1);},180000);
@@ -23,14 +27,19 @@ app.whenReady().then(async()=>{
       const actionTask=client.dialog('active',{signal:controller.signal,video:true,muteControl:true,muted,cameraControl:true,cameraEnabled});
       if(toggles===0 && cameraToggles===0)await video.render({format:'I420',width:4,height:4,sequence:1n,
         pixels:Buffer.from([50,90,150,210,50,90,150,210,50,90,150,210,50,90,150,210,90,90,180,180,150,150,80,80])});
+      if(toggles===0 && cameraToggles===0)await renderPreview();
       const action=await actionTask;
       if(action==='end')break;
-      if(action==='camera'){cameraEnabled=!cameraEnabled;cameraToggles++;continue;}
+      if(action==='camera'){
+        cameraEnabled=!cameraEnabled;cameraToggles++;
+        if(cameraEnabled)await renderPreview();else await preview.clear();
+        continue;
+      }
       muted=!muted;toggles++;
     }
     if(toggles<2)throw new Error('Fixture requires mute and unmute');
     if(cameraToggles<2)throw new Error('Fixture requires camera off and on');
-    await video.clear();await client.clear();
+    await video.clear();await preview.clear();await client.clear();
     console.log('PASS Electron call window over control/video pipes: consent, synthetic I420, mic/camera toggles, end (no live media)');
     host.dispose();clearTimeout(timeout);app.quit();
   } catch(error){host.dispose();clearTimeout(timeout);console.error(error.message);app.exit(1);}

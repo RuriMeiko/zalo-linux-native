@@ -20,6 +20,6 @@ contextBridge.exposeInMainWorld('linuxCall',{
         ()=>ipcRenderer.send('linux-call-painted',id,true),
         ()=>ipcRenderer.send('linux-call-painted',id,false));
     });
-    ipcRenderer.on('linux-call-video-clear',()=>clear());
+    ipcRenderer.on('linux-call-video-clear',(_event,source)=>clear(source));
   }
 });

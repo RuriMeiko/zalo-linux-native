@@ -10896,10 +10896,12 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                     helperEnv.ZALO_ZCALL_APP_LOCKED = linuxVideoLocked ? "1" : "0";
                     delete helperEnv.ZALO_ZCALL_VIDEO_PIPE;
                     delete helperEnv.ZALO_ZCALL_UI_PIPE;
+                    delete helperEnv.ZALO_ZCALL_PREVIEW_PIPE;
                     if (linuxVideo) helperEnv.ZALO_ZCALL_VIDEO_PIPE = "3";
+                    if (linuxVideo) helperEnv.ZALO_ZCALL_PREVIEW_PIPE = "5";
                     if (linuxCallUI) helperEnv.ZALO_ZCALL_UI_PIPE = "4";
-                    N = i(e, [g, y], {env: helperEnv, stdio: linuxCallUI ? ["pipe", "pipe", "pipe", linuxVideo ? "pipe" : "ignore", "pipe"] : ["pipe", "pipe", "pipe"]});
-                    if (linuxCallUI) linuxVideoDisplay = linuxCallUI(N.stdio[4], linuxVideo ? N.stdio[3] : null, require("electron"), {locked: linuxVideoLocked});
+                    N = i(e, [g, y], {env: helperEnv, stdio: linuxCallUI ? ["pipe", "pipe", "pipe", linuxVideo ? "pipe" : "ignore", "pipe", linuxVideo ? "pipe" : "ignore"] : ["pipe", "pipe", "pipe"]});
+                    if (linuxCallUI) linuxVideoDisplay = linuxCallUI(N.stdio[4], linuxVideo ? N.stdio[3] : null, require("electron"), {locked: linuxVideoLocked}, linuxVideo ? N.stdio[5] : null);
                     N.stdout.setEncoding("utf8"), N.stderr.setEncoding("utf8"), N.stdout.on("data", (e => {
                         let t = e.replace(/\r|\n/g, "").trim();
                         t && d.zsymb(4, "4LwuIQ", ["client: stdout data", "RLmZFk"], t)
