@@ -18,6 +18,9 @@ assert.equal(videoSpec.env.ZALO_ZCALL_NATIVE_VIDEO,'1');
 assert.equal(videoSpec.env.ZALO_ZCALL_VIDEO_DEVICE,'/dev/video2');
 assert.equal(videoSpec.env.ZALO_ZCALL_NATIVE_NETWORK,'1');
 assert.equal(videoSpec.env.ZALO_ZCALL_NATIVE_MEDIA,'1');
+assert.throws(()=>validateConfig({...config,experimentalIncoming:'true'}));
+assert.equal(launchSpec({...config,experimentalIncoming:true},{}).env.ZALO_ZCALL_NATIVE_INCOMING,'1');
+assert.equal(launchSpec(config,{ZALO_ZCALL_NATIVE_INCOMING:'1'}).env.ZALO_ZCALL_NATIVE_INCOMING,undefined);
 const spec=launchSpec(config,{PATH:'/bin',ELECTRON_RUN_AS_NODE:'1',LD_PRELOAD:'bad',
   ZALO_ZCALL_CAPTURE:'/tmp/private',ZALO_ZCALL_SCHEMA_LOG:'/tmp/schema',ZCALL_USE_PROXY:'1',
   ZALO_ZCALL_NATIVE_VIDEO:'1',ZALO_ZCALL_VIDEO_DEVICE:'/dev/video0'});

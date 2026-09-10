@@ -10892,6 +10892,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                     const linuxVideo = process.platform === "linux" && process.env.ZALO_ZCALL_NATIVE_VIDEO === "1" && process.env.ZALO_ZCALL_NATIVE_NETWORK === "1" && process.env.ZALO_ZCALL_NATIVE_MEDIA === "1"
                         ? require(o.join(o.dirname(process.env.ZALO_ZCALL_AGENT_PATH || e), "..", "android-zrtc", "video-window.cjs")) : null;
                     const helperEnv = {...process.env};
+                    helperEnv.ZALO_ZCALL_APP_LOCKED = linuxVideoLocked ? "1" : "0";
                     delete helperEnv.ZALO_ZCALL_VIDEO_PIPE;
                     if (linuxVideo) helperEnv.ZALO_ZCALL_VIDEO_PIPE = "3";
                     N = i(e, [g, y], {env: helperEnv, stdio: linuxVideo ? ["pipe", "pipe", "pipe", "pipe"] : ["pipe", "pipe", "pipe"]});
@@ -10930,6 +10931,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                             if (w && e.sender === w.webContents && typeof t.data === "boolean") {
                                 linuxVideoLocked = t.data;
                                 if (linuxVideoDisplay) linuxVideoDisplay.setLocked(t.data);
+                                if (I && S) S({type: "update", command: "linux-app-lock", data: t.data});
                             }
                             return;
                         }

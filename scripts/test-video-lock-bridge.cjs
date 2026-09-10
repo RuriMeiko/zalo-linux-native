@@ -12,10 +12,13 @@ for(const file of ['pc-dist/compact-app-pc.e08d0d44f38873747a6b.js','pc-dist/laz
 const main=fs.readFileSync(path.join(root,'main-dist/main.js'),'utf8');
 const body=main.match(/if \(t && t.command === "linux-app-lock"\) \{([\s\S]*?)\n                        \}/)[1];
 const sender={},updates=[];
-const context={w:{webContents:sender},linuxVideoLocked:false,linuxVideoDisplay:{setLocked:value=>updates.push(value)}};
+const forwarded=[];
+const context={w:{webContents:sender},I:true,S:message=>forwarded.push(JSON.parse(JSON.stringify(message))),linuxVideoLocked:false,linuxVideoDisplay:{setLocked:value=>updates.push(value)}};
 const handle=vm.runInNewContext(`(function(e,t){${body}})`,context);
 handle({sender:{}},{data:true});assert.equal(updates.length,0);
 handle({sender},{data:'true'});assert.equal(updates.length,0);
 handle({sender},{data:true});assert.equal(context.linuxVideoLocked,true);assert.deepEqual(updates,[true]);
 handle({sender},{data:false});assert.equal(context.linuxVideoLocked,false);assert.deepEqual(updates,[true,false]);
+assert.deepEqual(forwarded,[true,false].map(data=>({type:'update',command:'linux-app-lock',data})));
+context.I=false;handle({sender},{data:true});assert.equal(forwarded.length,2,'lock must not start helper');
 console.log('PASS actual bundled lock bridge: both stores, optional boolean event, main sender/type guards');

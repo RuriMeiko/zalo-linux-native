@@ -88,6 +88,21 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+The agent now has an opt-in incoming dispatcher (`experimentalIncoming` in the
+launcher). It invokes `incoming-desktop.mjs` and the tested incoming owner,
+using native GTK consent/active-call dialogs and the existing video media pump.
+Early remote cancellation, account changes, helper shutdown and passcode lock
+abort the incoming attempt. Main forwards lock state only from its authenticated
+main-window sender, without starting an idle helper. Tests cover dialog process
+abort/cleanup, driver startup cancellation, account identity and lock forwarding.
+A real GTK consent dialog was opened and aborted successfully without any call
+or device capture. No real-account incoming acceptance was performed.
+
+Older notes below saying the owner is not invoked by the agent describe the
+previous checkpoint, superseded by this opt-in wiring. First-incoming identity
+bootstrap and true remote rejection are still missing. The installed running
+helper has not been restarted with this new trial.
+
 The production desktop agent now binds its native local ID to the authenticated
 outgoing 401 configuration for the current desktop account. The account ticket
 is captured before sending 401, so delayed responses cannot bind a replacement

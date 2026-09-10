@@ -284,7 +284,8 @@ function getNativeVideoSink() {
     }
     return nativeVideoSink;
 }
-let setupTransport=null, outgoingSetup=null;
+let setupTransport=null, outgoingSetup=null, incomingAttempt=null;
+let nativeAppLocked=process.env.ZALO_ZCALL_APP_LOCKED==='1';
 function setupPhase(phase) {
     if(process.env.ZALO_ZCALL_SCHEMA_LOG) {
         try {require('./signal-schema').record(process.env.ZALO_ZCALL_SCHEMA_LOG,
@@ -373,14 +374,48 @@ function handleHostMessage(msg) {
     if(setupTransport && ['recvSignal','recvSignalError'].includes(type)) {
         setupTransport.receive(msg);return;
     }
-    if(setupTransport && type==='control') {setupTransport.receive(msg);return;}
+    if(setupTransport && type==='control') {
+        setupTransport.receive(msg);
+        if(incomingAttempt && data?.act_type==='voip' && ['cancel','endcall'].includes(data.act) &&
+            String(data.data?.callId)===incomingAttempt.callId && String(data.data?.uidFrom)===incomingAttempt.callerId)
+            incomingAttempt.controller.abort();
+        if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
+            process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
+            let nativeLocalId;
+            try {nativeLocalId=nativeIdentity.resolve();}
+            catch {setupPhase('incoming-identity-unavailable');return;}
+            callActive=true;
+            const attempt={controller:new AbortController(),promise:null,
+                callId:String(data.data?.callId),callerId:String(data.data?.uidFrom)};incomingAttempt=attempt;
+            attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(({runIncomingDesktop})=>
+                runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
+                    runtime:process.env.ZALO_ZRTC_RUNTIME,
+                    pcm:{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK},
+                    videoEnabled,device:process.env.ZALO_ZCALL_VIDEO_DEVICE,
+                    sink:videoEnabled?getNativeVideoSink():null,
+                    signal:attempt.controller.signal,onPhase:phase=>{
+                        setupPhase('incoming-'+phase);
+                        if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});
+                    }})).catch(()=>setupPhase('incoming-failed')).finally(()=>{
+                        if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}
+                    });
+        }
+        return;
+    }
     if (type === "update") {
         switch (command) {
+            case "linux-app-lock":
+                if(typeof data==='boolean') {
+                    nativeAppLocked=data;
+                    if(data)incomingAttempt?.controller.abort();
+                }
+                return;
             case "init":
             case "updateLocal":
                 const previousAccount=nativeIdentity.account;
                 initInfo = data || initInfo;
                 nativeIdentity.setAccount(initInfo.local && initInfo.local.id);
+                if(previousAccount!==nativeIdentity.account)incomingAttempt?.controller.abort();
                 if(previousAccount!==nativeIdentity.account && callActive && outgoingSetup)
                     outgoingSetup.stop().finally(()=>endCall('account changed'));
                 log("init received:", JSON.stringify(data && { local: data.local && data.local.id, os: data.osInfo, client: data.clientVersion }));
@@ -398,6 +433,7 @@ function handleHostMessage(msg) {
         }
     }
     if (type === "request") {
+        if(command==='endCall' && incomingAttempt) {incomingAttempt.controller.abort();return;}
         if(command==='endCall' && outgoingSetup) {
             outgoingSetup.stop().finally(()=>endCall('setup canceled'));return;
         }
@@ -548,9 +584,15 @@ let torn = false;
 function teardown(code) {
     if (torn) return;
     torn = true;
+    incomingAttempt?.controller.abort();
+    setupTransport?.close();
     try { outSock && outSock.destroy(); } catch (e) { }
     try { inSock && inSock.destroy(); } catch (e) { }
-    process.exit(code === undefined ? 0 : code);
+    const exitCode=code === undefined ? 0 : code;
+    const deadline=setTimeout(()=>process.exit(exitCode),15000);deadline.unref();
+    Promise.allSettled([incomingAttempt?.promise,outgoingSetup?.stop()]).finally(()=>{
+        clearTimeout(deadline);process.exit(exitCode);
+    });
 }
 
 function main() {
