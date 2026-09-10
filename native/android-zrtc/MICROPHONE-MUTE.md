@@ -25,8 +25,8 @@ runtime was not overwritten. Rebuild the worker before running these updated
 native fixtures; older workers do not implement command 17.
 
 Outgoing and incoming controls now use the persistent call window and update
-mute state only after a successful native response. The new window is awaiting
-deployment as documented in `CALL-WINDOW.md`.
+mute state only after a successful native response. The new window and diagnostic
+runtime were deployed/restarted with approval, as documented in `CALL-WINDOW.md`.
 
 ## Non-silent native evidence, 2026-09-10
 

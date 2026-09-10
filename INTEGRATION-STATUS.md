@@ -1,16 +1,22 @@
 # Full-app recovery integration — 2026-09-10
 
-Latest source checkpoint: unified call window is now wired to outgoing voice,
+Latest deployed checkpoint (`3f34275`, 2026-09-10): unified call window is now wired to outgoing voice,
 outgoing video and incoming call owners via a dedicated control pipe; remote
 video frames render in that same window. Electron fixture with synthetic video,
 Answer → mute → unmute → End passed through both pipes. This is not a new live
-two-account acceptance result and is not deployed to the running app yet.
+two-account acceptance result. App restart was approved and completed: main
+PID 1155420, helper PID 1155938, matching installed/source main SHA-256 and
+helper control/video/preview fds 4/3/5 verified. Runtime is now
+`~/zalo-native-recovery/mute-evidence-20260910/runtime`; its real native tone
+test passed three mute/unmute cycles at recording ingress (not a remote account).
+Previous main/config backups are retained under
+`~/.local/state/zalo-native-test/unified-call-20260910/`. Account data unchanged.
 Camera off/on now controls capture shutdown/restart; three real USB camera
 cycles passed with mock native ACK, and Electron control tests passed. Native
 two-account camera-off presentation and contact presentation remain unverified/incomplete.
 Local preview is now wired from the existing capture to a separate bounded pipe;
 Electron fixtures verify hide on camera-off without hiding remote video, and
-USB capture tests verify preview cleanup. This is still not deployed/live acceptance. See
+USB capture tests verify preview cleanup. Live acceptance remains pending. See
 `native/android-zrtc/CALL-WINDOW.md`; the historical deployment notes below
 must not be read as deployment evidence for the latest source.
 

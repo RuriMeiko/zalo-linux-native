@@ -9,8 +9,12 @@ The production main/helper integration now uses inherited fd 4 for bounded
 control messages, fd 3 for remote binary video frames and fd 5 for local preview. `desktop-call-window.cjs`
 joins both pipes to this same window. Incoming and outgoing voice/video inject
 the new dialog adapter, and clear it after worker shutdown. Lock and pipe closure
-dispose the host. **These source changes have not yet been deployed/restarted
-in the user's running app. Update main and helper together.**
+dispose the host. **Deployed and restarted with approval on 2026-09-10 at
+source checkpoint `3f34275`.** Main PID 1155420 and helper PID 1155938 were
+verified alive, with control/video/preview fds 4/3/5 and the new native runtime
+`~/zalo-native-recovery/mute-evidence-20260910/runtime`. Installed main SHA-256
+matches source: `17bf42b421d1d8366e4fc72e9b80984b9a009701c40b7ab4c1fcff5d8cbdadc4`.
+This is deployment evidence, not live two-account acceptance.
 
 ## Verified on 2026-09-10
 
@@ -50,7 +54,7 @@ in the user's running app. Update main and helper together.**
 
 ## Remaining before live acceptance
 
-- Deploy matching main/helper and test actual two-account signaling/media.
+- Test actual two-account signaling/media on the deployed matching main/helper.
 - Check local preview and video latency in actual two-account calls after deployment.
 - Real contact name/avatar with bounded, non-logging, account-scoped transport.
 - Camera off/on is now wired to joined capture shutdown/restart. Validate it
