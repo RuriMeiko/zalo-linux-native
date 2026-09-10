@@ -10839,6 +10839,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                     }
                 };
 
+            let linuxVideoDisplay = null, linuxVideoLocked = false;
             function W() {
                 if (I) return void d.zsymb(4, "YC0p1b", ["native started", "zWamwB"]);
                 I = !0, B(T.DO_LOAD);
@@ -10888,7 +10889,14 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                         d.zsymb(4, "DkRZBg", ["serverSend on listening", "8S-yLd"])
                     }))), d.zsymb(4, "jU0s7O", ["start client", "01p0C-"], e);
                     const i = n("QduZ").spawn;
-                    N = i(e, [g, y]), N.stdout.setEncoding("utf8"), N.stderr.setEncoding("utf8"), N.stdout.on("data", (e => {
+                    const linuxVideo = process.platform === "linux" && process.env.ZALO_ZCALL_NATIVE_VIDEO === "1" && process.env.ZALO_ZCALL_NATIVE_NETWORK === "1" && process.env.ZALO_ZCALL_NATIVE_MEDIA === "1"
+                        ? require(o.join(o.dirname(process.env.ZALO_ZCALL_AGENT_PATH || e), "..", "android-zrtc", "video-window.cjs")) : null;
+                    const helperEnv = {...process.env};
+                    delete helperEnv.ZALO_ZCALL_VIDEO_PIPE;
+                    if (linuxVideo) helperEnv.ZALO_ZCALL_VIDEO_PIPE = "3";
+                    N = i(e, [g, y], {env: helperEnv, stdio: linuxVideo ? ["pipe", "pipe", "pipe", "pipe"] : ["pipe", "pipe", "pipe"]});
+                    if (linuxVideo) linuxVideoDisplay = linuxVideo(N.stdio[3], require("electron"), {locked: linuxVideoLocked});
+                    N.stdout.setEncoding("utf8"), N.stderr.setEncoding("utf8"), N.stdout.on("data", (e => {
                         let t = e.replace(/\r|\n/g, "").trim();
                         t && d.zsymb(4, "4LwuIQ", ["client: stdout data", "RLmZFk"], t)
                     })), N.stderr.on("data", (e => {
@@ -10918,6 +10926,13 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
             e.exports = {
                 configure: function(e, t, n) {
                     w = n(), O = m.logControl, e && e.on("call-send-to-native", ((e, t) => {
+                        if (t && t.command === "linux-app-lock") {
+                            if (w && e.sender === w.webContents && typeof t.data === "boolean") {
+                                linuxVideoLocked = t.data;
+                                if (linuxVideoDisplay) linuxVideoDisplay.setLocked(t.data);
+                            }
+                            return;
+                        }
                         t._optional ? delete t._optional : W(), S(t)
                     })).on("call-init", ((e, t) => {
                         t && t._optional && delete t._optional, D = t
@@ -110462,7 +110477,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                             height: me.DEFAULT_LOGIN_HEIGHT,
                             minWidth: me.MIN_LOGIN_WIDTH,
                             minHeight: me.MIN_LOGIN_HEIGHT,
-                            frame: !0,
+                            frame: process.platform !== "linux",
                             titleBarStyle: "default",
                             resizable: !0,
                             backgroundColor: (null == r || null === (e = r.color) || void 0 === e ? void 0 : e.backgroundPrimary) || "#ffffff",

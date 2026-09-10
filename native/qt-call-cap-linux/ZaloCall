@@ -35,4 +35,4 @@ if [ -z "$NODE" ]; then
     exit 3
 fi
 
-exec env ELECTRON_RUN_AS_NODE=1 "$NODE" "$DIR/zcall-agent.js" "$@"
+exec env ELECTRON_RUN_AS_NODE=1 "$NODE" "${ZALO_ZCALL_AGENT_PATH:-$DIR/zcall-agent.js}" "$@"

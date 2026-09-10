@@ -269,10 +269,110 @@ function endCall(reason) {
 }
 
 let initInfo = {};
+const setupEnabled=process.env.ZALO_ZCALL_NATIVE_SETUP==='1';
+const networkEnabled=process.env.ZALO_ZCALL_NATIVE_NETWORK==='1';
+const mediaEnabled=process.env.ZALO_ZCALL_NATIVE_MEDIA==='1';
+// Outgoing camera transport only; remote video rendering remains incomplete.
+const videoEnabled=process.env.ZALO_ZCALL_NATIVE_VIDEO==='1' && networkEnabled && mediaEnabled;
+let nativeVideoSink;
+function getNativeVideoSink() {
+    if(process.env.ZALO_ZCALL_VIDEO_PIPE!=='3')throw new Error('Native video display pipe unavailable');
+    if(!nativeVideoSink) {
+        const stream=new (require('net').Socket)({fd:3,readable:true,writable:true});
+        nativeVideoSink=require('../android-zrtc/video-pipe.cjs').createVideoPipeSink(stream);
+    }
+    return nativeVideoSink;
+}
+let setupTransport=null, outgoingSetup=null;
+function setupPhase(phase) {
+    if(process.env.ZALO_ZCALL_SCHEMA_LOG) {
+        try {require('./signal-schema').record(process.env.ZALO_ZCALL_SCHEMA_LOG,
+            {type:'update',command:'linux-native-setup',data:{phase}});} catch (_) {}
+    }
+}
+if(setupEnabled) {
+    const {DesktopSignaling}=require('./desktop-signaling');
+    const {OutgoingSetup}=require('./outgoing-setup');
+    setupTransport=new DesktopSignaling(sendToHost);
+    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,onConfig:async(config,{callId,calleeId,video,current,signal})=>{
+        const {callerResponse}=await import('../android-zrtc/caller-response.mjs');
+        let mapped;
+        try {
+            mapped=callerResponse(config,{callId,clientVersion:initInfo.clientVersion,video,experimentalVideo:videoEnabled,
+                offlineConfiguration:!networkEnabled,abortOnServerChange:networkEnabled});
+        } catch (error) {
+            const phases={CONFIG_CALL_ID:'call-id-mismatch',CONFIG_MEDIA:'unsupported-video',CONFIG_DYNAMIC_ZRTP:'unsupported-dynamic-zrtp'};
+            setupPhase(phases[error.code] || 'unsupported-config');throw new Error('Unsupported native config');
+        }
+        current();
+        const {NativeWorker}=await import('../android-zrtc/worker-client.mjs');
+        const runtime=process.env.ZALO_ZRTC_RUNTIME;
+        if(!runtime || !path.isAbsolute(runtime)) throw new Error('Missing native runtime');
+        const pcm=mediaEnabled?{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK}:undefined;
+        const device=process.env.ZALO_ZCALL_VIDEO_DEVICE;
+        if(video && (typeof device!=='string' || !/^\/dev\/video[0-9]+$/.test(device)))throw new Error('Missing explicit video device');
+        const videoSink=video?getNativeVideoSink():null;
+        const worker=await NativeWorker.start(runtime,{network:networkEnabled,pcm,cpuVideo:video,experimentalVideoNetwork:video});
+        try {
+            current();
+            if(networkEnabled) {
+                setupPhase('negotiating-network');
+                const {negotiateOutgoing}=await import('../android-zrtc/outgoing-negotiation.mjs');
+                let result;
+                try {result=await negotiateOutgoing(worker,mapped,{signal});}
+                catch(error) {setupPhase('native-negotiation-failed');throw error;}
+                current();
+                const codecs=await worker.request('audioCodecs'),extra=await worker.request('extendData');
+                if(codecs.code!==0 || extra.code!==0) throw new Error('Native offer unavailable');
+                setupPhase('native-server-ready');
+                const {inviteOutgoing}=await import('../android-zrtc/outgoing-invitation.mjs');
+                const {acceptOutgoingAnswer}=await import('../android-zrtc/outgoing-answer.mjs');
+                if(video) {
+                    const {withCameraSession}=await import('../android-zrtc/camera-call-session.mjs');
+                    const {runVideoMedia}=await import('../android-zrtc/video-media-session.mjs');
+                    return await withCameraSession(worker,{device,signal,onPhase:setupPhase},({signal:videoSignal,onMediaStarted})=>
+                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,onPhase:setupPhase,
+                            onAnswer:async(control,owner)=>{
+                                const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
+                                    {calleeId,signal:videoSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});
+                                current();owner.current();
+                                const state=await worker.request('videoStats');
+                                if(state.code!==0)throw new Error('Video state unavailable');
+                                const media=JSON.parse(state.data);
+                                if(!media.videoCall || !media.canTransferMedia || media.codecId!==4)throw new Error('Peer did not negotiate native H.264 video');
+                                current();owner.current();onMediaStarted();return answer;
+                            }}), (mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,sink:videoSink}));
+                }
+                return await inviteOutgoing(worker,setupTransport,mapped,result,
+                    {calleeId,signal,onPhase:setupPhase,onAnswer:mediaEnabled
+                        ? (control,owner)=>acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
+                            {calleeId,signal,onPhase:setupPhase,current:()=>{current();owner.current();}})
+                        : undefined});
+            }
+            const reply=await worker.request('configure',mapped.configuration);
+            if(reply.code!==0) throw new Error('Native configuration rejected');
+            current();
+            const initialized=await worker.request('initialize');
+            if(initialized.code!==0) throw new Error('Native initialization rejected');
+            current();setupPhase('configured-offline');
+            // Keep online/RTP disabled until native readiness and device
+            // selection are implemented. Do not emit 416 from a config ACK.
+            return {callReady:false,offline:true};
+        } finally {await worker.close();}
+    }});
+}
 
 function handleHostMessage(msg) {
+    if (process.env.ZALO_ZCALL_SCHEMA_LOG) {
+        try {require('./signal-schema').record(process.env.ZALO_ZCALL_SCHEMA_LOG,msg);}
+        catch (_) {log('schema capture failed');}
+    }
     const { type, command, data } = msg || {};
     capture("host->engine", msg);
+    if(setupTransport && ['recvSignal','recvSignalError'].includes(type)) {
+        setupTransport.receive(msg);return;
+    }
+    if(setupTransport && type==='control') {setupTransport.receive(msg);return;}
     if (type === "update") {
         switch (command) {
             case "init":
@@ -280,6 +380,7 @@ function handleHostMessage(msg) {
                 initInfo = data || initInfo;
                 log("init received:", JSON.stringify(data && { local: data.local && data.local.id, os: data.osInfo, client: data.clientVersion }));
                 capture("init", data);
+                if(setupEnabled) sendToHost({type:'update',command:'linux-native-capabilities',data:{signalingErrors:true}});
                 sendToHost({ type: "update", command: "listDevice", data: buildDeviceList() });
                 return;
             case "listDevice":
@@ -292,12 +393,22 @@ function handleHostMessage(msg) {
         }
     }
     if (type === "request") {
+        if(command==='endCall' && outgoingSetup) {
+            outgoingSetup.stop().finally(()=>endCall('setup canceled'));return;
+        }
         if (command === "listDevice") {
             // H case "response": -> renderer channel "call-response-listDevice"
             sendToHost({ type: "response", command: "listDevice", data: buildDeviceList() });
             return;
         }
         if (command === "makeCall") {
+            if(outgoingSetup) {
+                if(callActive) return;
+                callActive=true;
+                outgoingSetup.start(data).catch(()=>setupPhase('setup-failed'))
+                    .finally(()=>endCall('native setup stage finished; media unavailable'));
+                return;
+            }
             // Honest surface: the ZRTP media engine is proprietary and absent,
             // so the call cannot connect. Release the renderer gate
             // deterministically (otherwise `callRunning` sticks and every call

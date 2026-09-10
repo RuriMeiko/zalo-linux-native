@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zalo Linux — isolated viewer test</title>
+<style>
+body{margin:0;background:#22262b;color:#f6f5f4;font:15px system-ui}#titleBar{padding:12px;background:#2e2e32}
+main{display:grid;place-items:center;gap:16px;padding:24px}.zimg-el{width:640px;max-width:85vw;height:auto}
+button{padding:8px 14px}.image-action{display:flex;gap:8px}#titleBar.locked~main{visibility:hidden}
+</style>
+<div id="titleBar">Isolated fixture — no account, no personal images</div>
+<main><button id="open-viewer">Open fixture image</button><div id="viewer"></div></main>
+<script>
+window.fixtureErrors = [];
+window.addEventListener('error', event => fixtureErrors.push(event.message));
+window.addEventListener('unhandledrejection', event => fixtureErrors.push(String(event.reason)));
+document.querySelector('#open-viewer').onclick = () => {
+  const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#daeaf0'; ctx.fillRect(0, 0, 640, 400);
+  ctx.fillStyle = '#24516a'; ctx.fillRect(40, 40, 560, 180);
+  ctx.fillStyle = '#ffffff'; ctx.font = '32px sans-serif'; ctx.fillText('Linux viewer test', 80, 145);
+  ctx.fillStyle = '#ce7e36'; ctx.fillRect(60, 260, 140, 80);
+  const img = document.createElement('img'); img.className = 'zimg-el'; img.alt = 'Synthetic test image'; img.src = canvas.toDataURL();
+  const toolbar = document.createElement('div'); toolbar.className = 'media-viewer__footer__child image-action';
+  document.querySelector('#viewer').replaceChildren(img, toolbar);
+};
+</script>
+<script src="../pc-dist/linux-extras/loader.js"></script>
+</html>

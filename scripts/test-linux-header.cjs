@@ -1,0 +1,51 @@
+// Execute the actual bundled titlebar class with boundary stubs, no account.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const shared = process.argv.includes('--shared');
+const source = fs.readFileSync(path.join(root, shared ? 'pc-dist/lazy/default-login-main-startup-shared-worker-znotification.9e3e92e88644da772301.js' : 'pc-dist/compact-app-pc.e08d0d44f38873747a6b.js'), 'utf8');
+const moduleStart = source.indexOf('y1FZ: function');
+const start = source.indexOf(shared ? 'class C extends' : 'class R extends', moduleStart);
+const end = source.indexOf(shared ? 't.b = Object(I.e)' : 't.b = Object(v.e)', start);
+assert.ok(moduleStart > 0 && end > start);
+const calls = [];
+const react = {Component: class {}, Fragment: 'fragment', createElement: (type, props, ...children) => ({type, props: props || {}, children})};
+const context = {
+  r: {a: react}, o: {a: 'fragment'}, a: {a: Object.assign}, S: false,
+  f: {b: value => value}, I: {a: 'account-extra', c: 'existing-menu'},
+  A: {default: {logAction() {}}}, l: {default: {stopKeepingAlive() {calls.push('stop-activity');}}},
+  u: {GeneralActions: {APP_LOCK_STATUS_CHANGED: 'lock'}},
+  h: {ModalManagerV2: {openModal: value => calls.push(value)}},
+  g: {ModalIdentitiesDefine: {SET_APP_LOCK: 'set-passcode'}}, T: {c: 'main'}
+};
+if (shared) Object.assign(context, {
+  i: context.r, r: context.o, E: context.f, v: context.I,
+  u: context.A, A: context.u, _: context.g, R: context.T
+});
+const Header = vm.runInNewContext(`(${source.slice(start, end).trim()})`, context);
+const header = Object.create(Header.prototype);
+header.props = {user: {zaloName: 'Test account'}, status: {isSetPassCode: false},
+  closeActivityWhenLock: () => calls.push('close-viewers'), dispatch: value => calls.push(value)};
+header.state = {isFocus: true, isMaximized: false, pendingUpdate: false};
+const flatten = node => !node || typeof node !== 'object' ? [] : [node, ...(node.children || []).flatMap(flatten)];
+const buttons = () => flatten(header.render()).filter(node => node.type === 'button');
+assert.equal(buttons().length, 4);
+assert.ok(flatten(header.render()).some(node => node.children.includes('Zalo - Test account')));
+buttons()[0].props.onClick({stopPropagation() {}});
+assert.equal(calls[0].name, 'set-passcode');
+calls.length = 0;
+header.props.status.isSetPassCode = true;
+buttons()[0].props.onClick({stopPropagation() {}});
+assert.deepEqual(calls.slice(0, 2), ['close-viewers', 'stop-activity']);
+assert.equal(calls[2].type, 'lock');
+assert.equal(calls[2].payload.isAppLock, true);
+header.props.status.isAppLock = true;
+assert.equal(buttons().length, 3);
+header.props.loginMode = true;
+assert.equal(buttons()[1].props.disabled, true);
+header.props.loginMode = false;
+header.props.isPopupWindow = true;
+assert.equal(buttons().length, 3);
+console.log(`PASS ${shared ? 'shared/login' : 'compact'} Linux header: account title, controls, existing passcode/lock actions, login/locked/popup guards`);

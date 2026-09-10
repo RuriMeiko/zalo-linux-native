@@ -1,4 +1,24 @@
 # Zalo Linux Port 2026
+> **Recovery checkpoint (2026-09-10):** the full upstream app tree and recovered
+> native sources are now integrated locally. Renderer signaling, header,
+> passcode bridge and viewer module tests pass on this tree. This is not a
+> verified release: real-account voice/video must be retested after recovery,
+> incoming-call UI wiring and redistribution review remain open. See
+> [integration evidence and remaining gates](INTEGRATION-STATUS.md).
+
+> **Independent-project transition (2026-09-09):** the current Linux-native
+> development builds on [realdtn2/zalo-linux-2026](https://github.com/realdtn2/zalo-linux-2026),
+> not a from-scratch implementation. See [credits and provenance](CREDITS.md),
+> [current status](PORT-CHECKLIST.md) and [publication checklist](RELEASE-CHECKLIST.md).
+> Native outgoing **voice was confirmed audible in both directions** in one
+> user-assisted test. Video capture reaches the native VideoSource, but **video
+> calls are not implemented end to end**. Existing installation/release links
+> below refer to the upstream project, not a new independent release.
+
+For explicit native voice startup with user-local runtime and device settings,
+see [NATIVE-LAUNCH.md](NATIVE-LAUNCH.md). This development launcher does not run
+the inherited upstream updater.
+
 ⚠️ **Work in Progress** - This project is under active development.
 A Linux port of Zalo, bringing the popular Vietnamese messaging application to the Linux platform.
 
@@ -6,7 +26,7 @@ A Linux port of Zalo, bringing the popular Vietnamese messaging application to t
 
 ## How It Works
 
-This is an unofficial port of the **Zalo macOS desktop client** to Linux — not a web wrapper. Calls are not supported yet.
+This is an unofficial port of the **Zalo macOS desktop client** to Linux — not a web wrapper. The experimental native voice path is documented in [native/android-zrtc](native/android-zrtc/README.md); default installation is not yet a verified distribution of that path.
 
 The port was created by:
 1. Extracting the `.dmg` from the macOS version
@@ -66,11 +86,11 @@ Requires: `wget`, `unzip`
 
 ### `zcall` (Audio & Video Calling)
 
-**Status:** ❌ Unported (Stubbed — degrades gracefully)
+**Status:** Experimental native outgoing voice verified; video and complete call UI unfinished.
 
 **Description:**  
 A massive proprietary VoIP and WebRTC stack built around custom ZRTP-based encryption. Implemented through `zcall_mac.node` and responsible for all voice and video calling functionality.
-**State:**
+**Earlier implementation (retained as historical context, superseded for the opt-in native voice path):**
 `zcall_mac.node` is a Mach-O binary and cannot run on Linux. Call **signalling/ringing** (WebSocket `voicecall/*`) is pure JS and fully working. The Linux binding routes to a contract stub (device enumeration returns the native JSON-string contract; call setup rejects through the same path a macOS config-fetch failure uses), and `native/qt-call-cap-linux/` ships a real call-v2 **wire-protocol bridge**: a Node agent + POSIX launcher that speaks the actual two-socket `$`-framed AES protocol (chunking, per-frame ACK, `native-ready`, `listDevice`, `update`, deterministic `sendSignal 401` end, `killMe` discipline), verified against a host emulator under both Node 22 and Electron 22's Node 16 (`node native/qt-call-cap-linux/test-wire.js`). **Media (voice/video I/O) still requires VNG's proprietary ZRTP-variant stack and is not implemented** — the bridge fails calls fast and correctly instead of hanging. Binary analysis + rationale: `recon-zcall-protocol.md`; protocol invariants: `CALL-LINUX.md`; contract regression: `native/nativelibs/zcall/test-linux.js`.
 
 ---

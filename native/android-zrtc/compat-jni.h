@@ -1,0 +1,12 @@
+#pragma once
+#include <jni.h>
+#include "call-events.h"
+JNIEnv *zrtc_linux_env(void);
+JavaVM *zrtc_linux_vm(void);
+jobject zrtc_linux_context(void);
+/* Offline diagnostics only: native audio objects owned by the engine. */
+void *zrtc_linux_audio_object(int recording);
+unsigned long zrtc_linux_audio_frames(int recording);
+unsigned long zrtc_linux_audio_failures(void);
+jobject zrtc_linux_call_callback(ZrtcEventSink sink, void *opaque, int network_type);
+unsigned zrtc_linux_refs(jobject object);

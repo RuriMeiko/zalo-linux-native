@@ -1,5 +1,10 @@
 # Zalo Linux Port — Coverage Report
 
+> Current audit and remaining work: [PORT-CHECKLIST.md](PORT-CHECKLIST.md).
+> Historical claims below are not all current: zjxl now passes real native
+> encode/decode tests; zimage's Node test uses a mock; a separate x86_64 APK
+> supplies a loadable ZRTC engine. No native end-to-end call is established.
+
 Branch: `port/linux-native-modules` · Base: `origin/latest` @ `0f3049a`
 Scope: every module marked **Unported** in the README, plus live end-to-end
 call investigation and Android-engine disassembly. All claims below were
@@ -39,6 +44,15 @@ df4ca57 qt-call-cap-linux: makeCall gate-release + bubble trace; CALL-LINUX live
 
 ## Calls — what is actually proven
 
+**Native engine milestone (2026-09-09):**
+[`native/android-zrtc/`](native/android-zrtc/README.md) executes the unmodified
+Android x86_64 `libzrtc.so` using a standalone Bionic process on the Linux host.
+Verified: full load/constructors, Opus encode/decode of 50 frames, SRTP init/shutdown,
+CallConfig and Peer create/delete, and initial idle state. A static extractor
+recovers 173 JNI registrations. OpenSLES remains a fail-stop probe adapter;
+JNI application integration and authenticated calling remain unimplemented.
+This milestone is distinct from the successful Wine call described below.
+
 1. **Control plane works.** `zcall-agent.js` implements the call-v2 wire
    protocol (ZaloCall pipe framing, `makeCall` gate-release, bubble trace);
    `test-wire.js` runs the framing loop without native deps.
@@ -56,8 +70,8 @@ df4ca57 qt-call-cap-linux: makeCall gate-release + bubble trace; CALL-LINUX live
 
 ## Android engine disassembly (`Zalo_26.08.02_APKPure.xapk`)
 
-Answer to "can Android share the call package with Linux?" — **no, and here
-is the hard evidence:**
+Historical analysis of the ARM64-only XAPK below. It does not apply to the
+separate 21.12.01 x86_64 APK now exercised by `native/android-zrtc/`:
 
 - Call engine = `lib/arm64-v8a/libzrtc.so` (6.5 MB stripped ELF, **5953
   exported `zrtc::`/`rtc::` C++ symbols**, readable demangling).
@@ -79,8 +93,9 @@ is the hard evidence:**
 So the Android package contributes **protocol intelligence** (symbol-level
 map of the ZRTP state machine, key-schedule hooks, TCP-tunnel framing —
 usable to reimplement the media plane cleanly on Linux) but cannot be the
-runtime. A clean-room Linux media engine remains the only viable path, and
-the symbol map above de-risks it substantially.
+runtime on this x86_64 host without ISA translation. Reusing the separately
+obtained x86_64 engine with Bionic and native platform adapters is now an
+additional path under active development.
 
 ## Gaps (honest list)
 

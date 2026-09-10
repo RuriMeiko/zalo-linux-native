@@ -1,0 +1,705 @@
+{
+  "sourceLog": "/home/rurimeiko/.codex/sessions/2026/09/09/rollout-2026-09-09T10-19-51-01a0842d-d5c2-7d00-8515-c19d14c6e19c.jsonl",
+  "eofNormalization": "one final newline",
+  "bases": [
+    {
+      "path": "native/qt-call-cap-linux/zcall-agent.js",
+      "sha256": "5c923276b4c765d98a4f8f26d6971a3f879cbc5b1ba649d8149795fb9cd2e7a4"
+    },
+    {
+      "path": "native/qt-call-cap-linux/ZaloCall",
+      "sha256": "f9fdec9d43adc7943f5adf455c75e882cc232f8ba4461abd2c41437b22f22dde"
+    },
+    {
+      "path": "CALL-LINUX.md",
+      "sha256": "267698b4cf33500733aae414c81718437d494786068b986d5a427f56900a39e8"
+    },
+    {
+      "path": "COVERED.md",
+      "sha256": "25c0e130fb399514ea6043fcea16d05ed9be0ace875fbcb32e80bfa56659d311"
+    },
+    {
+      "path": "README.md",
+      "sha256": "c1b954358750fdf676a0a2ee5b06c71c1a0f7c709eb807adb38b675019404399"
+    }
+  ],
+  "patchCount": 320,
+  "skippedFailed": [
+    {
+      "record": 1602,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 2295,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 2552,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 2566,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 3378,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 3546,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 5194,
+      "reason": "recorded tool execution failed"
+    },
+    {
+      "record": 8491,
+      "reason": "recorded tool execution failed"
+    }
+  ],
+  "whitespaceMatches": [
+    {
+      "record": 5284,
+      "path": "native/android-zrtc/test-outgoing-answer-pcm.mjs"
+    }
+  ],
+  "files": [
+    {
+      "path": "native/qt-call-cap-linux/zcall-agent.js",
+      "bytes": 27573,
+      "sha256": "a68c889359e666a3a6ac0ad72b70603d71bfaa9a41cd114f173b6ee07d90d0d7"
+    },
+    {
+      "path": "native/qt-call-cap-linux/ZaloCall",
+      "bytes": 1454,
+      "sha256": "1b343ed5cf23b6f0f2babd8ca4ad9bf1fc0e1ac7d52aa017cc61ef4e3bfe97de"
+    },
+    {
+      "path": "CALL-LINUX.md",
+      "bytes": 6480,
+      "sha256": "8a4129cbe4de9290590c4111a5716bc9d8c7d9cdfc8e3e492f90fe75ae8b4d8c"
+    },
+    {
+      "path": "COVERED.md",
+      "bytes": 7735,
+      "sha256": "e6c867d35283d4d374b73f7373fc4456b1be15bbf27eead95adc5b7700821660"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8980,
+      "sha256": "e3ce054698b005fcec7bc5535c2afdc2d57efa0fd34950ef8dcb5a5901d7ccda"
+    },
+    {
+      "path": "native/android-zrtc/probe.c",
+      "bytes": 4103,
+      "sha256": "b491dd97440a3b7a2d48ffc4a3566fae588b3eb0c269d449464bf25a014c22a5"
+    },
+    {
+      "path": "native/android-zrtc/platform-probe.c",
+      "bytes": 1594,
+      "sha256": "51272ed11c65929399966f3e911072cdddb3276ddd5a49dbb6af5f4070ce2c03"
+    },
+    {
+      "path": "native/android-zrtc/run-probe.sh",
+      "bytes": 1675,
+      "sha256": "9b1223a798ed55be5973b0b1835d63df0d4dd6cc870cfd12274f6200181c02b1"
+    },
+    {
+      "path": "native/android-zrtc/extract-jni.mjs",
+      "bytes": 2602,
+      "sha256": "e2339d0d9c308b2319fefb5ea8bfbedf039610bc61ba065a07fe2165230e920e"
+    },
+    {
+      "path": "native/android-zrtc/prepare-runtime.sh",
+      "bytes": 1263,
+      "sha256": "866d5e604d72394d5c2d853a809d91369ed5bab1a624ec933a4a5c064808568a"
+    },
+    {
+      "path": "native/android-zrtc/README.md",
+      "bytes": 34230,
+      "sha256": "4c5d71a6a20db9ddfcbcc5cdad30ce75d57c52119bd286372f54203391e22fa7"
+    },
+    {
+      "path": "native/android-zrtc/call-boundary.c",
+      "bytes": 9353,
+      "sha256": "fbe044b5ed47bef8cfa2dd5580f04e250d09ae00bc48ca1d5f3ffb5dcead04a9"
+    },
+    {
+      "path": "native/android-zrtc/run-call-check.sh",
+      "bytes": 1387,
+      "sha256": "a37fe9339af8623c38523d2f94e05c90c627a93b60ba1eb61cca8bffb4ab61dc"
+    },
+    {
+      "path": "native/android-zrtc/compat-jni.h",
+      "bytes": 497,
+      "sha256": "912eb93ce347cb5a37aef175b734de366eeec303cdd3d57a667f8e9f39b1df10"
+    },
+    {
+      "path": "native/android-zrtc/compat-jni.c",
+      "bytes": 19732,
+      "sha256": "5a0cf245beea0b544bf95d41940e9b6b3b87b1cfba1660d6eaed65664ff67eb5"
+    },
+    {
+      "path": "native/android-zrtc/pcm-host.c",
+      "bytes": 3391,
+      "sha256": "acd082541a8d95eae1fd0e7d443e709c1a3e49473fda6a614fcf242bd3d1e960"
+    },
+    {
+      "path": "native/android-zrtc/test-pcm.mjs",
+      "bytes": 4985,
+      "sha256": "310e88cdd9b3145d8cad7df59ba322d3705b347b22dbce3f18045802cf132951"
+    },
+    {
+      "path": "native/android-zrtc/pcm-bridge.h",
+      "bytes": 309,
+      "sha256": "9dd812a2ed25d52a66ae86bc664b5063a4d623cdc0900692b74df62d9aa7c6f8"
+    },
+    {
+      "path": "native/android-zrtc/pcm-bridge.c",
+      "bytes": 3841,
+      "sha256": "60ee1028e141f3d9549aefb0216056d5a99b79af5da15d49a235d704a8570cca"
+    },
+    {
+      "path": "PORT-CHECKLIST.md",
+      "bytes": 26611,
+      "sha256": "730bdafa68e74eb7616dd58c7cf76ba5491723511d7b6445bd6b3c4e1c436233"
+    },
+    {
+      "path": "native/android-zrtc/pcm-bridge-probe.c",
+      "bytes": 2501,
+      "sha256": "c79e9dbeaaf2724ca2447263396fa0bbc003d87b98e89b4fa1492b097571d4ed"
+    },
+    {
+      "path": "native/android-zrtc/call-events.h",
+      "bytes": 580,
+      "sha256": "47d6149cf5d78326c8997c1b8bf1d42e5aed8242740db0c3512240f6b2eb54fe"
+    },
+    {
+      "path": "native/android-zrtc/call-events.c",
+      "bytes": 1435,
+      "sha256": "6dc0d15f8df044bd8dd70287a1c241efd3fad42bc735a5cad3e5f3df5dada63a"
+    },
+    {
+      "path": "native/android-zrtc/callback-probe.c",
+      "bytes": 5535,
+      "sha256": "0386aa10beaf0c2728f416548a31abd9499ceba4711e3dfc2dc3df28d99686f1"
+    },
+    {
+      "path": "native/android-zrtc/voice-platform.c",
+      "bytes": 2773,
+      "sha256": "9dddaa9c1664c3510590172d94fa01930111c6cf67590179586076198f25f998"
+    },
+    {
+      "path": "native/android-zrtc/worker.c",
+      "bytes": 33879,
+      "sha256": "8e1fcbee800c7e1e0881038f5edb80e9f43a7f0ead183df332a7510b2e210408"
+    },
+    {
+      "path": "native/android-zrtc/build-worker.sh",
+      "bytes": 723,
+      "sha256": "95e46b04220cb6d19e15188e306cd6433f7c29542f41ab1792b734828a29cf94"
+    },
+    {
+      "path": "native/android-zrtc/worker-client.mjs",
+      "bytes": 12815,
+      "sha256": "326f5ce7ca34c06a9b870d334a9cfe9db92dfe02ec999c757f1ed9bf982cf6fb"
+    },
+    {
+      "path": "native/android-zrtc/test-worker.mjs",
+      "bytes": 1929,
+      "sha256": "754572142ecfdfdfcb5ee15fa9cc0c832d67d749186c8cd2161550b789d19f2a"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-wire.mjs",
+      "bytes": 4275,
+      "sha256": "d6000b127c3e675a298788c220f30269f91b098b157756292d107c585fe1315f"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-call.mjs",
+      "bytes": 2044,
+      "sha256": "499dd5efc269a66c2a493bb89d6b82982fb8b77ce24e66a9c592dcc20b998d02"
+    },
+    {
+      "path": "native/android-zrtc/protocol-enums.mjs",
+      "bytes": 1169,
+      "sha256": "cd2769664e559a721a056e38c94689f5f39fc61039bf6b449f3c5fe7b84a679c"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-incoming.mjs",
+      "bytes": 3535,
+      "sha256": "1ff8ef1ffb697b9ec7187a20bd8debc7f115dc750c02c21ceeb2068f4e4f45c3"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-pcm.mjs",
+      "bytes": 2375,
+      "sha256": "57dd5890fd38c1f3e2d54a23f37cd57fc886fe3e54d8d189285cf6a981ac0cb9"
+    },
+    {
+      "path": "native/qt-call-cap-linux/desktop-signaling.js",
+      "bytes": 5133,
+      "sha256": "eda2600facc0181ad7661c18a56fc822fe35982021cbb96319f0e74e8adeef01"
+    },
+    {
+      "path": "native/qt-call-cap-linux/test-desktop-signaling.js",
+      "bytes": 5819,
+      "sha256": "6a3a2f8b1cd53f7007a804b747e04cbe9d6480f70b692e956fe06f42f7543bdb"
+    },
+    {
+      "path": "native/android-zrtc/desktop-config.mjs",
+      "bytes": 4040,
+      "sha256": "88a7f1034d5f2d242a53a1d863d0a398a285ec2a0014432f58e18b42ac3cdb1a"
+    },
+    {
+      "path": "native/android-zrtc/test-desktop-config.mjs",
+      "bytes": 3627,
+      "sha256": "4bae24064d22e2c17d5b825c7ba9e20734740751df7493f2c88953555b4ef7ff"
+    },
+    {
+      "path": "native/android-zrtc/incoming-session.mjs",
+      "bytes": 12059,
+      "sha256": "defa4aba3c474b63014ab28a0a3b854a89d7e4dc2ca86304db20e2a5ea9200d0"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-session.mjs",
+      "bytes": 3004,
+      "sha256": "fce5895f8c78e3cca2948a2c6f84923220a72f057f28caf362b8cc3deacdf61b"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-device-failure.mjs",
+      "bytes": 2027,
+      "sha256": "b7b0c7252b4c3e51cec85f66787ed07b9ffa7c66645d445bd7139a72c936e3c9"
+    },
+    {
+      "path": "native/qt-call-cap-linux/signal-schema.js",
+      "bytes": 2818,
+      "sha256": "e54fab5837ba5dd7a14ac731c00d5f6cabf348f335a0886ff36724b47384327f"
+    },
+    {
+      "path": "native/qt-call-cap-linux/test-signal-schema.js",
+      "bytes": 2024,
+      "sha256": "c6f0d465185cc7a27d999a793d7d128c8ace12a02d896ffd0700caf1f075cf07"
+    },
+    {
+      "path": "scripts/test-native-call-schema.sh",
+      "bytes": 1348,
+      "sha256": "db38eba3ac3c9d81ff2ad88050d23b21974146375fb743a14e10048961236901"
+    },
+    {
+      "path": "native/qt-call-cap-linux/PASSIVE-TEST.md",
+      "bytes": 2240,
+      "sha256": "f84221cfa5dff49d5cec23fb64d72daa320f4920ab5a99acee60ac4696266aa5"
+    },
+    {
+      "path": "native/android-zrtc/incoming-control.mjs",
+      "bytes": 4566,
+      "sha256": "d80145acb9e908ca937cba7779c262d0b7cf1004bd076b953af41e00fdbc7d60"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-control.mjs",
+      "bytes": 4112,
+      "sha256": "d8d41b5f4d8642b3db8325e863311defa852110e8a48e6a105b18f4ed0306b8c"
+    },
+    {
+      "path": "native/qt-call-cap-linux/outgoing-setup.js",
+      "bytes": 2443,
+      "sha256": "0fc428290c972563229df86f7c162c50d2b7c742303add79faf63e10e55a0741"
+    },
+    {
+      "path": "native/qt-call-cap-linux/test-outgoing-setup.js",
+      "bytes": 2610,
+      "sha256": "dda9d700a73fe1329d02d116400eafafefdc00a0a0db0b0a0e2c764040164d97"
+    },
+    {
+      "path": "native/android-zrtc/caller-response.mjs",
+      "bytes": 1557,
+      "sha256": "34990021a8d1c6c79dee6d20b68e7079dbc6a66287e58e87611931ff503fcc38"
+    },
+    {
+      "path": "native/android-zrtc/test-caller-response.mjs",
+      "bytes": 1760,
+      "sha256": "6d9e503b3e0d84d8a84d6dab0fe95d7025389a8c1b2306daf830a13681431293"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-config-flags.mjs",
+      "bytes": 1591,
+      "sha256": "c66e7655f23b7610fdace9f049ee6f0348ad8f1270ee4cef92fe9ddb4e423d05"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-network.mjs",
+      "bytes": 2064,
+      "sha256": "039336206828ffd8b316e9b3ee582d8db496be6f371bb85863fda5eba6246d5b"
+    },
+    {
+      "path": "native/android-zrtc/outgoing-negotiation.mjs",
+      "bytes": 2835,
+      "sha256": "c36e70fbddacceac18ef990fe5a205d22705318c03177c62a08c75cc9e2e4a33"
+    },
+    {
+      "path": "native/android-zrtc/test-outgoing-negotiation.mjs",
+      "bytes": 1601,
+      "sha256": "ffbc3a206b0a1cdbedfcaa01532bce3c62e4c1c5e83549243db593dce4749698"
+    },
+    {
+      "path": "native/android-zrtc/outgoing-invitation.mjs",
+      "bytes": 4472,
+      "sha256": "96783c2923be388d25e8e081c6a14d45db382bf99ac40af4fa59cd3b90735899"
+    },
+    {
+      "path": "native/android-zrtc/test-outgoing-invitation.mjs",
+      "bytes": 7977,
+      "sha256": "f56a4a38b2a194b8044cc05004af86a1e302c5dfbe1d5b7f869e7ca2d8c00926"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-answer.mjs",
+      "bytes": 1396,
+      "sha256": "8f1c7bb97d222442ba7c806218c808bd44b3e461c17f15d6f50f82b1418df997"
+    },
+    {
+      "path": "native/android-zrtc/outgoing-answer.mjs",
+      "bytes": 2346,
+      "sha256": "0ced5cb88a914fe42f49741e17d9e58fa955fc1549bbd0127ca203943432ca04"
+    },
+    {
+      "path": "native/android-zrtc/test-outgoing-answer.mjs",
+      "bytes": 1999,
+      "sha256": "952269325bd13afe7e94b2083a89c6020079439768afdb4972eec12cc627ffb7"
+    },
+    {
+      "path": "native/android-zrtc/test-outgoing-answer-pcm.mjs",
+      "bytes": 13472,
+      "sha256": "d8fccb939a9a0eaf6c5557ed324cb74bec56dd5792fb81dbdf8c50c36152a798"
+    },
+    {
+      "path": "native/android-zrtc/video-source-probe.c",
+      "bytes": 2034,
+      "sha256": "b5681fe9b3806a2cffaa5332190ca3167b6e714c443b284687c445d057f75544"
+    },
+    {
+      "path": "native/android-zrtc/test-camera-ingress.sh",
+      "bytes": 1093,
+      "sha256": "9348c3456fe9ca11ea8c503cab9125f01447744dccb10073e1c4dc228c75171a"
+    },
+    {
+      "path": "native/android-zrtc/video-source-linux.h",
+      "bytes": 632,
+      "sha256": "72b6e2f9ccd818b1b328a9f3285b5da9b876e6be7e2072addd86d0b333285322"
+    },
+    {
+      "path": "native/android-zrtc/video-source-linux.c",
+      "bytes": 2282,
+      "sha256": "f8931ece22e9104b5cc3371eb8773ff4c441fc275d942cb07a217529eaed8200"
+    },
+    {
+      "path": "CREDITS.md",
+      "bytes": 3507,
+      "sha256": "f425ac230ce057adc539fcaea1804bf9075e33cfbbe47a8a2e9601c3ecfd8f31"
+    },
+    {
+      "path": "RELEASE-CHECKLIST.md",
+      "bytes": 3364,
+      "sha256": "b4300efe68f461f7100cbebef87b16d7426034f190a646ddb35053633c0ac150"
+    },
+    {
+      "path": "scripts/native-launch.mjs",
+      "bytes": 5606,
+      "sha256": "1b58e78d5bb0655dbe22563e2e3b5af40ab5dceee7510ac671af2b8926a245b4"
+    },
+    {
+      "path": "scripts/test-native-launch.mjs",
+      "bytes": 1594,
+      "sha256": "972bf99559285d4ccd6e22d74b388ba7fcdb89db743d7606b3b675974a3a088f"
+    },
+    {
+      "path": "NATIVE-LAUNCH.md",
+      "bytes": 2977,
+      "sha256": "b917b71bbe4042f2cf7097ab8093e5a2983812cf59bd446b2cb49772e7c2347d"
+    },
+    {
+      "path": "native/android-zrtc/video-codec-probe.c",
+      "bytes": 5440,
+      "sha256": "024244c5245a6573daa6d4ddbbb3ac704d237fd5f231c6d3c452d49eb9611fbb"
+    },
+    {
+      "path": "native/android-zrtc/test-video-codec.sh",
+      "bytes": 994,
+      "sha256": "082f96aa387639b770e776245ea6453cf5a5eb4fa9ffed219221d04f25517fde"
+    },
+    {
+      "path": "native/android-zrtc/test-video-roundtrip.mjs",
+      "bytes": 2412,
+      "sha256": "1ee7b062628710d6d39ab1cace60e712e17705cfde252d44c41ac12ec3eecfb4"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-video.mjs",
+      "bytes": 1306,
+      "sha256": "a81c95d36353bc80fa6f119f1cda45e59c85e99c4ed9e695698b63fa2dcc5f66"
+    },
+    {
+      "path": "native/android-zrtc/video-capturer-linux.h",
+      "bytes": 564,
+      "sha256": "6948c432bf6779896ed11903c86a44da82ecd37da654643bff831b7cd5b6c0cb"
+    },
+    {
+      "path": "native/android-zrtc/video-capturer-linux.c",
+      "bytes": 2789,
+      "sha256": "a168a5fb659bd3244e2e81e064ce108f495eba4f418d4865bbb3f1b03ee2334b"
+    },
+    {
+      "path": "native/android-zrtc/video-capturer-probe.c",
+      "bytes": 1755,
+      "sha256": "bce5d0f613ebc0ebf700ea11062c9739e5d85c4eeeb5220d0c79849817afd254"
+    },
+    {
+      "path": "native/android-zrtc/test-video-capturer.sh",
+      "bytes": 826,
+      "sha256": "fc0f897615dd9552093e909475c8883770c8df70c99e96c08d2ae7ecf483efa6"
+    },
+    {
+      "path": "native/android-zrtc/video-peer-linux.h",
+      "bytes": 653,
+      "sha256": "a092a89b6b1ce73e1aebb604cab9d34d9abb9ae4f5b454b5e5e7cc71df6817c2"
+    },
+    {
+      "path": "native/android-zrtc/video-peer-linux.c",
+      "bytes": 8154,
+      "sha256": "2edcf94f218291246637dad748452e7d0260b3f3c814ab0f5162dfe9081199e8"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-video-peer.mjs",
+      "bytes": 2057,
+      "sha256": "e580eaa581888bd46e9054fb21bd2026558e06a01819d19b2262c78a4b6d5ff2"
+    },
+    {
+      "path": "native/android-zrtc/test-camera-peer.mjs",
+      "bytes": 2366,
+      "sha256": "99ee376a135102b7beaa571c143fb7c9094d2018377078de9ba3b0477deee175"
+    },
+    {
+      "path": "native/android-zrtc/VIDEO-PEER.md",
+      "bytes": 42494,
+      "sha256": "92228427d35b33802819607f47be320dd7629f1b633becd83fb1826482e009db"
+    },
+    {
+      "path": "native/android-zrtc/h264-rtp-diagnostic.mjs",
+      "bytes": 5672,
+      "sha256": "12c99517538d7d28dfe6b6ab3349602a9dc1ad86d8479786aa76b7ffb31c0754"
+    },
+    {
+      "path": "native/android-zrtc/test-h264-rtp-diagnostic.mjs",
+      "bytes": 3613,
+      "sha256": "5dbd7023ee24e603421e535cb1a16d74aaf90cebd3d88879769bcd6dabfe1cda"
+    },
+    {
+      "path": "scripts/test-linux-header.cjs",
+      "bytes": 3080,
+      "sha256": "0e6711654ad6885b807a2c60ccc88a2479bcb7569ac77a8f0f049a514fe75bd6"
+    },
+    {
+      "path": "LINUX-DESKTOP-EXTRAS.md",
+      "bytes": 6344,
+      "sha256": "250de2b9bb2f7970d8eae8bf75031602530ce248412742f4b072c3806317a837"
+    },
+    {
+      "path": "scripts/test-viewer-extras.cjs",
+      "bytes": 2871,
+      "sha256": "bf00c09cd3eb94658e46696c03fef385aa6ecc7cf94b23dde6b94dbbbf0e734b"
+    },
+    {
+      "path": "scripts/viewer-extras-fixture.html",
+      "bytes": 1755,
+      "sha256": "c4df86437c8f61a14945d5a20ab9ef30a205b8896976f2646f438c10e10209c8"
+    },
+    {
+      "path": "scripts/test-viewer-extras-browser.js",
+      "bytes": 3811,
+      "sha256": "c9e1a7214e1ec732789a3ca90a9c51e18c77e3248360d9ffeac4e3d0ca3f6d52"
+    },
+    {
+      "path": "native/android-zrtc/camera-pump.mjs",
+      "bytes": 4345,
+      "sha256": "7835d70e139e1a6e677e92f73ec6eb99b18c154a8b3a90da33ce724824f3a870"
+    },
+    {
+      "path": "native/android-zrtc/test-camera-pump.mjs",
+      "bytes": 4042,
+      "sha256": "823bb3a9f7d3e4d45a6362eecf6d4e7d7e6225cb3b741db2e8094ecef450bc41"
+    },
+    {
+      "path": "native/android-zrtc/camera-call-session.mjs",
+      "bytes": 1463,
+      "sha256": "0779d17834ebf446e194a2ec4626026f4cb5bf1191df6ddf888057f04c06eeb5"
+    },
+    {
+      "path": "native/android-zrtc/test-camera-call-session.mjs",
+      "bytes": 2139,
+      "sha256": "9cad02106a4803a2883fec3f734f9f35c12b1053b362620efe486f7d9aeb2980"
+    },
+    {
+      "path": "native/android-zrtc/OUTGOING-VIDEO.md",
+      "bytes": 4339,
+      "sha256": "bcdcddf0600b4e23f06999422d3aa7728235b1e56957ba78cfa57b19bff8b3d2"
+    },
+    {
+      "path": "native/android-zrtc/video-frame-store.h",
+      "bytes": 548,
+      "sha256": "c75d4fceff62bc2c3066ed1ad5f8f72f5cf3a42a7cb475573aaa7d866df218b5"
+    },
+    {
+      "path": "native/android-zrtc/video-frame-store.c",
+      "bytes": 1777,
+      "sha256": "3460cff5065eb07e2c1423cb7264fbe65ee18f9b05e5873989e8684c33a33770"
+    },
+    {
+      "path": "native/android-zrtc/test-video-frame-store.c",
+      "bytes": 1488,
+      "sha256": "5d93b861eda58197fffd102405499483bc93006c44c3260299484283bd85fb5f"
+    },
+    {
+      "path": "native/android-zrtc/video-snapshot.mjs",
+      "bytes": 1136,
+      "sha256": "99e9efbf3a0703f81a391c6aa42182b6c94e50e9883fd71190e49b09164c212e"
+    },
+    {
+      "path": "native/android-zrtc/test-video-snapshot.mjs",
+      "bytes": 1340,
+      "sha256": "7509bf2c416f2add6915a02f376a1f8538976886d981d67f3809fb48e05e1b92"
+    },
+    {
+      "path": "native/android-zrtc/remote-video-pump.mjs",
+      "bytes": 1623,
+      "sha256": "eaf42aa442d1ebe19ae9a42826e976fe997d971b4434b1e4048ea4d079545dcf"
+    },
+    {
+      "path": "native/android-zrtc/i420-rgba.mjs",
+      "bytes": 965,
+      "sha256": "a59240e0611cafe10a5f0ef55cddaac7b7b7faaef0f33174e0ef540a858ab501"
+    },
+    {
+      "path": "native/android-zrtc/test-remote-video-pump.mjs",
+      "bytes": 2686,
+      "sha256": "924557b02d664146d1465c6cb458c8bfffaf1ecfe43b6dac2b2287a577aebd0e"
+    },
+    {
+      "path": "native/android-zrtc/canvas-video-renderer.mjs",
+      "bytes": 1114,
+      "sha256": "329d1851026b61e2673d2e52cffe0105d69fee747aacb6ef72248494efd491cb"
+    },
+    {
+      "path": "native/android-zrtc/test-canvas-video-renderer.mjs",
+      "bytes": 1173,
+      "sha256": "2b0e7678c9d432ea29270b92be74d37d027eda5b0108c3c19ea0acb45f4ac2ab"
+    },
+    {
+      "path": "native/android-zrtc/video-pipe.cjs",
+      "bytes": 4651,
+      "sha256": "95826e3d574a5cd5f88571b052923c16bcf4037bf3b0c02088aab0dcc7c5a55f"
+    },
+    {
+      "path": "native/android-zrtc/test-video-pipe.cjs",
+      "bytes": 1562,
+      "sha256": "2c5fd4514b689b9a1dcb6c8022e32d257582101d45c1034d143a2d228f817b77"
+    },
+    {
+      "path": "native/android-zrtc/video-window.cjs",
+      "bytes": 4075,
+      "sha256": "3473aa4024099ce72b5144004b995d950021b626d2d0517ded17b2e89d7ecd7e"
+    },
+    {
+      "path": "native/android-zrtc/video-window-preload.cjs",
+      "bytes": 531,
+      "sha256": "28946a01251bc6a8ec256c6806acda91ee34335c99ca0d8c403dd6066b049f48"
+    },
+    {
+      "path": "native/android-zrtc/video-window.html",
+      "bytes": 734,
+      "sha256": "9c5b745423282fb83c90632fdd0c4a14f42b1fa8cd5a3d7c2484096d2afb35dd"
+    },
+    {
+      "path": "native/android-zrtc/video-window.css",
+      "bytes": 533,
+      "sha256": "c7105a90da2b21ef1ef400339b438fb4463afcc164567d0c792f1017cea72f2e"
+    },
+    {
+      "path": "native/android-zrtc/video-window-renderer.mjs",
+      "bytes": 354,
+      "sha256": "286af81e2b21e65a93fddee71c8f5ef7e41f7dd1d5c9e9287fa12dd25b9d2f5f"
+    },
+    {
+      "path": "native/android-zrtc/video-media-session.mjs",
+      "bytes": 1267,
+      "sha256": "36d902f50129d63cd8ca39d34cf67fdf14db9e46d53b12237cc5f8472bcafa31"
+    },
+    {
+      "path": "native/android-zrtc/test-video-media-session.mjs",
+      "bytes": 1413,
+      "sha256": "05ab217e8bd0cae1026b5c71f28ae58633902254a317a80521b1e3850eb3855b"
+    },
+    {
+      "path": "native/android-zrtc/test-video-window.cjs",
+      "bytes": 4732,
+      "sha256": "601c2a931512b33f584a5183dabd0dc6605ded541b2203f7ca7600c72f3e6d5d"
+    },
+    {
+      "path": "native/android-zrtc/test-video-electron-sender.cjs",
+      "bytes": 1595,
+      "sha256": "974f66624cc4fb0ca1546ea32d1190c28b48ca345785dcb13c301b47bdc5be7a"
+    },
+    {
+      "path": "native/android-zrtc/test-video-electron.cjs",
+      "bytes": 1487,
+      "sha256": "0ec234955c921ce3d9b9690189d04a8c50c63c05a3cadd86f2394939e7a606b7"
+    },
+    {
+      "path": "scripts/test-video-lock-bridge.cjs",
+      "bytes": 1708,
+      "sha256": "ae8a11e1386a68992f9d1c5697a4a9c6d03f333ee9eb9a22e7f091e5e0e30a2f"
+    },
+    {
+      "path": "native/android-zrtc/test-worker-incoming-video.mjs",
+      "bytes": 8607,
+      "sha256": "21ee51ba085a14cabb536fd1b9a5ada37edc63b067156dfd0b7b3d846e90e22a"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-video-control.mjs",
+      "bytes": 2476,
+      "sha256": "8d7f14aedcbf9a5cd563dfb9ce17b6fd195cf09ba02b9ef7bbd993bcb68ca61b"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-video-session.mjs",
+      "bytes": 3484,
+      "sha256": "30699bbaefb159d8dda869d497c07b078fcd57f7de809c716adb5d762fae02d6"
+    },
+    {
+      "path": "native/android-zrtc/incoming-answer.mjs",
+      "bytes": 2673,
+      "sha256": "628b736ed46b445ddc1026868c64c6a3e93e433755b520221a116fd312e50dc7"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-answer.mjs",
+      "bytes": 1985,
+      "sha256": "342a6f7f98a985378fdd521d470d44f18c5fa53aa7c51421630187c70dbe6ff4"
+    },
+    {
+      "path": "scripts/test-signaling-log-privacy.cjs",
+      "bytes": 2630,
+      "sha256": "c6463c923b6b8949dca5191fdd8fade66d798ae5ece6a92159cff75c7405d96f"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-answer-session.mjs",
+      "bytes": 6765,
+      "sha256": "ad0083a676d8c0f6688a82832a591232bb95cdd72840b1959311b2523edf0272"
+    },
+    {
+      "path": "native/android-zrtc/incoming-answer-ack.mjs",
+      "bytes": 794,
+      "sha256": "b0d1d1000ff32db4387ba39a24348373bc6836e991dc2ac79df2b9cdad164aba"
+    },
+    {
+      "path": "native/android-zrtc/test-incoming-answer-ack.mjs",
+      "bytes": 954,
+      "sha256": "4ec3a92c310cf2ab65f259d73b755bf09a53f034be3ac66bd31a61ee2aff9c38"
+    }
+  ],
+  "issues": []
+}

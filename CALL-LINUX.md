@@ -1,5 +1,11 @@
 # Calling on Linux — zcall bridge (`native/qt-call-cap-linux/`)
 
+> 2026-09-09: a separate [Android ZRTC native probe](native/android-zrtc/README.md)
+> now loads the unmodified x86_64 engine on the Linux host with Bionic. Native
+> Peer/CallConfig lifecycle, Opus encode/decode and SRTP initialization pass.
+> This experiment is not integrated into the bridge below and does not yet
+> provide device audio, JNI application callbacks or authenticated calls.
+
 What the call pipeline actually is on Linux, what we ship, and every invariant
 the bridge must satisfy. Evidence for all protocol claims: extracted from
 `main-dist/main.js` / `main-dist/compact-app.js` (module IDs and line numbers in

@@ -1,0 +1,94 @@
+"use strict";
+const assert=require('node:assert/strict');
+const {DesktopSignaling}=require('./desktop-signaling');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+(async()=>{
+    const sent=[];
+    const bridge=new DesktopSignaling(m=>sent.push(m),{timeoutMs:40});
+    const offer={calleeId:'456',callId:123,codec:'[]',type:1};
+    const first=bridge.request(401,offer);
+    assert.deepEqual(sent,[{type:'sendSignal',command:401,data:offer}]);
+    await assert.rejects(bridge.request(401,offer),/busy/);
+    assert.equal(bridge.receive({type:'sendSignal',command:401,data:{}}),false);
+    assert.equal(bridge.receive({type:'recvSignal',command:402,data:{}}),false);
+    const serverResponse={error_code:7,data:{fixture:true}};
+    assert.equal(bridge.receive({type:'recvSignal',command:401,data:serverResponse}),true);
+    assert.deepEqual(await first,serverResponse);
+    let control;
+    bridge.on('control',data=>control=data);
+    const incoming={act_type:'voip',act:'request',data:{uidN:'456',callId:123}};
+    assert.equal(bridge.receive({type:'control',data:incoming}),true);
+    assert.deepEqual(control,incoming);
+    const ringing=bridge.request(407,{callerId:'456',callId:123});
+    await assert.rejects(ringing,/timeout/);
+    assert.equal(bridge.receive({type:'recvSignal',command:407,data:{}}),false);
+    await assert.rejects(bridge.request(407,{callerId:'456',callId:123}),/expired/);
+    await assert.rejects(bridge.request(401,{...offer,zpw_sek:'never forwarded'}),/Unexpected/);
+    await assert.rejects(bridge.request(11,{}),/Unsupported/);
+    const end=bridge.request(409,{toId:'456',callId:123});
+    bridge.close();await assert.rejects(end,/closed/);
+    await assert.rejects(bridge.request(401,offer),/closed/);
+    // Exercise the shipped renderer methods, not a reimplementation of its
+    // dispatch table. Only the authenticated API itself is replaced by a spy.
+    const bundle=fs.readFileSync(path.join(__dirname,'../../pc-dist/compact-app-pc.e08d0d44f38873747a6b.js'),'utf8');
+    function method(name,next) {
+        const start=bundle.indexOf('                '+name+'(');
+        const end=bundle.indexOf('                '+next+'(',start);
+        assert.ok(start>=0 && end>start);
+        return bundle.slice(start,end).trim();
+    }
+    const calls=[];
+    let apiFailure=null;
+    const decoded={sessId:'fixture',servers:[],settings:{}};
+    const decoderStart=bundle.indexOf('        kCOK: function(');
+    const decoderEnd=bundle.indexOf('        kCR7:',decoderStart);
+    assert.ok(decoderStart>=0 && decoderEnd>decoderStart);
+    const decoderModule=vm.runInNewContext('({'+bundle.slice(decoderStart,decoderEnd)+'})').kCOK;
+    const decoderExports={};
+    const dependencies={
+        '1pet':{ERR_KICK_OUT:-999},
+        'z0WU':{default:{decodeAES:text=>text,logCoreError(){}}}, // identity AES fixture only
+        'X4fA':{a:{onKickoutSession(){}}},'PoHQ':{p:{triggerEvent(){}}},
+    };
+    const load=id=>dependencies[id];load.d=(target,key,get)=>Object.defineProperty(target,key,{get});
+    decoderModule({},decoderExports,load);
+    const payload=await decoderExports.a({status:200,data:{error_code:0,data:JSON.stringify({error_code:0,data:decoded})}});
+    assert.equal(JSON.stringify(payload),JSON.stringify(decoded));
+    await assert.rejects(decoderExports.a({status:200,data:{error_code:0,data:JSON.stringify({error_code:7,error_message:'fixture'})}}),e=>e.error_code===7);
+    const api=new Proxy({}, {get:(_,name)=>(...args)=>{
+        calls.push({name,args});return apiFailure?Promise.reject(apiFailure):Promise.resolve(decoded);
+    }});
+    const renderer=vm.runInNewContext('({'+method('handleUpdate','handleSendSignal')+','+
+        method('handleSendSignal','handleSendSignalError')+','+
+        method('handleSendSignalError','isNoNetwork')+','+
+        method('handleRecvSignal','isIncomingCallEvent')+'})',{
+        s:{default:api},A:{default:{call:{using_queue:false}}},
+        v:{a:{BACKGROUND_2_FOREGROUND:1},b:{activeApp(){}}},
+    });
+    renderer.logInfo=()=>{};
+    renderer.logError=()=>{};
+
+    renderer.handleRecvSignal=renderer.handleRecvSignal.bind(renderer);
+    const integrated=new DesktopSignaling(m=>renderer.handleSendSignal(null,m.command,m.data));
+    renderer._sendToNative=m=>integrated.receive(m);
+    const delivered=await integrated.request(401,offer);
+    assert.equal(delivered,decoded); // already-decoded data, not an envelope
+    assert.equal(calls[0].name,'requestCall');
+    assert.deepEqual(calls[0].args,['456',123,'[]',1]);
+    await integrated.request(416,{calleeId:'456',rtcpAddress:'127.0.0.1:9',rtpAddress:'127.0.0.1:8',codec:'[]',extendData:'{}',session:'fixture',callId:123});
+    assert.deepEqual(calls[1],{name:'sendRequestCall',args:['456','127.0.0.1:9','127.0.0.1:8','[]','{}','fixture',123]});
+    const errors=[];
+    renderer._sendToNative=m=>{errors.push(m);integrated.receive(m);};
+    renderer.handleSendSignalError(401,{error_code:9},{callId:123});
+    assert.equal(errors.length,0); // old engines do not opt into this extension
+    renderer.handleUpdate(null,'linux-native-capabilities',{signalingErrors:true});
+    apiFailure={error_code:9,error_message:'private',request:{responseURL:'secret'}};
+    await assert.rejects(integrated.request(401,offer),e=>e.code===9 && e.command===401);
+    assert.equal(JSON.stringify(errors[0]),JSON.stringify({type:'recvSignalError',command:401,data:{callId:123,errorCode:9}}));
+    apiFailure=null;
+    assert.equal(await integrated.request(401,offer),decoded); // a real error reply permits retry
+    integrated.close();
+    console.log('PASS desktop signaling boundary: exact host frames, response/control grammar, no false success, timeout isolation, close');
+})().catch(e=>{console.error(e);process.exitCode=1;});
