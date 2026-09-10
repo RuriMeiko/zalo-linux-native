@@ -257,5 +257,9 @@ export class IncomingSession extends EventEmitter {
     })();
     return this.#stopping;
   }
-  async dispose() {this.#disposed=true;await this.stop();this.#worker.off('callEvent',this.#onNative);}
+  async dispose() {
+    this.#disposed=true;
+    try {await this.stop();}
+    finally {this.#worker.off('callEvent',this.#onNative);}
+  }
 }

@@ -102,6 +102,14 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+Disposal now removes the native event listener even if the worker rejects the
+stop request (for example after a crash). Owner tests inject this failure both
+during consent and active media and verify listener/ownership release. Desktop
+driver tests additionally cover video-pump failure, active-dialog failure,
+local hangup and parent abort, deliberately delaying task completion to verify
+that worker closure waits for both media and UI cleanup. These are synthetic
+failure tests, not real-account or hardware unplug acceptance.
+
 Incoming local hangup now joins the UI/video task and disposes the native
 session **before** awaiting desktop 409. Previously native PCM could remain
 active until the end-call API replied or timed out. The owner regression holds

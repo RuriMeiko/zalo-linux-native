@@ -31,4 +31,48 @@ for(const scenario of ['accept','ignore','startup-cancel','start-error','missing
   assert.equal(owners,['accept','ignore'].includes(scenario)?1:0);
   if(scenario==='accept')assert.deepEqual(dialogs,['consent','active']);
 }
-console.log('PASS desktop incoming driver: validated identity/caller, GTK hooks, local end, startup cancel/error and cleanup');
+const videoMessage={...message,data:{...message.data,data:{...message.data.data,params:JSON.stringify({...params,
+  video:{enable:1},extendData:JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97}]}})})}}};
+const defer=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),resolve};};
+for(const scenario of ['video-error','dialog-error','local-end','parent-abort']) {
+  const transport=new EventEmitter(),controller=new AbortController(),ready=defer(),finish=defer();
+  const events=[];let started=0;
+  const task=async(kind,signal)=>{
+    const aborted=defer();
+    const onAbort=()=>aborted.resolve();
+    signal.addEventListener('abort',onAbort,{once:true});
+    if(signal.aborted)onAbort();
+    if(++started===2)ready.resolve();
+    try {
+      await ready.promise;
+      if((scenario==='video-error' && kind==='video') || (scenario==='dialog-error' && kind==='dialog'))
+        throw Error(scenario);
+      if(scenario==='local-end' && kind==='dialog')return true;
+      await aborted.promise;
+      await finish.promise; // joins remain pending after abort is delivered
+    } finally {signal.removeEventListener('abort',onAbort);events.push(kind+'-joined');}
+  };
+  const running=runIncomingDesktop(transport,videoMessage,{nativeLocalId:123,clientVersion:0,runtime:'/fixture',
+    videoEnabled:true,device:'/dev/video0',sink:{},pcm:{source:'mic',sink:'speaker'},signal:controller.signal},{
+    startWorker:async(_runtime,args)=>{
+      assert.equal(args.cpuVideo,true);assert.equal(args.experimentalVideoNetwork,true);
+      return {close:async()=>{events.push('closed');}};
+    },
+    owner:async(worker,_transport,_message,o)=>{
+      assert.equal(await o.requestConsent({video:true,signal:o.signal}),true);
+      await o.runMedia(worker,{video:true,signal:o.signal});
+    },
+    dialog:async(kind,{signal})=>kind==='consent'?true:task('dialog',signal),
+    videoMedia:async(_worker,{signal})=>task('video',signal),
+  });
+  const outcome=scenario.endsWith('error')?assert.rejects(running,new RegExp(scenario)):running;
+  await ready.promise;
+  if(scenario==='parent-abort')controller.abort();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(!events.includes('closed'),'worker must remain alive until media tasks join');
+  finish.resolve();await outcome;
+  assert.equal(events.at(-1),'closed');
+  assert.ok(events.includes('video-joined') && events.includes('dialog-joined'));
+  assert.equal(transport.listenerCount('control'),0);
+}
+console.log('PASS desktop incoming driver: identity, GTK hooks, startup cancellation, video/dialog faults, parent/local stop, joined cleanup');

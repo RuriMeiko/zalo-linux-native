@@ -136,4 +136,23 @@ for(const event of ['nativeFault','workerClosed'])for(const during of ['consent'
   await assert.rejects(f.run(),/already owned/);
   apiReply.resolve({});await running;f.clean();await f.run();f.clean();
 }
-console.log('PASS incoming owner: bounded consent, exclusive ownership, remote/local hangup, native fault/exit, joined media and listener cleanup');
+for(const during of ['consent','media']) {
+  const f=fixture(),entered=defer();
+  const original=f.worker.request.bind(f.worker);
+  let broken=false;
+  f.worker.request=async(op,args)=>{
+    if(broken && op==='stop')throw new Error('worker disconnected during stop');
+    return original(op,args);
+  };
+  const options=during==='consent'?{requestConsent:()=>{entered.resolve();return new Promise(()=>{});}}:
+    {requestConsent:async()=>true,runMedia:async(_worker,{signal})=>{
+      const stopped=defer();signal.addEventListener('abort',()=>stopped.resolve(),{once:true});
+      entered.resolve();await stopped.promise;f.events.push('media-joined');
+    }};
+  const outcome=assert.rejects(f.run(options),/worker disconnected during stop/);
+  await entered.promise;broken=true;f.worker.emit('workerClosed');await outcome;
+  f.clean();
+  assert.equal(f.events.filter(x=>x===409).length,during==='media'?1:0);
+  broken=false;await f.run();f.clean(); // no stale listener or ownership retained
+}
+console.log('PASS incoming owner: bounded consent, exclusive ownership, remote/local hangup, native fault/exit including failed stop, joined media and listener cleanup');
