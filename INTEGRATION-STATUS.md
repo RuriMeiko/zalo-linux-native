@@ -102,6 +102,24 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+### CDP trial — outgoing voice UI
+
+With explicit user approval, the app was relaunched with loopback-only CDP
+port 9222 and the isolated `mute-check/runtime` build. Current renderer bundles
+(compact header, lock forwarding and signaling-log redaction) were copied after
+diff review; previous files remain in the home-only `cdp-trial-20260910` backup.
+CDP verified the requested contact header and clicked the voice-call button.
+The native worker and GTK “Đang gọi” process were observed. A later check found
+both gone and no Pulse recording/playback streams. No reason for termination
+or remote ringing/answer is established by these observations. User confirmation
+is pending; this is not successful two-account voice acceptance.
+
+Outgoing voice now has dialing and post-answer GTK controls, using the same
+acknowledged mute coordinator as incoming. Invitation cleanup joins the UI and
+stops native audio before awaiting server end acknowledgment. Synthetic UI and
+invitation lifecycle tests pass. The dialing UI currently starts after native
+server negotiation; earlier setup failures still need a visible error path.
+
 Incoming startup/media failures now show a generic GTK error dialog after the
 worker has closed. It suggests checking network and devices, contains no raw
 exception or account strings, and auto-closes after 15 seconds. User abort and
