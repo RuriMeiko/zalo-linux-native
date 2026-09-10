@@ -101,23 +101,29 @@ function thumbnailWithSharp(sharp, buffer, width, height, format, quality) {
     return pipe.toBuffer();
 }
 
-function thumbnailWithVipsCli(vipsBin, buffer, width, height, format) {
+async function thumbnailWithVipsCli(vipsBin, buffer, width, height, format) {
     const { spawnSync } = require('child_process');
+    const fs = require('fs'), path = require('path');
+    const input = Buffer.from(buffer);
     const enc = pickEncoder(format);
     const ext = enc === 'jpeg' ? '.jpg' : enc === 'png' ? '.png' : '.tif';
-    const tmpOut = `/tmp/zimage-thumb-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const cache = path.join(require('os').homedir(), '.cache', 'zalo-native', 'thumbnails');
+    fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
+    if (fs.realpathSync(cache) !== cache) throw new Error('Thumbnail cache must not traverse symlinks');
+    const directory = fs.mkdtempSync(path.join(cache, 'image-'));
+    const tmpOut = path.join(directory, 'thumbnail' + ext);
     const w = Math.max(1, Math.round(Number(width) || 1));
     const h = Math.max(1, Math.round(Number(height) || 1));
-    const r = spawnSync(vipsBin, ['thumbnail', 'stdin', tmpOut, `${w}`, '-h', `${h}`], {
-        input: Buffer.from(buffer),
-        timeout: 30000,
-    });
-    const fs = require('fs');
     try {
+        const r = spawnSync(vipsBin, ['thumbnail', 'stdin', tmpOut, `${w}`, '-h', `${h}`], {
+            input,
+            timeout: 30000,
+        });
         if (r.status !== 0) throw new Error('An error occurred in thumbnailing');
-        return Promise.resolve(fs.readFileSync(tmpOut));
+        return fs.readFileSync(tmpOut);
     } finally {
         try { fs.unlinkSync(tmpOut); } catch (e) {}
+        try { fs.rmdirSync(directory); } catch (e) {}
     }
 }
 

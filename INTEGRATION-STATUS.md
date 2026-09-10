@@ -1,5 +1,16 @@
 # Full-app recovery integration — 2026-09-10
 
+The optional zimage vips fallback now uses a unique mode-0700 directory under
+`~/.cache/zalo-native/thumbnails`, not predictable output files in `/tmp`.
+Cache symlink traversal is rejected; the exact output and empty operation
+directory are removed in finally, including thrown spawn failures. Cleanup
+remains best-effort on filesystem errors/process crash. Its API now rejects
+asynchronously instead of throwing synchronously for CLI failures.
+`test-vips-temp.cjs` uses real filesystem operations with a mocked vips process
+and verifies location, permissions and normal/error cleanup; codec/format parity
+is not established. The existing image contract test also passes. This source
+change has not been copied into either installed app.
+
 Additional zimage file-API fix: `resizeQA` previously ran its entire read/resize/
 write operation twice when given a callback and swallowed Promise-only failures.
 It now creates one operation; callback mode reports once, Promise-only mode
