@@ -1,4 +1,32 @@
-# Full-app recovery integration — 2026-09-10
+# Full-app recovery integration — 2026-09-11
+
+## Electron 22 runtime acceptance — source checkpoint
+
+The complete 20-command account-free regression runner passes when invoked by
+Electron 22.3.27 in Node mode. Native/runtime-facing commands therefore execute
+against Electron's embedded Node 16 rather than only the developer's Node 22.
+The installer fixture is the deliberate exception: its public contract is a
+plain Node CLI and it pins that exact executable in `launch-installed.sh`.
+Two fixtures were adjusted to avoid the newer-only `structuredClone` global,
+and the aggregate runner now routes only the installer fixture through plain
+Node while preserving Electron execution for the native module set.
+
+Separate real Electron processes passed native zimage format/resize/file tests,
+cross-installation single-instance locking, the shared incoming/active call
+window (answer, mic off/on, camera off/on and end), and the outgoing preparation
+cancel path. The latter produced no worker or invitation in its synthetic
+signaling boundary. The reusable remote-video display fixture passed render,
+clear, user close, reopen and renderer ACK behavior.
+
+The strongest account-free media fixture ran the configured native runtime for
+three cycles: synthetic I420 entered the original CPU H.264 encoder, traversed
+localhost UDP, returned through the native decoder as verified 480x360 pixels,
+then flowed through the snapshot/display pipe to a real Electron canvas. It
+reported 81 decoded frames and 64 painted ACKs; independent FFmpeg decoding also
+verified 27 received frames per cycle. This is meaningful renderer and media-
+pipeline evidence, but the server and peer were local fixtures. It does not close
+the current-build two-account, physical-device reconnect, final bundled-runtime,
+clean-machine or licensing gates.
 
 ## Current authoritative deployment: `8d7a0d0`
 

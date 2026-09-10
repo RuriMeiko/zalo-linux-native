@@ -1,6 +1,6 @@
 # Native Linux port — current working checklist
 
-Updated 2026-09-10. Objective: a complete native Linux app, including working
+Updated 2026-09-11. Objective: a complete native Linux app, including working
 voice/video, with no Wine or Android emulator. This supersedes the stale
 `/tmp/port-checklist.md`. Do not count a passing stub test as a working feature.
 Do not publish a PR; finish native functionality before release claims.
@@ -28,6 +28,12 @@ Do not publish a PR; finish native functionality before release claims.
 - Contact name/avatar presentation and remote decline/end handling are source-
   wired and deployed. The first incoming call after restart no longer issues a
   competing 401 configuration request.
+- The complete 20-command regression runner now passes through Electron 22's
+  embedded Node. Real Electron fixtures also pass zimage, shared-profile
+  single-instance, call answer/mic/camera/end, pre-invitation cancel, reusable
+  video display and three native H.264 localhost encode/decode/display cycles.
+  This verifies the runtime used by the installed development app, not a final
+  self-contained package or two-account media.
 - Still open: live verification of that corrected cold first-incoming path,
   device switching, screen sharing, remote camera-state signaling, device
   reconnect/profile recovery, and complete current-build two-account voice/video QA.
@@ -127,7 +133,11 @@ has no incoming dispatcher or always ends outgoing calls describe old code.
 - [x] Independently decode original engine H.264 via FFmpeg: 171 decoded 480x360 frames, 57 distinct image hashes for a moving synthetic pattern across three cycles. Preserve decoder frame cadence (passthrough). No RTP/network or remote window covered by this check.
 - [x] Original WebRtcVideoCoding CPU/H.264 initialization and NV12 → native I420 → deliverFrame → encoded callback in an offline probe: three cycles, each 60 synthetic inputs yielded 57 nonempty encoded callbacks / 10,542 bytes. Native GetEncodeStats stayed 0/0; it is not used as success evidence. No remote video, decoder or Peer video integration proven.
 - [x] Logitech C922 capture → NV12 → original native VideoSource → I420 callback, 30 real frames at 640x480; repeated after factoring CPU source ownership into video-source-linux.c. Reject malformed size/rotation before native dispatch. No textures/EGL, video encoder, remote video or in-call window wired yet.
-- [ ] Verify all native modules under the packaged Electron runtime.
+- [x] Verify the current native module set under the same pinned Electron
+  22.3.27 runtime used by the installed development app. The full aggregate,
+  native zimage and real GUI/IPC/native-video fixtures passed on 2026-09-11.
+- [ ] Repeat native-module and GUI verification with the Electron runtime inside
+  the final self-contained package; no such package exists yet.
 - [ ] Build a self-contained Linux package; smoke-test fresh installation.
 
 ### Live test diagnosis — 2026-09-09 13:28 ICT

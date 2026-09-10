@@ -24,7 +24,9 @@ Status: development, not a complete native Linux release.
   drawing/recolor/preview/lock tests pass; actual Zalo acceptance is pending.
   See [LINUX-DESKTOP-EXTRAS.md](LINUX-DESKTOP-EXTRAS.md).
 - [ ] Automated regression suite covering the released configuration, plus
-  fresh-install and user-assisted voice/video acceptance tests.
+  fresh-install and user-assisted voice/video acceptance tests. The full
+  20-command suite and separate Electron 22 GUI/native-video fixtures pass on
+  2026-09-11; final-package and current-build live-account coverage are missing.
 
 The detailed evidence and outstanding work are in [PORT-CHECKLIST.md](PORT-CHECKLIST.md).
 Do not substitute successful module tests for these end-to-end gates.

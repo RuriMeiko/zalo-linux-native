@@ -38,7 +38,7 @@ const videoMessage={...message,data:{...message.data,data:{...message.data.data,
   video:{enable:1},extendData:JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97}]}})})}}};
 for(const scenario of ['bad-json','oversized','missing-caller','missing-camera','missing-display','disabled-video','already-canceled']) {
   const transport=new EventEmitter(),controller=new AbortController(),dialogs=[];
-  const input=structuredClone(videoMessage);
+  const input=JSON.parse(JSON.stringify(videoMessage));
   const options={nativeLocalId:123,clientVersion:0,runtime:'/fixture',videoEnabled:true,
     device:'/dev/video0',sink:{},signal:controller.signal};
   if(scenario==='bad-json')input.data.data.params='{private';

@@ -44,7 +44,7 @@ assert.deepEqual(launchSpec({...config,noSandbox:true,cdpPort:9222},{}).args,
 console.log('PASS portable native launch: strict config, Bluetooth names, no proxy/capture inheritance, explicit sandbox/CDP');
 const cameraConfig={...config,experimentalVideo:true,videoDevice:'/dev/video0'};
 for(const mode of ['ready','camera-missing','camera-file','no-output','pulse-error','malformed']) {
-  const selected=structuredClone(cameraConfig),queries=[];
+  const selected=JSON.parse(JSON.stringify(cameraConfig)),queries=[];
   const warnings=await inspectCallDevices(selected,{
     statDevice:async device=>{
       assert.equal(device,selected.videoDevice);

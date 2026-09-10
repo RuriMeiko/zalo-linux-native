@@ -1,10 +1,12 @@
 # Zalo Linux Native
-> **Development checkpoint (2026-09-10):** outgoing/incoming call owners use one
+> **Development checkpoint (2026-09-11):** outgoing/incoming call owners use one
 > Electron call window with remote video, local camera preview and acknowledged
 > mic/camera controls. Incoming **Từ chối** now sends the authenticated desktop
 > cancel request for voice/video before local teardown. Snapshot `8d7a0d0` is
 > installed and running from the verified user-local copy; 25 call-control suites
-> and all 20 aggregate regression commands pass. It includes the corrected NV21
+> and all 20 aggregate regression commands pass under Electron 22's embedded
+> Node. Real Electron zimage, single-instance, call-control and native H.264
+> localhost encode/decode/canvas fixtures also pass. It includes the corrected NV21
 > camera path, contact name/avatar presentation, normalized remote decline/end,
 > and a cold-start incoming path that no longer creates a competing 401 call.
 > Current two-account confirmation remains a release gate.
