@@ -1,11 +1,11 @@
 # Full-app recovery integration — 2026-09-10
 
-## Current authoritative deployment: `d3c9c88`
+## Current authoritative deployment: `8d7a0d0`
 
 The registered user-local installation was recoverably replaced from clean
-checkpoint `d3c9c88`. The previous complete snapshot is retained at
-`~/zalo-native-recovery/installed-dec0ed2-before-d3c9c88`; no account profile
-was moved or inspected. The current installed verifier passes all 13,401
+checkpoint `8d7a0d0`. The previous complete snapshot is retained at
+`~/zalo-native-recovery/installed-d3c9c88-before-8d7a0d0`; no account profile
+was moved or inspected. The current installed verifier passes all 13,403
 manifest entries. Strict runtime, Logitech camera, webcam microphone and HDMI
 speaker preflight passed before installation. Launcher, Electron main and the
 native call helper were then verified alive from

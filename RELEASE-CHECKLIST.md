@@ -38,7 +38,7 @@ Do not substitute successful module tests for these end-to-end gates.
   a full local copy/preflight with its helper resolved inside the installation.
   New installs additionally verify their manifest, generated config and launcher
   before every start. The registered copy was recoverably replaced at snapshot
-  `d3c9c88`; its 13,401 entries and device/runtime preflight pass. The registered
+  `8d7a0d0`; its 13,403 entries and device/runtime preflight pass. The registered
   launcher starts main/helper from that copy. Clean-machine acceptance remains open.
   Self-contained runtime acquisition, default-shortcut migration and clean-machine
   verification remain open.

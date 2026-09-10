@@ -107,7 +107,7 @@ Zalo's authenticated renderer control to the current desktop account ticket.
 A cached identity must match. It deliberately does not start a parallel 401:
 live testing showed that the old probe competed with and disconnected the real
 incoming call after a cold restart. Matching main/helper deployment is required;
-the manifest-verified installation at `d3c9c88` includes both. Identity stays
+the manifest-verified installation at `8d7a0d0` includes both. Identity stays
 only in memory and is invalidated on account change.
 **Từ chối** sends desktop command 405 to `/api/voicecall/cancel` with callType 0
 for voice or 1 for video, then tears down native ringing. Static bundle extraction

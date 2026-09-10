@@ -120,10 +120,11 @@ with snapshot `529aa91`: the old `e10acc3` directory is retained at
 `~/zalo-native-recovery/installed-e10acc3-before-529aa91`. It was later replaced
 again at checkpoint `fede1b0`; the immediately previous snapshot remains at
 `~/zalo-native-recovery/installed-8fa66c5-before-fede1b0`. The installation was
-subsequently advanced to `d3c9c88`; its immediately previous complete copy is
-retained at `~/zalo-native-recovery/installed-dec0ed2-before-d3c9c88`. The current
-manifest has 13,401 verified entries, generated-file integrity is enabled,
-installed runtime/device preflight passes, and the running helper resolves
-inside the installed copy. The local testing configuration explicitly enables
-`noSandbox`; installer defaults do not add it. CDP is omitted from the current
-installed configuration.
+subsequently advanced through `d3c9c88` to publication snapshot `8d7a0d0`; its
+immediately previous complete copy is retained at
+`~/zalo-native-recovery/installed-d3c9c88-before-8d7a0d0`. The current manifest
+has 13,403 verified entries, generated-file integrity is enabled, installed
+runtime/device preflight passes, and the running helper resolves inside the
+installed copy. The local testing configuration explicitly enables `noSandbox`;
+installer defaults do not add it. CDP is omitted from the current installed
+configuration.

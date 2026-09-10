@@ -9,7 +9,7 @@ Do not publish a PR; finish native functionality before release claims.
 
 - Native outgoing and opt-in incoming are wired into the desktop helper.
   The installed app and native helper were restarted from manifest-verified
-  source checkpoint `d3c9c88` on September 10.
+  source checkpoint `8d7a0d0` on September 10.
 - `node scripts/test-call-control.mjs` runs 25 deterministic suites, including
   real driver/owner/session composition with mocked native/server/UI boundaries.
   It covers cancellation during consent, answer and media in voice/video,
