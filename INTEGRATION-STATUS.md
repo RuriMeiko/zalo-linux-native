@@ -1,5 +1,14 @@
 # Full-app recovery integration — 2026-09-10
 
+Latest source-only bootstrap fix: compact startup no longer requests the
+single-instance lock a second time after denial. The actual bootstrap is
+executed in a VM fixture for acquired/denied normal/compact paths; each acquires
+the lock once and loads exactly one entry module. This does not prove global
+cross-installation exclusion or migration safety (migration still precedes the
+lock). The running app and installed copy have not been updated for this fix.
+The control suite now has 25 tests. Entrypoint tests failed in the restricted
+subprocess environment and passed when rerun outside it; no real app was opened.
+
 ## User-local installation and menu registered
 
 Source snapshot `e10acc3` was copied into the previously absent directory

@@ -10,20 +10,12 @@ function bootstrap() {
 
     const isCompactApp = process.argv.some(e => e.startsWith('--launch-compact-app'));
 
-    if (isCompactApp) {
-        if (require('electron').app.requestSingleInstanceLock()) {
-            return handleEntryCompactApp();
-        } else {
-            require('./main-dist/second-instance');
-        }
+    if (!require('electron').app.requestSingleInstanceLock()) {
+        return require('./main-dist/second-instance');
     }
-
-    if (require('electron').app.requestSingleInstanceLock()) {
-        perf.record(perf.MAIN_SCRIPT);
-        require('./main-dist/main');
-    } else {
-        require('./main-dist/second-instance');
-    }
+    if (isCompactApp) return handleEntryCompactApp();
+    perf.record(perf.MAIN_SCRIPT);
+    return require('./main-dist/main');
 }
 
 bootstrap();
