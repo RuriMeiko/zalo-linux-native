@@ -67,4 +67,26 @@ assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'
 const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
 assert.ok(css.includes('width:30px;height:30px'));
 assert.ok(css.includes('-webkit-app-region:no-drag'));
-console.log(`PASS ${shared ? 'shared/login' : 'compact'} Linux header: account title, controls, existing passcode/lock actions, login/locked/popup guards`);
+assert.ok(css.includes('#titleBar.image-show__title{height:46px;min-height:46px'));
+assert.ok(css.includes('.media-viewer .media-viewer__title-bar{height:46px;min-height:46px'));
+if (process.argv.includes('--html')) {
+  header.state.isMaximized = false;
+  const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
+  const render = node => {
+    if (node == null || typeof node === 'boolean') return '';
+    if (typeof node !== 'object') return escape(node);
+    if (node.type === 'fragment') return node.children.map(render).join('');
+    if (node.type === 'style') return '<style>' + node.children.join('') + '</style>';
+    const attributes = Object.entries(node.props).filter(([key]) => !key.startsWith('on') && key !== 'style').map(([key,value]) => {
+      const name = ({className:'class',strokeWidth:'stroke-width',strokeLinecap:'stroke-linecap',strokeLinejoin:'stroke-linejoin'})[key] || key;
+      return typeof value === 'boolean' ? value ? ` ${name}` : '' : ` ${name}="${escape(value)}"`;
+    }).join('');
+    return `<${node.type}${attributes}>${node.children.map(render).join('')}</${node.type}>`;
+  };
+  const cssFiles = fs.readdirSync(path.join(root,'pc-dist')).filter(name => name.endsWith('.css'));
+  process.stdout.write('<!doctype html><meta charset="utf-8"><title>Header regression fixture</title>' +
+    cssFiles.map(name => `<link rel="stylesheet" href="file://${root}/pc-dist/${name}">`).join('') +
+    '<style>body{margin:0;background:#222;color:white}.fixture{width:800px;margin:40px auto;border:1px solid #555}.fixture-content{height:160px;display:grid;place-items:center}</style>' +
+    '<div class="fixture media-viewer"><div class="media-viewer__title-bar">' + render(header.render()) +
+    '</div><div class="fixture-content">Ảnh kiểm thử — không có dữ liệu tài khoản</div></div>');
+} else console.log(`PASS ${shared ? 'shared/login' : 'compact'} Linux header: account title, controls, existing passcode/lock actions, login/locked/popup guards`);
