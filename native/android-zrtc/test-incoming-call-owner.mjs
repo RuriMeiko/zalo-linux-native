@@ -10,7 +10,7 @@ const message={type:'control',data:{act_type:'voip',act:'request',data:{uidFrom:
 const ended={act_type:'voip',act:'endcall',data:{uidFrom:'456',callId:'789'}};
 const defer=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),resolve};};
 function fixture() {
-  const events=[];
+  const events=[],signals=[];
   class Worker extends EventEmitter {
     async request(op,args={}) {
       events.push(op);
@@ -24,7 +24,8 @@ function fixture() {
     }
   }
   const worker=new Worker(),transport=new EventEmitter();
-  transport.request=async command=>{
+  transport.request=async(command,payload)=>{
+    signals.push({command,payload});
     events.push(command);
     if(command===402)queueMicrotask(()=>transport.emit('control',{act_type:'voip',act:'answer_ack',data:{callId:789}}));
     return {};
@@ -32,15 +33,18 @@ function fixture() {
   transport.cancel=()=>{};
   const options={context:{nativeLocalId:123,video:true},callerId:'456',requestConsent:async()=>false,
     runMedia:async()=>{throw new Error('must not start media');}};
-  return {worker,transport,events,options,run:extra=>runIncomingCall(worker,transport,message,{...options,...extra}),
+  return {worker,transport,events,signals,options,run:extra=>runIncomingCall(worker,transport,message,{...options,...extra}),
     clean(){for(const event of ['callEvent','nativeFault','workerClosed'])assert.equal(worker.listenerCount(event),0);
       assert.equal(transport.listenerCount('control'),0);}};
 }
 {
   const f=fixture();
   assert.deepEqual(await f.run(),{accepted:false,callReady:false});
-  assert.ok(!f.events.includes(402));f.clean();
-  await f.run();f.clean(); // ownership is reusable after local decline
+  assert.ok(!f.events.includes(402));
+  assert.deepEqual(f.signals.filter(({command})=>command===405),[
+    {command:405,payload:{toId:'456',callId:789,callType:1}}
+  ]);f.clean();
+  await f.run();f.clean(); // ownership is reusable after remote decline
 }
 {
   const f=fixture();

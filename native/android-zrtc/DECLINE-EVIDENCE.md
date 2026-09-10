@@ -1,7 +1,8 @@
 # Incoming decline investigation — 2026-09-10
 
-Status: **not sufficient to implement user rejection**. The GTK action remains
-“Bỏ qua” (local dismissal). No real call traffic or account profile was read.
+Status: **implemented at the authenticated desktop boundary**. The incoming
+action is now “Từ chối” and sends desktop command 405 before local teardown.
+No account profile was read.
 
 Static input: pinned Android `classes5.dex`, SHA-256
 `33918b743d0fc66a51913058db41daa5a04f4c9b41ed2f0bf228a4effc54076b`.
@@ -62,11 +63,13 @@ client IMEI. Command **402** instead calls the answer endpoint with an explicit
 status. Android's four-integer cancellation interface cannot yet be assumed
 equivalent to the desktop's three-argument wrapper.
 
-`test-desktop-signaling.js` now exercises the shipped renderer's command 405
+`test-desktop-signaling.js` exercises the shipped renderer's command 405
 dispatch and extracts the actual static API builder. With synthetic peer/call
 IDs and identity encryption it verifies endpoint, parameter names, fixed
-status zero and request code 11305. It performs no network request and does
-not assert that fixture callType zero means user rejection.
+status zero and request code 11305. The shipped desktop call-message mapping
+also identifies `calltype === 1` as video and every other value as audio. The
+owner therefore sends callType 0 for voice and 1 for video; composition tests
+cover both values without making a network request.
 
 ## UI and end-call cross-check
 

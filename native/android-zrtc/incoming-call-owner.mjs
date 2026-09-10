@@ -76,7 +76,14 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     try {accepted=await consentResult(requestConsent,{video,callerId,signal:controller.signal});}
     catch(error){throw failure??error;}
     clearTimeout(ringTimer);check();
-    if(accepted!==true)return {accepted:false,callReady:false};
+    if(accepted!==true) {
+      // The shipped desktop renderer maps command 405 to
+      // /api/voicecall/cancel. Its callType follows the desktop convention:
+      // 0 = voice, 1 = video. This is the pre-answer rejection path; command
+      // 409 is reserved for a call whose media session was already started.
+      await transport.request(405,{toId:callerId,callId:decoded.key.callId,callType:video?1:0});
+      return {accepted:false,callReady:false};
+    }
     await session.answer({callerId,userAccepted:true});check();
     await session.waitForAnswerAck({timeoutMs:ackTimeoutMs,signal:controller.signal});check();
     await session.startMedia();mediaStarted=true;check();
@@ -91,7 +98,8 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     signal?.removeEventListener('abort',abort);transport.off('control',control);
     worker.off('nativeFault',nativeFault);worker.off('workerClosed',nativeFault);
     // Desktop command 409 is sendEndCall(toId, callId), not a ZRTC enum.
-    // Do not echo a remote hangup or guess the pre-answer rejection grammar.
+    // Do not echo a remote hangup. Explicit pre-answer rejection has already
+    // used command 405 above.
     // The media task has already joined before reaching this cleanup.
     try {
       try {

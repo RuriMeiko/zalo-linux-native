@@ -9,7 +9,7 @@ const extension=JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97
 const untilAbort=signal=>new Promise(resolve=>{
   if(signal.aborted)resolve();else signal.addEventListener('abort',resolve,{once:true});
 });
-for(const video of [false,true])for(const scenario of ['consent-cancel','answer-cancel','media-cancel','local-end','native-fault']) {
+for(const video of [false,true])for(const scenario of ['local-reject','consent-cancel','answer-cancel','media-cancel','local-end','native-fault']) {
   const events=[],dialogs=[],transport=new EventEmitter(),controller=new AbortController();
   const params={id:789,protocol:1,sessId:'fixture',settings:{},zrtc_config:{},rtpIP:'127.0.0.1:9000',
     rtcpIP:'127.0.0.1:9001',video:{enable:video?1:0},extendData:extension};
@@ -39,6 +39,8 @@ for(const video of [false,true])for(const scenario of ['consent-cancel','answer-
       if(scenario==='answer-cancel')remoteCancel();
       else transport.emit('control',{act_type:'voip',act:'answer_ack',data:{callId:789}});
     });
+    if(command===405)
+      assert.deepEqual(payload,{toId:message.data.data.uidN,callId:789,callType:video?1:0});
     if(command===409) {
       assert.deepEqual(payload,{toId:message.data.data.uidN,callId:789});
       assert.equal(events.at(-2),'stop','native stopped before end API');
@@ -54,6 +56,7 @@ for(const video of [false,true])for(const scenario of ['consent-cancel','answer-
       if(kind==='error'){assert.equal(events.at(-1),'closed');return true;}
       if(kind==='consent') {
         if(scenario==='consent-cancel'){remoteCancel();await untilAbort(signal);throw Error('dialog canceled');}
+        if(scenario==='local-reject')return false;
         return true;
       }
       if(scenario==='local-end')return 'end';
@@ -63,7 +66,8 @@ for(const video of [false,true])for(const scenario of ['consent-cancel','answer-
     videoMedia:async(_worker,{signal})=>{await untilAbort(signal);events.push('video-joined');},
   });
   if(['consent-cancel','answer-cancel','native-fault'].includes(scenario))await assert.rejects(running);
-  else assert.deepEqual(await running,{accepted:true,callReady:false});
+  else assert.deepEqual(await running,{accepted:scenario!=='local-reject',callReady:false});
+  assert.equal(events.filter(x=>x===405).length,scenario==='local-reject'?1:0);
   assert.equal(events.filter(x=>x===409).length,['local-end','native-fault'].includes(scenario)?1:0);
   assert.equal(dialogs.includes('error'),scenario==='native-fault');
   assert.equal(events.filter(x=>x==='closed').length,1);

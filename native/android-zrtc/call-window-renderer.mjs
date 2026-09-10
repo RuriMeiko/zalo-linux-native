@@ -26,8 +26,7 @@ window.linuxCall.subscribe((id,next)=>{
   get('status').textContent=incoming?(state.video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'):
     state.kind==='preparing'?'Đang chuẩn bị cuộc gọi':state.kind==='dialing'?'Đang đổ chuông':error?'Cuộc gọi bị gián đoạn':state.muted?'Mic đã tắt':'Đang trong cuộc gọi';
   get('answer').hidden=!incoming;get('mic').hidden=!active;get('camera').hidden=incoming || error || !state.video;
-  // Until remote rejection is verified, this is deliberately a local ignore.
-  const endLabel=incoming?'Bỏ qua':error?'Đóng':state.kind==='preparing'?'Hủy':'Kết thúc';
+  const endLabel=incoming?'Từ chối':error?'Đóng':state.kind==='preparing'?'Hủy':'Kết thúc';
   get('end').setAttribute('aria-label',endLabel);get('end').title=endLabel;
   const micLabel=state.muted?'Bật mic':'Tắt mic';
   get('mic').setAttribute('aria-label',micLabel);get('mic').title=micLabel;
