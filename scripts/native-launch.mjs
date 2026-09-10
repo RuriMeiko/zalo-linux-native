@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Native voice development launcher. No downloads, upstream updates or defaults
 // that silently fall back to Wine. Configuration is data, never sourced shell.
-import {readFile,stat,readdir} from 'node:fs/promises';
+import {readFile,stat,readdir,readlink} from 'node:fs/promises';
 import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createHash} from 'node:crypto';
@@ -70,13 +70,27 @@ export async function preflight(config) {
     if(!Array.isArray(rows) || !rows.some(row=>row.name===c[field])) throw new Error(`Selected ${field} is unavailable`);
   }
 }
+export function isRunningApp(cmdline,executable,appDir) {
+  if(path.basename(executable)!=='electron') return false;
+  const argv=cmdline.split('\0').filter(Boolean);
+  if(argv.some(a=>a.startsWith('--type='))) return false;
+  if(argv.length>1) return argv.includes(appDir);
+  // Electron process.title can replace the original NUL-separated argv.
+  // Match the exact executable and final app path, never a substring or shell.
+  const title=argv[0] || '';
+  if(!title.startsWith(executable+' ') || !title.endsWith(' '+appDir)) return false;
+  const options=title.slice(executable.length+1,-appDir.length-1);
+  return !options || options.split(' ').every(a=>/^--[A-Za-z0-9-]+(?:=[^\s]+)?$/.test(a) && !a.startsWith('--type='));
+}
 async function rejectExistingApp(appDir) {
   for(const pid of await readdir('/proc')) {
     if(!/^\d+$/.test(pid)) continue;
-    let argv;
-    try {argv=(await readFile(`/proc/${pid}/cmdline`,'utf8')).split('\0');}
+    let cmdline,executable;
+    try {
+      [cmdline,executable]=await Promise.all([readFile(`/proc/${pid}/cmdline`,'utf8'),readlink(`/proc/${pid}/exe`)]);
+    }
     catch {continue;} // exited process or inaccessible other-user process
-    if(path.basename(argv[0])==='electron' && argv.includes(appDir) && !argv.some(a=>a.startsWith('--type=')))
+    if(isRunningApp(cmdline,executable,appDir))
       throw new Error('Zalo is already running; quit it from the tray before applying native configuration');
   }
 }

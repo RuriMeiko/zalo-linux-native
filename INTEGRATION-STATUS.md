@@ -4,7 +4,19 @@ Development checkout: `/home/rurimeiko/zalo-linux-native`.
 This is a Git worktree: its shared Git database remains in
 `/home/rurimeiko/zalo-native-recovery/.git`. Both directories are persistent
 home directories; retain both until a standalone clone/backup is verified.
-The running installed Zalo application has not been replaced or restarted.
+On 2026-09-10, with the user's explicit approval, the installed application was
+restarted with the incoming/voice/video trial at `b9ec2fb`. The main bundle was
+copied from this checkout after reviewing its diff; the previous installed main
+bundle is backed up under `~/.local/state/zalo-native-test/restart-20260910/`.
+The helper process was verified to run from this checkout with native setup,
+network, media, video and incoming flags enabled. The account profile was not
+copied or edited. This proves deployment, not successful two-account calling.
+
+Local configuration: `~/.config/zalo-native-linux/launch.json` (mode 0600).
+Preflight passed for the pinned runtime, Logitech C922 camera `/dev/video0`,
+webcam microphone and HDMI output. Bluetooth playback was unavailable at this
+check. A fresh helper still needs a validated outgoing configuration before it
+can accept incoming calls. User-assisted voice/video testing remains pending.
 
 ## Inputs and history
 
@@ -20,7 +32,7 @@ The running installed Zalo application has not been replaced or restarted.
   profiles or call captures. Viewer provenance is retained in
   `pc-dist/linux-extras/PROVENANCE.md`; third-party notices are retained.
 
-Verified integrated bundle SHA-256 values:
+Historical initial integration bundle SHA-256 values (not current hashes):
 
 | File | SHA-256 |
 | --- | --- |
@@ -77,11 +89,13 @@ using `ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=10
 system SSH configuration currently reports a file-ownership error; the explicit
 empty config avoids loading that broken file while retaining host-key checking.
 No credentials were displayed or changed. Authentication does not prove write
-permission to the final independent repository; no push has occurred.
+permission to the final independent repository by itself. Subsequent SSH pushes
+published `main`, including the incoming trial commit `b9ec2fb`.
 
 A subsequent public repository API check confirmed that the supplied
 `RuriMeiko/zalo-linux-native` repository already has `fork: false` and public
-visibility. SSH `push --dry-run main:main` succeeded; `main` remains unpublished.
+visibility. SSH `push --dry-run main:main` succeeded, followed by actual pushes.
+The remote default branch still requires changing to `main`.
 The viewer-specific publication concern has been resolved; third-party notices
 remain applicable (see `RELEASE-CHECKLIST.md`). The independent repository
 name no longer needs to block development or require destructive recreation.
@@ -100,8 +114,8 @@ or device capture. No real-account incoming acceptance was performed.
 
 Older notes below saying the owner is not invoked by the agent describe the
 previous checkpoint, superseded by this opt-in wiring. First-incoming identity
-bootstrap and true remote rejection are still missing. The installed running
-helper has not been restarted with this new trial.
+bootstrap and true remote rejection are still missing. The installed helper
+has now been restarted with this trial; see the deployment checkpoint above.
 
 The production desktop agent now binds its native local ID to the authenticated
 outgoing 401 configuration for the current desktop account. The account ticket
@@ -109,9 +123,8 @@ is captured before sending 401, so delayed responses cannot bind a replacement
 account. Repeated init/device updates preserve the same-account binding;
 switches invalidate it and cancel active outgoing setup. No desktop ID is
 truncated or persisted. `test-native-identity.js` covers binding/conflicts and
-the production `OutgoingSetup` delayed-response boundary. This does not yet
-enable incoming calls: the dispatcher/UI still must consume this identity, and
-a fresh helper has no verified native identity until a validated outgoing
+the production `OutgoingSetup` delayed-response boundary. The dispatcher now
+consumes this identity, but a fresh helper has no verified native identity until a validated outgoing
 configuration is obtained. First-call incoming bootstrap remains open.
 
 `native/android-zrtc/incoming-call-owner.mjs` now composes invitation setup,
@@ -120,7 +133,8 @@ media task. `test-incoming-call-owner.mjs` verifies local decline, consent
 timeout even when the UI promise never settles, ignored late consent, exclusive
 worker ownership, matching remote cancellation, media-task joining before
 native stop, and listener cleanup/reuse. These tests use synthetic transport
-and worker events; the owner is **not yet called by the desktop agent**.
+and worker events; the desktop agent now invokes this owner through the opt-in
+incoming driver.
 
 Integration contracts: the caller must supply authenticated transport and
 independently verified desktop/native caller identity mapping. Consent UI must
