@@ -12,7 +12,7 @@ const exec=promisify(execFile);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const hash='c7e5f005fd5c12dc64d72008a1871638246899a9cf6b034dc13981c014caeefe';
 export function validateConfig(config) {
-  const keys=['appDir','electron','runtime','source','sink','noSandbox','cdpPort'];
+  const keys=['appDir','electron','runtime','source','sink','noSandbox','cdpPort','experimentalVideo','videoDevice'];
   if(!config || typeof config!=='object' || Array.isArray(config) ||
       Object.keys(config).some(k=>!keys.includes(k))) throw new Error('Invalid native-launch configuration keys');
   for(const key of ['appDir','electron','runtime'])
@@ -22,6 +22,12 @@ export function validateConfig(config) {
     if(typeof config[key]!=='string' || !/^[A-Za-z0-9_.:-]+$/.test(config[key]))
       throw new Error(`Expected explicit Pulse device name: ${key}`);
   if(config.source.endsWith('.monitor')) throw new Error('Choose a microphone, not a playback monitor');
+  if(config.experimentalVideo!==undefined && typeof config.experimentalVideo!=='boolean')
+    throw new Error('experimentalVideo must be boolean');
+  if(config.experimentalVideo===true) {
+    if(typeof config.videoDevice!=='string' || !/^\/dev\/video[0-9]+$/.test(config.videoDevice))
+      throw new Error('Experimental video requires an explicit /dev/videoN device');
+  } else if(config.videoDevice!==undefined) throw new Error('videoDevice requires experimentalVideo opt-in');
   if(config.noSandbox!==undefined && typeof config.noSandbox!=='boolean') throw new Error('noSandbox must be boolean');
   if(config.cdpPort!==undefined && (!Number.isInteger(config.cdpPort) || config.cdpPort<1024 || config.cdpPort>65535))
     throw new Error('cdpPort must be 1024..65535');
@@ -36,6 +42,7 @@ export function launchSpec(config,inherited=process.env) {
     ZALO_ZCALL_NATIVE_SETUP:'1',ZALO_ZCALL_NATIVE_NETWORK:'1',ZALO_ZCALL_NATIVE_MEDIA:'1',
     ZALO_ZRTC_RUNTIME:c.runtime,ZALO_ZCALL_PCM_SOURCE:c.source,ZALO_ZCALL_PCM_SINK:c.sink,
     ZALO_ZCALL_AGENT_PATH:path.join(root,'native/qt-call-cap-linux/zcall-agent.js')});
+  if(c.experimentalVideo)Object.assign(env,{ZALO_ZCALL_NATIVE_VIDEO:'1',ZALO_ZCALL_VIDEO_DEVICE:c.videoDevice});
   const args=[];
   if(c.noSandbox) args.push('--no-sandbox');
   if(c.cdpPort) args.push('--remote-debugging-address=127.0.0.1',`--remote-debugging-port=${c.cdpPort}`);
@@ -51,6 +58,8 @@ export async function preflight(config) {
   }
   if(createHash('sha256').update(await readFile(path.join(c.runtime,'apk/lib/x86_64/libzrtc.so'))).digest('hex')!==hash)
     throw new Error('Unsupported native library hash');
+  if(c.experimentalVideo && !(await stat(c.videoDevice)).isCharacterDevice())
+    throw new Error('Selected camera is not a character device');
   for(const [field,kind] of [['source','sources'],['sink','sinks']]) {
     const result=await exec('pactl',['--format=json','list',kind],{timeout:3000,maxBuffer:2*1024*1024});
     const rows=JSON.parse(result.stdout);
@@ -74,10 +83,11 @@ async function main() {
   const configPath=args.find(a=>a!=='--check') || path.join(process.env.XDG_CONFIG_HOME || path.join(homedir(),'.config'),'zalo-native-linux','launch.json');
   const config=validateConfig(JSON.parse(await readFile(configPath,'utf8')));
   await preflight(config);
-  if(args.includes('--check')) {console.log('PASS native runtime and selected audio devices; no call started');return;}
+  if(args.includes('--check')) {console.log('PASS native runtime and configured device presence; no call or camera capture started');return;}
   await rejectExistingApp(config.appDir);
   const {executable,args:electronArgs,env}=launchSpec(config);
-  console.log('Starting experimental native voice; video calling is not ready.');
+  console.log(config.experimentalVideo?'Starting experimental native voice/video; end-to-end video acceptance remains unverified.':
+    'Starting experimental native voice; video is disabled.');
   if(config.noSandbox) console.warn('Warning: Electron sandbox explicitly disabled by configuration.');
   const child=spawn(executable,electronArgs,{env,stdio:'inherit'});
   for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));

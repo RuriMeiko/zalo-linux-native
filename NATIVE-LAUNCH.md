@@ -50,6 +50,27 @@ does not install packages or download binaries. Unlike the inherited `start.sh`,
 it does not run the upstream updater. The inherited installer/desktop shortcut
 has not yet been replaced or validated for independent distribution.
 
+## Experimental video opt-in
+
+The integrated development tree also accepts these two configuration fields:
+
+```json
+{
+  "experimentalVideo": true,
+  "videoDevice": "/dev/video2"
+}
+```
+
+Add them to the complete configuration above, choosing the actual camera node
+on your machine (the example is not a detected device). Both fields are
+required together; inherited video environment settings are discarded. With
+the opt-in, the launcher enables the agent's existing native video/network/media
+path and forwards only the selected `/dev/videoN` node. Without it, video stays
+disabled. `--check` checks that the selected node is a character device, without
+opening it or capturing frames. It does not prove V4L2 format support, camera
+permissions, camera identity, or remote video connectivity. This is a manual
+development entry point, not completion of incoming video UI or a video release.
+
 ## Explicit diagnostics and sandbox exception
 
 - `"cdpPort": 9222` enables loopback-only remote debugging. Omit in normal use.

@@ -55,6 +55,22 @@ methods with synthetic API responses, not a real account.
 
 ## Still required before release
 
+### Launch and publication checkpoint
+
+The launcher now supports explicit `experimentalVideo: true` plus a selected
+`videoDevice` (`/dev/videoN`); default voice launch still strips inherited video
+flags. Configuration tests pass, but no real camera was opened in this check.
+See `NATIVE-LAUNCH.md` for the development-only opt-in and validation limits.
+
+GitHub CLI authentication remains invalid. A read-only SSH authentication check
+using `ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=10
+-o StrictHostKeyChecking=yes -T git@github.com` successfully authenticated as
+`RuriMeiko` (GitHub's expected no-shell response exits with code 1). The default
+system SSH configuration currently reports a file-ownership error; the explicit
+empty config avoids loading that broken file while retaining host-key checking.
+No credentials were displayed or changed. Authentication does not prove write
+permission to the final independent repository; no push has occurred.
+
 ### Incoming lifecycle owner checkpoint
 
 `native/android-zrtc/incoming-call-owner.mjs` now composes invitation setup,
