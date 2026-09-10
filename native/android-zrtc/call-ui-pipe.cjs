@@ -71,7 +71,7 @@ function attachCallUIHost(stream,createWindow,{locked=false}={}) {
     }
     if(pending || message.id!==lastId+1)throw Error();lastId=message.id;
     if(message.type==='clear'){clear();pipe.send({id:message.id,type:'result',value:true});return;}
-    if(message.type!=='dialog' || !['consent','dialing','active','error'].includes(message.kind) ||
+    if(message.type!=='dialog' || !['consent','preparing','dialing','active','error'].includes(message.kind) ||
       ['video','muted','muteControl','cameraControl','cameraEnabled'].some(key=>typeof message[key]!=='boolean'))throw Error();
     const task={id:message.id,controller:new AbortController()};pending=task;
     Promise.resolve().then(()=>{

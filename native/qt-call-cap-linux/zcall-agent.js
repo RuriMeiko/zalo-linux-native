@@ -317,7 +317,10 @@ if(setupEnabled) {
     const {DesktopSignaling}=require('./desktop-signaling');
     const {OutgoingSetup}=require('./outgoing-setup');
     setupTransport=new DesktopSignaling(sendToHost);
-    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),onConfig:async(config,{callId,calleeId,video,peerName,current,signal,context})=>{
+    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),
+      onPreparing:options=>networkEnabled && mediaEnabled?
+        require('../android-zrtc/outgoing-preparation.cjs').outgoingPreparation(nativeCallDialog,options):async()=>{},
+      onConfig:async(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing})=>{
         const outgoingDialog=(kind,options)=>nativeCallDialog(kind,{...options,peerName});
         const {callerResponse}=await import('../android-zrtc/caller-response.mjs');
         let mapped;
@@ -349,6 +352,7 @@ if(setupEnabled) {
                 const codecs=await worker.request('audioCodecs'),extra=await worker.request('extendData');
                 if(codecs.code!==0 || extra.code!==0) throw new Error('Native offer unavailable');
                 setupPhase('native-server-ready');
+                await finishPreparing();current();
                 const {inviteOutgoing}=await import('../android-zrtc/outgoing-invitation.mjs');
                 const {acceptOutgoingAnswer}=await import('../android-zrtc/outgoing-answer.mjs');
                 if(video) {
@@ -390,7 +394,7 @@ if(setupEnabled) {
             // Keep online/RTP disabled until native readiness and device
             // selection are implemented. Do not emit 416 from a config ACK.
             return {callReady:false,offline:true};
-        } finally {try {await worker.close();}finally {await clearNativeCallUI();}}
+        } finally {try {await worker.close();}finally {try {await finishPreparing();}finally {await clearNativeCallUI();}}}
     }});
 }
 
@@ -483,7 +487,7 @@ function handleHostMessage(msg) {
                 if(callActive) return;
                 callActive=true;
                 outgoingSetup.start(data).catch(()=>setupPhase('setup-failed'))
-                    .finally(()=>endCall('native setup stage finished; media unavailable'));
+                    .finally(async()=>{await clearNativeCallUI();endCall('native setup stage finished');});
                 return;
             }
             // Honest surface: the ZRTP media engine is proprietary and absent,

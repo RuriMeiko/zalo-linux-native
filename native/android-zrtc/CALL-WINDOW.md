@@ -24,7 +24,14 @@ This is deployment evidence, not live two-account acceptance.
 - `node native/android-zrtc/test-call-ui-pipe.cjs`: real duplex protocol and
   composed host (mock Electron) verify pre-frame dialing, shared video display,
   controls, cancellation ACK, reuse after clear, lock and disconnect teardown.
-- `node scripts/test-call-control.mjs`: now includes 23 lifecycle suites.
+- `node scripts/test-call-control.mjs`: now includes 24 lifecycle suites.
+- `test-outgoing-preparation.cjs`: outgoing voice/video begins with the
+  cancellable `preparing` stage before configuration completes, retained during
+  native startup. Cancel aborts configuration/negotiation; handoff joins the
+  dialog cancellation ACK before dialing starts. Tests cover config/native/UI
+  failure and parent cancellation. The composed pipe test checks preparing →
+  dialing → active reuse with no duration before connection. This is source-only;
+  both helper and window protocol must be deployed together before live QA.
 - `test-incoming-preflight.mjs`: identity/name preparation failures show one
   generic error without raw signaling data, preserve the original failure even
   when UI delivery fails, and suppress UI/owner entry after cancellation before

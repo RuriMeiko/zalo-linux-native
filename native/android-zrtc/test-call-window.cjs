@@ -17,6 +17,12 @@ class Window extends EventEmitter {
 const turn=()=>new Promise(resolve=>setImmediate(resolve));
 (async()=>{
   const host=create({BrowserWindow:Window,ipcMain});
+  const preparingStage=new AbortController();
+  const preparing=host.dialog('preparing',{signal:preparingStage.signal});
+  const preparationCanceled=assert.rejects(preparing,/canceled/);await turn();
+  assert.equal(windows[0].messages.at(-1)[2].kind,'preparing');
+  assert.equal(windows[0].messages.at(-1)[2].startedAt,null);
+  preparingStage.abort();await preparationCanceled;
   const stage=new AbortController();
   const dialing=host.dialog('dialing',{signal:stage.signal,video:true});
   const canceled=assert.rejects(dialing,/canceled/);await turn();

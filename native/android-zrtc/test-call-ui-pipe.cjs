@@ -37,6 +37,13 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   const host=attach(hostStream,videoHost,{BrowserWindow:Window,ipcMain},{locked:false},previewHost);
   const preview=createVideoPipeSink(previewClient);
   const client=createCallUIClient(clientStream),video=createVideoPipeSink(videoClient);
+  const preparingAbort=new AbortController();
+  const preparing=client.dialog('preparing',{signal:preparingAbort.signal,video:true,peerName:'Liên hệ thử'});
+  const prepared=assert.rejects(preparing,/canceled/);await turn();
+  assert.equal(windows.length,1,'Preparation opens before signaling/media');
+  assert.equal(windows[0].messages.at(-1)[2].kind,'preparing');
+  assert.equal(windows[0].messages.at(-1)[2].startedAt,null);
+  preparingAbort.abort();await prepared;
   const dialingAbort=new AbortController();
   const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true,peerName:'Liên hệ thử tiếng Việt 🎥'});
   const aborted=assert.rejects(dialing,/canceled/);await turn();

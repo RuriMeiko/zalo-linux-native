@@ -66,7 +66,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
     },
     clearVideo(source='remote'){if(window && !disposed)window.webContents.send('linux-call-video-clear',source);},
     async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true,peerName=''}={}) {
-      if(disposed || pending || !['consent','dialing','active','error'].includes(kind) || !signal || signal.aborted)
+      if(disposed || pending || !['consent','preparing','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
       await ensure();
       if(disposed || signal.aborted)throw new Error('Call window canceled');

@@ -6,10 +6,12 @@ const {peerName:normalizePeerName}=require('../android-zrtc/call-presentation.cj
 // onConfig must validate/apply the decoded response; a 401 response is never
 // treated as remote ringing. 416 must wait for actual native media readiness.
 class OutgoingSetup {
-    constructor(signaling,{onConfig,onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false,getContext=()=>undefined}={}) {
+    constructor(signaling,{onConfig,onPreparing=()=>async()=>{},onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false,getContext=()=>undefined}={}) {
         if(typeof onConfig!=='function') throw new TypeError('Missing native config consumer');
         if(typeof allowVideo!=='boolean')throw new TypeError('Video opt-in must be boolean');
         if(typeof getContext!=='function')throw new TypeError('Invalid setup context provider');
+        if(typeof onPreparing!=='function')throw new TypeError('Invalid preparation callback');
+        this.onPreparing=onPreparing;
         this.getContext=getContext;
         this.allowVideo=allowVideo;
         this.signaling=signaling;this.onConfig=onConfig;this.onPhase=onPhase;
@@ -30,14 +32,22 @@ class OutgoingSetup {
         const current=()=>{if(generation!==this.generation) throw new Error('Outgoing setup canceled');};
         // Publish busy before callbacks can re-enter start().
         this.active=Promise.resolve().then(async()=>{
+            const signal=this.abort.signal;
+            const cancel=()=>{if(generation===this.generation){++this.generation;this.abort.abort();this.signaling.cancel(401);}};
+            let finishPreparing=async()=>{};
+            try {
+            current();
+            finishPreparing=this.onPreparing({signal,video,peerName,cancel});
+            if(typeof finishPreparing!=='function')throw new TypeError('Missing preparation cleanup');
             const context=this.getContext();
             current();this.onPhase('requesting-config');current();
             const config=await this.signaling.request(401,{
                 calleeId,callId,codec:'[]',type,
             });
             current();this.onPhase('received-config');current();
-            const result=await this.onConfig(config,{callId,calleeId,video,peerName,current,signal:this.abort.signal,context});
+            const result=await this.onConfig(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing});
             current();return result;
+            } finally {if(typeof finishPreparing==='function')await finishPreparing();}
         });
         return this.active.finally(()=>{this.active=null;});
     }

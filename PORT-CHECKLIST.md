@@ -10,12 +10,16 @@ Do not publish a PR; finish native functionality before release claims.
 - Native outgoing and opt-in incoming are wired into the desktop helper.
   The installed app was restarted with source checkpoint `3f34275` on September 10;
   later source changes are not proof that a running helper has reloaded them.
-- `node scripts/test-call-control.mjs` runs 23 deterministic suites, including
+- `node scripts/test-call-control.mjs` runs 24 deterministic suites, including
   real driver/owner/session composition with mocked native/server/UI boundaries.
   It covers cancellation during consent, answer and media in voice/video,
   local end, native faults, no remote hangup echo and cleanup before errors.
   Pre-owner identity/name failures now show a generic bounded error; cancellation
   suppresses this notification. This latest change is source-tested, not deployed.
+- Outgoing voice/video now opens a cancellable preparation stage before the 401
+  response, keeping it through native network startup. It joins the UI stage
+  before handing over to dialing; unit and composed pipe tests pass. Requires
+  matched helper/window deployment and real UI/live-call acceptance.
 - Native H.264/PCM loopback evidence and deployment details are maintained in
   `INTEGRATION-STATUS.md`. These do not prove two-account media acceptance.
 - Shared call window, remote display, local preview, mic and camera toggles are

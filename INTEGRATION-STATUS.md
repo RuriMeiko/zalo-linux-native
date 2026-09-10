@@ -1,5 +1,13 @@
 # Full-app recovery integration — 2026-09-10
 
+New source-only outgoing UI: `preparing` opens before configuration completes
+and remains cancellable throughout native startup. Its Vietnamese status is
+“Đang chuẩn bị cuộc gọi”, with “Hủy”; it does not claim remote ringing. The
+preparation owner joins its dialog before the existing dialing/active owner
+takes over. Both voice/video cancellation/failure fixtures and the composed
+control-pipe stage transition pass. Deploy helper and window protocol together;
+no live app restart or new two-account acceptance is claimed here.
+
 Latest signaling source fix: canceled/timed-out configuration command 401 can
 be retried on the same helper using a fresh call ID. Success responses must
 carry the exact numeric requested `id`; late successes/errors are ignored.
