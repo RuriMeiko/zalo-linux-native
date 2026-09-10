@@ -73,6 +73,28 @@ function fixture() {
   await assert.rejects(f.run(),/already owned/);
   join.resolve();assert.deepEqual(await running,{accepted:true,callReady:false});
   assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));f.clean();
+  assert.ok(!f.events.includes(409),'do not echo remote hangup');
+}
+for(const apiFailure of [false,true]) {
+  const f=fixture(),controller=new AbortController(),entered=defer();
+  const original=f.transport.request;
+  f.transport.request=async(command,payload)=>{
+    if(command===409){
+      assert.deepEqual(payload,{toId:'456',callId:789});
+      assert.equal(f.events.at(-1),'media-joined');
+      if(apiFailure){f.events.push(409);throw new Error('end API unavailable');}
+    }
+    return original(command,payload);
+  };
+  const running=f.run({signal:controller.signal,requestConsent:async()=>true,runMedia:async(_worker,{signal})=>{
+    const stopped=defer();signal.addEventListener('abort',()=>stopped.resolve(),{once:true});
+    entered.resolve();await stopped.promise;f.events.push('media-joined');
+  }});
+  const result=apiFailure?assert.rejects(running,/end API unavailable/):running;
+  await entered.promise;controller.abort();await result;
+  assert.equal(f.events.filter(x=>x===409).length,1);
+  assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf(409));f.clean();
+  await f.run();f.clean();
 }
 {
   const f=fixture();

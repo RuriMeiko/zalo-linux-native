@@ -79,6 +79,8 @@ const vm=require('node:vm');
     assert.deepEqual(calls[0].args,['456',123,'[]',1]);
     await integrated.request(416,{calleeId:'456',rtcpAddress:'127.0.0.1:9',rtpAddress:'127.0.0.1:8',codec:'[]',extendData:'{}',session:'fixture',callId:123});
     assert.deepEqual(calls[1],{name:'sendRequestCall',args:['456','127.0.0.1:9','127.0.0.1:8','[]','{}','fixture',123]});
+    await integrated.request(409,{toId:'456',callId:123});
+    assert.deepEqual(calls[2],{name:'sendEndCall',args:['456',123]});
     const errors=[];
     renderer._sendToNative=m=>{errors.push(m);integrated.receive(m);};
     renderer.handleSendSignalError(401,{error_code:9},{callId:123});

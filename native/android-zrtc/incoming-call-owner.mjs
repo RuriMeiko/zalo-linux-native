@@ -36,7 +36,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
   if(signal?.aborted)throw new Error('Incoming call canceled');
   const controller=new AbortController(),session=new IncomingSession(worker,transport,{allowVideo:video});
   owners.add(worker);
-  let failure,ringTimer,stopping,mediaRunning=false;
+  let failure,ringTimer,stopping,mediaRunning=false,mediaStarted=false,remoteEnded=false;
   const pending=new Set();
   const cancel=()=>{
     controller.abort();
@@ -50,6 +50,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     if(event.act!=='answer_ack') {
       let key;try {key=incomingControlKey(envelope);}catch {return;}
       if(key.callId!==decoded.key.callId || key.callerId!==decoded.key.callerId)return;
+      remoteEnded=true;
       cancel();return;
     } else if(String(event.data?.callId)!==String(decoded.key.callId))return;
     const task=session.control(envelope,context).then(result=>{
@@ -74,7 +75,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     if(accepted!==true)return {accepted:false,callReady:false};
     await session.answer({callerId,userAccepted:true});check();
     await session.waitForAnswerAck({timeoutMs:ackTimeoutMs,signal:controller.signal});check();
-    await session.startMedia();check();
+    await session.startMedia();mediaStarted=true;check();
     mediaRunning=true;
     try {await runMedia(worker,{video,signal:controller.signal});}
     finally {mediaRunning=false;}
@@ -84,7 +85,16 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
   } finally {
     clearTimeout(ringTimer);controller.abort();
     signal?.removeEventListener('abort',abort);transport.off('control',control);
-    try {await Promise.all([...pending]);await stopping;await session.dispose();}
+    // Desktop command 409 is sendEndCall(toId, callId), not a ZRTC enum.
+    // Do not echo a remote hangup or guess the pre-answer rejection grammar.
+    // The media task has already joined before reaching this cleanup.
+    try {
+      try {
+        await Promise.all([...pending]);await stopping;
+        if(mediaStarted && !remoteEnded)
+          await transport.request(409,{toId:callerId,callId:decoded.key.callId});
+      } finally {await session.dispose();}
+    }
     finally {session.off('phase',phase);owners.delete(worker);}
   }
 }
