@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {validateConfig,launchSpec,isRunningApp} from './native-launch.mjs';
+import {validateConfig,launchSpec,isRunningApp,inspectCallDevices,preflight} from './native-launch.mjs';
 const electron='/opt/electron/electron',app='/opt/test app';
 for(const cmd of [`${electron}\0--no-sandbox\0${app}\0`,`${electron} --no-sandbox ${app}\0`,`${electron} ${app}\0`])
   assert.equal(isRunningApp(cmd,electron,app),true);
@@ -42,3 +42,28 @@ for(const key of ['ELECTRON_RUN_AS_NODE','LD_PRELOAD','ZALO_ZCALL_CAPTURE','ZALO
 assert.deepEqual(launchSpec({...config,noSandbox:true,cdpPort:9222},{}).args,
   ['--no-sandbox','--remote-debugging-address=127.0.0.1','--remote-debugging-port=9222',config.appDir]);
 console.log('PASS portable native launch: strict config, Bluetooth names, no proxy/capture inheritance, explicit sandbox/CDP');
+const cameraConfig={...config,experimentalVideo:true,videoDevice:'/dev/video0'};
+for(const mode of ['ready','camera-missing','camera-file','no-output','pulse-error','malformed']) {
+  const selected=structuredClone(cameraConfig),queries=[];
+  const warnings=await inspectCallDevices(selected,{
+    statDevice:async device=>{
+      assert.equal(device,selected.videoDevice);
+      if(mode==='camera-missing')throw new Error('private filesystem error');
+      return {isCharacterDevice:()=>mode!=='camera-file'};
+    },
+    queryPulse:async(command,args,options)=>{
+      assert.equal(command,'pactl');assert.equal(options.timeout,3000);queries.push(args[2]);
+      if(mode==='pulse-error')throw new Error('private server error');
+      if(mode==='malformed')return {stdout:'not JSON'};
+      return {stdout:JSON.stringify([{name:args[2]==='sources'?selected.source:mode==='no-output'?'auto_null':selected.sink}])};
+    },
+  });
+  assert.deepEqual(queries,['sources','sinks']);
+  assert.deepEqual(selected,cameraConfig,'Device inspection must not rewrite selections');
+  const expected=mode==='ready'?[]:mode.startsWith('camera')?['Selected camera is unavailable']:
+    mode==='no-output'?['Selected sink is unavailable']:['Unable to check selected source','Unable to check selected sink'];
+  assert.deepEqual(warnings,expected);
+}
+await assert.rejects(preflight(config,{requireDevices:'false'}),/boolean/);
+await assert.rejects(preflight({...config,runtime:'/nonexistent-zalo-runtime-fixture'}, {requireDevices:false}),/ENOENT/);
+console.log('PASS device readiness: disconnect warnings, no silent fallback, bounded Pulse queries, redacted errors; runtime remains required');

@@ -43,6 +43,12 @@ bash start.sh /absolute/path/launch.json --check
 ```
 
 `--check` verifies runtime files, the pinned ZRTC hash, and exact audio devices.
+Normal launch still requires the runtime and pinned library, but a missing
+configured mic, speaker or camera now emits a terminal warning instead of
+preventing access to messaging. Device selections are preserved; there is no
+automatic default-device or `auto_null` fallback. Reconnect the configured
+devices before calling. `--check` remains strict and exits unsuccessfully while
+any selected device is unavailable. This is presence checking, not a media test.
 It does not prove call connectivity, renderer patch compatibility or camera
 support. Close an existing Zalo instance from the tray before launching; existing
 instances are rejected to avoid silently retaining old environment settings.

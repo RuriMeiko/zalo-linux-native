@@ -22,6 +22,17 @@ Reconnect/select a real output and rerun preflight before attempting restart.
 
 ## Source and earlier deployment evidence
 
+The launcher now separates app startup from physical call-device readiness.
+Runtime files/hash are still required; missing selected devices produce terminal
+warnings on normal launch, while `--check` remains strict. Host-side preflight
+was executed with the current config: launch mode returns only
+`Selected sink is unavailable`, strict mode rejects as expected. No app was
+started and no device was opened in this check. Tests cover missing camera,
+non-device camera path, missing output, failed/malformed Pulse queries and
+unchanged selections; all 24 call-control suites pass. This supersedes the
+old device-presence startup blocker, not the outstanding live-call readiness
+requirement or the fact that the installed app has not been restarted.
+
 New source-only outgoing UI: `preparing` opens before configuration completes
 and remains cancellable throughout native startup. Its Vietnamese status is
 “Đang chuẩn bị cuộc gọi”, with “Hủy”; it does not claim remote ringing. The

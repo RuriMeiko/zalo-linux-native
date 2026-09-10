@@ -53,7 +53,25 @@ export function launchSpec(config,inherited=process.env) {
   args.push(c.appDir);
   return {executable:c.electron,args,env};
 }
-export async function preflight(config) {
+// Devices can disappear while the app is closed. Preserve explicit selections
+// and let messaging launch; strict --check still reports call readiness failure.
+export async function inspectCallDevices(config,{statDevice=stat,queryPulse=exec}={}) {
+  const c=validateConfig(config),warnings=[];
+  if(c.experimentalVideo) {
+    try {if(!(await statDevice(c.videoDevice)).isCharacterDevice())warnings.push('Selected camera is unavailable');}
+    catch {warnings.push('Selected camera is unavailable');}
+  }
+  for(const [field,kind] of [['source','sources'],['sink','sinks']]) {
+    try {
+      const result=await queryPulse('pactl',['--format=json','list',kind],{timeout:3000,maxBuffer:2*1024*1024});
+      const rows=JSON.parse(result.stdout);
+      if(!Array.isArray(rows) || !rows.some(row=>row?.name===c[field]))warnings.push(`Selected ${field} is unavailable`);
+    } catch {warnings.push(`Unable to check selected ${field}`);}
+  }
+  return warnings;
+}
+export async function preflight(config,{requireDevices=true}={}) {
+  if(typeof requireDevices!=='boolean')throw new TypeError('requireDevices must be boolean');
   const c=validateConfig(config);
   for(const file of [c.electron,path.join(c.appDir,'bootstrap.js'),
     path.join(c.runtime,'bionic/linker64'),path.join(c.runtime,'results/zrtc-worker'),
@@ -62,13 +80,9 @@ export async function preflight(config) {
   }
   if(createHash('sha256').update(await readFile(path.join(c.runtime,'apk/lib/x86_64/libzrtc.so'))).digest('hex')!==hash)
     throw new Error('Unsupported native library hash');
-  if(c.experimentalVideo && !(await stat(c.videoDevice)).isCharacterDevice())
-    throw new Error('Selected camera is not a character device');
-  for(const [field,kind] of [['source','sources'],['sink','sinks']]) {
-    const result=await exec('pactl',['--format=json','list',kind],{timeout:3000,maxBuffer:2*1024*1024});
-    const rows=JSON.parse(result.stdout);
-    if(!Array.isArray(rows) || !rows.some(row=>row.name===c[field])) throw new Error(`Selected ${field} is unavailable`);
-  }
+  const warnings=await inspectCallDevices(c);
+  if(requireDevices && warnings.length)throw new Error(warnings.join('; '));
+  return warnings;
 }
 export function isRunningApp(cmdline,executable,appDir) {
   if(path.basename(executable)!=='electron') return false;
@@ -100,9 +114,10 @@ async function main() {
     throw new Error('Usage: node scripts/native-launch.mjs [config.json] [--check]');
   const configPath=args.find(a=>a!=='--check') || path.join(process.env.XDG_CONFIG_HOME || path.join(homedir(),'.config'),'zalo-native-linux','launch.json');
   const config=validateConfig(JSON.parse(await readFile(configPath,'utf8')));
-  await preflight(config);
+  const warnings=await preflight(config,{requireDevices:args.includes('--check')});
   if(args.includes('--check')) {console.log('PASS native runtime and configured device presence; no call or camera capture started');return;}
   await rejectExistingApp(config.appDir);
+  for(const warning of warnings)console.warn(`Call device warning: ${warning}. Reconnect the configured device before calling; selection unchanged.`);
   const {executable,args:electronArgs,env}=launchSpec(config);
   console.log(config.experimentalVideo?'Starting experimental native voice/video; end-to-end video acceptance remains unverified.':
     'Starting experimental native voice; video is disabled.');
