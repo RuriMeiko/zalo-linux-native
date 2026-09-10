@@ -66,12 +66,15 @@ header.state.isMaximized = true;
 assert.ok(buttons().some(button => button.props['aria-label'] === 'Khôi phục'));
 const css = flatten(header.render()).find(node => node.type === 'style').children.join('');
 assert.ok(css.includes('#titleBar{position:relative;left:0;width:100%;padding-left:0;height:32px;min-height:32px'));
+assert.ok(css.includes('background:var(--layer-background,#fff);color:var(--text-primary,#293a57)'));
+assert.ok(css.includes('#titleBar:not(.locked){z-index:100}'));
 assert.ok(css.includes('width:24px;height:24px'));
 assert.ok(css.includes('svg{width:12px;height:12px;'));
 assert.ok(css.includes('-webkit-app-region:no-drag'));
 assert.ok(css.includes('#titleBar.image-show__title{height:32px;min-height:32px'));
 assert.ok(css.includes('.media-viewer .media-viewer__title-bar{position:relative;width:100%;height:32px;min-height:32px'));
-assert.ok(css.includes('overflow:hidden;background:#2e2e32'));
+assert.ok(css.includes('overflow:hidden;background:var(--title-ptv,#333)'));
+assert.ok(css.includes('background:transparent;color:inherit'));
 const mainHtml = process.argv.includes('--main-html');
 if (process.argv.includes('--html') || mainHtml) {
   header.state.isMaximized = false;

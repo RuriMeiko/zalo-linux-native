@@ -15,7 +15,11 @@
   }
   const title=bar.querySelector('.title-name');
   const titleStyle=getComputedStyle(title);
-  if(titleStyle.color!=='rgb(246, 245, 244)' || titleStyle.fontSize!=='13px')
-    throw new Error('Image title typography regressed');
-  return `PASS rendered ${viewer?'image':'main'} header: shared 32px bar, contained 24px controls, 13px title`;
+  const barStyle=getComputedStyle(bar);
+  const expectedColor=viewer?'rgb(255, 255, 255)':'rgb(41, 58, 87)';
+  const expectedBackground=viewer?'rgb(51, 51, 51)':'rgb(255, 255, 255)';
+  if(titleStyle.color!==expectedColor || titleStyle.fontSize!=='13px' ||
+    barStyle.backgroundColor!==expectedBackground || (!viewer && barStyle.zIndex!=='100'))
+    throw new Error('Theme-aware header rendering regressed');
+  return `PASS rendered ${viewer?'image':'main'} header: shared 32px bar, contained controls, Zalo theme colors`;
 })();
