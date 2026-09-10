@@ -362,7 +362,7 @@ if(setupEnabled) {
                     return await withOutgoingCallUI(worker,{signal,video:true,
                         runMedia:(mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,device,sink:videoSink,preview:getNativePreviewSink()})},
                         ({signal:videoSignal,onAnswered,beforeCleanup})=>
-                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,onPhase:setupPhase,beforeCleanup,
+                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,video:true,onPhase:setupPhase,beforeCleanup,
                             onAnswer:async(control,owner)=>{
                                 const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
                                     {calleeId,signal:videoSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});

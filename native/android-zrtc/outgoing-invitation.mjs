@@ -1,8 +1,9 @@
 // Holds native ownership across the invitation/peer response. Does not claim
 // accepted media from an API ACK or an observed answer control message.
 export async function inviteOutgoing(worker,signaling,mapped,ready,
-  {calleeId,signal,onPhase=()=>{},onAnswer,beforeCleanup=async()=>{},timeoutMs=45000}={}) {
+  {calleeId,signal,video=false,onPhase=()=>{},onAnswer,beforeCleanup=async()=>{},timeoutMs=45000}={}) {
   if(typeof beforeCleanup!=='function')throw new TypeError('Invalid invitation cleanup');
+  if(typeof video!=='boolean')throw new TypeError('Invalid invitation media type');
   if(typeof calleeId!=='string' || !/^[1-9][0-9]{0,19}$/.test(calleeId)) throw new Error('Invalid invitation peer');
   if(!Number.isInteger(timeoutMs) || timeoutMs<1) throw new Error('Invalid invitation timeout');
   const {callId,partnerId,session}=mapped.configuration;
@@ -72,11 +73,14 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
     clearTimeout(timer);signal?.removeEventListener('abort',abort);
     signaling.off('control',onControl);worker.off('callEvent',onFault);worker.off('nativeFault',onRuntimeFault);
     done=true;await queue;
-    // End the remote attempt on local cancellation/failure or completion of
-    // observation-only mode; an integrated answer retains ownership above.
+    // A pending invitation and a connected call use different desktop APIs.
+    // Command 405 maps to /api/voicecall/cancel and stops peer ringing;
+    // command 409 is reserved for a peer that already answered.
     try {await beforeCleanup();}
     finally {if(sent && !remoteEnded) {
-      try {await signaling.request(409,{toId:calleeId,callId});onPhase('remote-cleanup-ack');}
+      const command=answered?409:405;
+      const payload=answered?{toId:calleeId,callId}:{toId:calleeId,callId,callType:video?1:0};
+      try {await signaling.request(command,payload);onPhase('remote-cleanup-ack');}
       catch {onPhase('remote-cleanup-failed');}
     }}
   }

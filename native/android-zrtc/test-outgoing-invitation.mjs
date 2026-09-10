@@ -36,11 +36,34 @@ for(const mode of ['answer','remote-end','timeout','error','abort','wrong-peer',
     } else await assert.rejects(pending,/timeout|failed|canceled/);
     assert.equal(frames[0].command,416);
     assert.equal(frames[0].data.session,'fixture');
-    assert.equal(frames.filter(f=>f.command===409).length,mode==='remote-end'?0:1);
+    const connected=['answer','cleanup-error'].includes(mode);
+    assert.equal(frames.filter(f=>f.command===409).length,connected?1:0);
+    assert.equal(frames.filter(f=>f.command===405).length,!connected && mode!=='remote-end'?1:0);
+    if(!connected && mode!=='remote-end')assert.deepEqual(frames.find(f=>f.command===405).data,
+      {toId:'9999999999999999999',callId:789,callType:0});
     if(mode==='timeout' || mode==='wrong-peer') assert.ok(!phases.includes('peer-ringing'));
     if(mode==='cleanup-error') assert.ok(phases.includes('remote-cleanup-failed'));
     assert.equal(worker.listenerCount('callEvent'),0);assert.equal(signaling.listenerCount('control'),0);
   } finally {signaling.close();}
+}
+// Canceling an unanswered video invitation must stop peer ringing with the
+// video callType. It must never use the connected-call endpoint.
+{
+  const worker=new EventEmitter(),frames=[],abort=new AbortController();
+  worker.request=async op=>({code:0,data:op==='audioCodecs'?'[{"name":"opus/16000/1","payload":112}]':'{}'});
+  const signaling=new DesktopSignaling(message=>{
+    frames.push(message);
+    queueMicrotask(()=>{
+      signaling.receive({type:'recvSignal',command:message.command,data:undefined});
+      if(message.command===416)abort.abort();
+    });
+  });
+  await assert.rejects(inviteOutgoing(worker,signaling,mapped,ready,
+    {calleeId:'9999999999999999999',signal:abort.signal,video:true}),/canceled/);
+  assert.deepEqual(frames.filter(frame=>frame.command===405).map(frame=>frame.data),
+    [{toId:'9999999999999999999',callId:789,callType:1}]);
+  assert.equal(frames.some(frame=>frame.command===409),false);
+  signaling.close();
 }
 // An integrated answer must retain the worker/transport until remote hangup.
 {
@@ -98,7 +121,7 @@ for(const mode of ['remote-during-ack','remote-before-answer-task','runtime-faul
   assert.equal(frames.filter(f=>f.command===409).length,mode.startsWith('remote')?0:1);
   signaling.close();exitWorker({code:0});
 }
-console.log('PASS invitation lifecycle: retained answer, immediate remote cancel, runtime/exit during ACK, cleanup; no claimed media');
+console.log('PASS invitation lifecycle: retained answer, pending voice/video cancel 405, connected end 409, runtime/exit cleanup; no claimed media');
 for(const mode of ['remote-end','local-end','camera-failure']) {
   const worker=new EventEmitter(),frames=[],abort=new AbortController();
   worker.request=async op=>({code:0,data:op==='audioCodecs'?'[{"name":"opus/16000/1","payload":112}]':'{}'});
