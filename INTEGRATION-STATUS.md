@@ -1,5 +1,14 @@
 # Full-app recovery integration — 2026-09-10
 
+Latest source checkpoint: unified call window is now wired to outgoing voice,
+outgoing video and incoming call owners via a dedicated control pipe; remote
+video frames render in that same window. Electron fixture with synthetic video,
+Answer → mute → unmute → End passed through both pipes. This is not a new live
+two-account acceptance result and is not deployed to the running app yet.
+Camera toggle/local preview/contact presentation remain incomplete. See
+`native/android-zrtc/CALL-WINDOW.md`; the historical deployment notes below
+must not be read as deployment evidence for the latest source.
+
 Development checkout: `/home/rurimeiko/zalo-linux-native`.
 This is a Git worktree: its shared Git database remains in
 `/home/rurimeiko/zalo-native-recovery/.git`. Both directories are persistent

@@ -10889,14 +10889,17 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                         d.zsymb(4, "DkRZBg", ["serverSend on listening", "8S-yLd"])
                     }))), d.zsymb(4, "jU0s7O", ["start client", "01p0C-"], e);
                     const i = n("QduZ").spawn;
-                    const linuxVideo = process.platform === "linux" && process.env.ZALO_ZCALL_NATIVE_VIDEO === "1" && process.env.ZALO_ZCALL_NATIVE_NETWORK === "1" && process.env.ZALO_ZCALL_NATIVE_MEDIA === "1"
-                        ? require(o.join(o.dirname(process.env.ZALO_ZCALL_AGENT_PATH || e), "..", "android-zrtc", "video-window.cjs")) : null;
+                    const linuxCallUI = process.platform === "linux" && process.env.ZALO_ZCALL_NATIVE_NETWORK === "1" && process.env.ZALO_ZCALL_NATIVE_MEDIA === "1"
+                        ? require(o.join(o.dirname(process.env.ZALO_ZCALL_AGENT_PATH || e), "..", "android-zrtc", "desktop-call-window.cjs")) : null;
+                    const linuxVideo = linuxCallUI && process.env.ZALO_ZCALL_NATIVE_VIDEO === "1";
                     const helperEnv = {...process.env};
                     helperEnv.ZALO_ZCALL_APP_LOCKED = linuxVideoLocked ? "1" : "0";
                     delete helperEnv.ZALO_ZCALL_VIDEO_PIPE;
+                    delete helperEnv.ZALO_ZCALL_UI_PIPE;
                     if (linuxVideo) helperEnv.ZALO_ZCALL_VIDEO_PIPE = "3";
-                    N = i(e, [g, y], {env: helperEnv, stdio: linuxVideo ? ["pipe", "pipe", "pipe", "pipe"] : ["pipe", "pipe", "pipe"]});
-                    if (linuxVideo) linuxVideoDisplay = linuxVideo(N.stdio[3], require("electron"), {locked: linuxVideoLocked});
+                    if (linuxCallUI) helperEnv.ZALO_ZCALL_UI_PIPE = "4";
+                    N = i(e, [g, y], {env: helperEnv, stdio: linuxCallUI ? ["pipe", "pipe", "pipe", linuxVideo ? "pipe" : "ignore", "pipe"] : ["pipe", "pipe", "pipe"]});
+                    if (linuxCallUI) linuxVideoDisplay = linuxCallUI(N.stdio[4], linuxVideo ? N.stdio[3] : null, require("electron"), {locked: linuxVideoLocked});
                     N.stdout.setEncoding("utf8"), N.stderr.setEncoding("utf8"), N.stdout.on("data", (e => {
                         let t = e.replace(/\r|\n/g, "").trim();
                         t && d.zsymb(4, "4LwuIQ", ["client: stdout data", "RLmZFk"], t)

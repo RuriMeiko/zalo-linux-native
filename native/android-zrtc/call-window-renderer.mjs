@@ -1,4 +1,11 @@
+import {createCanvasVideoRenderer} from './canvas-video-renderer.mjs';
 const get=id=>document.getElementById(id);
+const videoRenderer=createCanvasVideoRenderer(get('remote'));
+window.linuxCall.onFrame(frame=>{
+  try {videoRenderer.render(frame);get('remote').hidden=false;document.body.classList.add('with-video');}
+  finally {frame.pixels.fill(0);}
+},()=>{videoRenderer.clear();get('remote').hidden=true;document.body.classList.remove('with-video');});
+window.addEventListener('pagehide',()=>videoRenderer.dispose(),{once:true});
 let revision=0,state,busy=true;
 function controls() {
   for(const id of ['end','answer','mic'])get(id).disabled=busy;

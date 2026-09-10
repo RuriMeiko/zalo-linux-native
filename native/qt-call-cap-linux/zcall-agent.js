@@ -276,6 +276,19 @@ const mediaEnabled=process.env.ZALO_ZCALL_NATIVE_MEDIA==='1';
 // Outgoing camera transport only; remote video rendering remains incomplete.
 const videoEnabled=process.env.ZALO_ZCALL_NATIVE_VIDEO==='1' && networkEnabled && mediaEnabled;
 let nativeVideoSink;
+let nativeCallUI;
+function getNativeCallUI() {
+    if(process.env.ZALO_ZCALL_UI_PIPE!=='4')throw new Error('Native call UI pipe unavailable');
+    if(!nativeCallUI) {
+        const stream=new (require('net').Socket)({fd:4,readable:true,writable:true});
+        nativeCallUI=require('../android-zrtc/call-ui-pipe.cjs').createCallUIClient(stream);
+    }
+    return nativeCallUI;
+}
+const nativeCallDialog=(kind,options)=>getNativeCallUI().dialog(kind,options);
+async function clearNativeCallUI() {
+    if(nativeCallUI)try {await nativeCallUI.clear();}catch {setupPhase('call-ui-cleanup-failed');}
+}
 function getNativeVideoSink() {
     if(process.env.ZALO_ZCALL_VIDEO_PIPE!=='3')throw new Error('Native video display pipe unavailable');
     if(!nativeVideoSink) {
@@ -345,7 +358,7 @@ if(setupEnabled) {
                                 const media=JSON.parse(state.data);
                                 if(!media.videoCall || !media.canTransferMedia || media.codecId!==4)throw new Error('Peer did not negotiate native H.264 video');
                                 current();owner.current();await onAnswered();return answer;
-                            }}));
+                            }}),nativeCallDialog);
                 }
                 if(mediaEnabled) {
                     const {withOutgoingVoiceUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');
@@ -355,7 +368,7 @@ if(setupEnabled) {
                                 const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
                                     {calleeId,signal:voiceSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});
                                 current();owner.current();await onAnswered();return answer;
-                            }}));
+                            }}),nativeCallDialog);
                 }
                 return await inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal,onPhase:setupPhase});
             }
@@ -368,7 +381,7 @@ if(setupEnabled) {
             // Keep online/RTP disabled until native readiness and device
             // selection are implemented. Do not emit 416 from a config ACK.
             return {callReady:false,offline:true};
-        } finally {await worker.close();}
+        } finally {try {await worker.close();}finally {await clearNativeCallUI();}}
     }});
 }
 
@@ -404,7 +417,8 @@ function handleHostMessage(msg) {
                     signal:attempt.controller.signal,onPhase:phase=>{
                         setupPhase('incoming-'+phase);
                         if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});
-                    }})).catch(()=>setupPhase('incoming-failed')).finally(()=>{
+                    }},{dialog:nativeCallDialog})).catch(()=>setupPhase('incoming-failed')).finally(async()=>{
+                        await clearNativeCallUI();
                         if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}
                     });
         }

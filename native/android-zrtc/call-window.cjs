@@ -4,6 +4,13 @@ const path=require('node:path');
 // dialog stages or waiting for a mute ACK must not destroy the window.
 module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
   let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false;
+  let framePending,frameSerial=0;
+  const painted=(event,id,ok)=>{
+    if(!window || event.sender!==window.webContents || id!==framePending?.id)return;
+    const task=framePending;framePending=null;clearTimeout(task.timer);
+    if(ok===true)task.resolve();else task.reject(new Error('Call video rendering failed'));
+  };
+  ipcMain.on('linux-call-painted',painted);
   const settle=(error,value)=>{
     const current=pending;if(!current)return;
     pending=null;current.signal.removeEventListener('abort',current.abort);
@@ -41,6 +48,20 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
     return loading;
   };
   return {
+    async render(frame) {
+      if(disposed || !loading)throw new Error('Call display unavailable');
+      await loading;
+      if(disposed || !window || framePending)throw new Error('Call display unavailable');
+      return new Promise((resolve,reject)=>{
+        const id=++frameSerial;
+        framePending={id,resolve,reject,timer:setTimeout(()=>{
+          framePending=null;reject(new Error('Call video renderer timeout'));
+        },4000)};
+        try {window.webContents.send('linux-call-frame',id,{...frame,sequence:frame.sequence.toString()});}
+        catch {clearTimeout(framePending.timer);framePending=null;reject(new Error('Call video unavailable'));}
+      });
+    },
+    clearVideo(){if(window && !disposed)window.webContents.send('linux-call-video-clear');},
     async dialog(kind,{signal,video=false,muted=false,muteControl=false}={}) {
       if(disposed || pending || !['consent','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
@@ -63,6 +84,8 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
     dispose() {
       if(disposed)return;disposed=true;settle(new Error('Call window closed'));
       ipcMain.removeListener('linux-call-action',action);
+      ipcMain.removeListener('linux-call-painted',painted);
+      if(framePending){clearTimeout(framePending.timer);framePending.reject(new Error('Call window closed'));framePending=null;}
       if(window && !window.isDestroyed())window.destroy();window=null;
     }
   };
