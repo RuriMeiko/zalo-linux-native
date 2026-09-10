@@ -7,6 +7,12 @@ preparation owner joins its dialog before the existing dialing/active owner
 takes over. Both voice/video cancellation/failure fixtures and the composed
 control-pipe stage transition pass. Deploy helper and window protocol together;
 no live app restart or new two-account acceptance is claimed here.
+The source has now passed isolated Electron 22 UI checks through agent-browser:
+pre-configuration Hủy cancels the real setup/control-pipe composition with
+synthetic signaling; a separate fixture passes answer, mic/camera toggles and
+end with synthetic video. Local preview hides/restores without hiding remote
+video. Both test processes exited 0. This strengthens UI evidence only; it does
+not replace deployed/live media acceptance.
 
 Latest signaling source fix: canceled/timed-out configuration command 401 can
 be retried on the same helper using a fresh call ID. Success responses must

@@ -18,6 +18,20 @@ This is deployment evidence, not live two-account acceptance.
 
 ## Verified on 2026-09-10
 
+- Latest source checkpoint `233db7e` was exercised in isolated Electron 22 via
+  agent-browser on loopback CDP 9234. The new
+  `test-call-window-electron.cjs --preparation-only` composes the real outgoing
+  setup and control pipe with a deliberately pending synthetic 401 response.
+  The visible Vietnamese preparing status/name and enabled Hủy button were
+  inspected; clicking Hủy canceled setup, sent no invitation, started no worker,
+  cleared the window and exited 0. Screenshot retained under home:
+  `~/zalo-native-recovery/call-preparation-qa.png`.
+- A separate run of the full Electron fixture passed Answer → mute → unmute →
+  camera off → camera on → End. DOM checks confirmed local preview hidden on
+  camera-off and restored on camera-on, while remote canvas stayed visible.
+  Both fixture processes exited 0 and browser sessions were closed. No account,
+  physical device, live signaling or installed app restart was involved.
+
 - `node native/android-zrtc/test-call-window.cjs`: reuse across stages and mute
   acknowledgements, stable duration origin, consent, close during an ACK gap,
   sender/revision/action validation, cleanup, sandbox permissions.

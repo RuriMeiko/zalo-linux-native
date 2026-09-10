@@ -20,6 +20,25 @@ app.whenReady().then(async()=>{
   const video=require('./video-pipe.cjs').createVideoPipeSink(videoClient),controller=new AbortController();
   const timeout=setTimeout(()=>{controller.abort();host.dispose();app.exit(1);},180000);
   try {
+    if(process.argv.includes('--preparation-only')) {
+      const assert=require('node:assert/strict');
+      const {OutgoingSetup}=require('../qt-call-cap-linux/outgoing-setup');
+      const {DesktopSignaling}=require('../qt-call-cap-linux/desktop-signaling');
+      const {outgoingPreparation}=require('./outgoing-preparation.cjs');
+      const frames=[];
+      const signaling=new DesktopSignaling(frame=>frames.push(frame),{timeoutMs:180000});
+      const setup=new OutgoingSetup(signaling,{allowVideo:true,callId:()=>789,
+        onPreparing:options=>outgoingPreparation((kind,details)=>client.dialog(kind,details),options),
+        onConfig:()=>assert.fail('Canceled preparation must not configure a worker')});
+      try {
+        await assert.rejects(setup.start({type:3,partner:[{id:'9999999999999999999',name:'Liên hệ kiểm thử 🎥'}]}),/canceled/);
+        assert.equal(frames.length,1);assert.equal(frames[0].command,401);
+        assert.equal(setup.active,null);
+        await client.clear();
+        console.log('PASS Electron outgoing preparation: real setup/control pipe, pre-config cancel, no worker/invitation (synthetic signaling)');
+      } finally {signaling.close();host.dispose();clearTimeout(timeout);}
+      app.quit();return;
+    }
     const accepted=await client.dialog('consent',{signal:controller.signal,video:true});
     if(!accepted)throw new Error('Fixture was not answered');
     let muted=false,toggles=0,cameraEnabled=true,cameraToggles=0;
