@@ -12,6 +12,11 @@ current account ticket are required before remembering an identity or creating
 an incoming worker. Its fixture tests pass for voice/video, mismatches, account
 switch and cancellation/retry. This has not been deployed or tested against a
 real server while an incoming call is pending; it is not live acceptance.
+Incoming preflight now reports identity/name preparation failures through the
+existing bounded generic error dialog, without forwarding raw errors or caller
+data. Cancellation at each await boundary suppresses the dialog and prevents
+entry into the incoming owner. This source-only change has deterministic tests;
+the running app has not been restarted for it.
 
 Latest deployed checkpoint (`3f34275`, 2026-09-10): unified call window is now wired to outgoing voice,
 outgoing video and incoming call owners via a dedicated control pipe; remote

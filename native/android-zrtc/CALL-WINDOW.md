@@ -24,7 +24,11 @@ This is deployment evidence, not live two-account acceptance.
 - `node native/android-zrtc/test-call-ui-pipe.cjs`: real duplex protocol and
   composed host (mock Electron) verify pre-frame dialing, shared video display,
   controls, cancellation ACK, reuse after clear, lock and disconnect teardown.
-- `node scripts/test-call-control.mjs`: now includes 22 lifecycle suites.
+- `node scripts/test-call-control.mjs`: now includes 23 lifecycle suites.
+- `test-incoming-preflight.mjs`: identity/name preparation failures show one
+  generic error without raw signaling data, preserve the original failure even
+  when UI delivery fails, and suppress UI/owner entry after cancellation before
+  or during either await. This source change has not been live deployed/tested.
 - Real Electron 22 fixture `test-call-window-electron.cjs`, operated through
   agent-browser on loopback CDP port 9234: Answer → mute → unmute → End passed.
   This fixture now exercises both control and binary video pipes, with a

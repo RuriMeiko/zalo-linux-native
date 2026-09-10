@@ -416,10 +416,10 @@ function handleHostMessage(msg) {
             const attempt={controller:new AbortController(),promise:null,
                 callId:String(data.data?.callId),callerId:String(data.data?.uidFrom)};incomingAttempt=attempt;
             attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(async({runIncomingDesktop})=>{
-                const {resolveIncomingIdentity}=await import('../android-zrtc/incoming-identity.mjs');
-                const nativeLocalId=await resolveIncomingIdentity(setupTransport,nativeIdentity,msg,
-                    {signal:attempt.controller.signal,videoEnabled,clientVersion:initInfo.clientVersion});
-                const peerName=await incomingName.resolve(data.data?.uidN,attempt.controller.signal);
+                const {prepareIncomingDesktop}=await import('../android-zrtc/incoming-preflight.mjs');
+                const {nativeLocalId,peerName}=await prepareIncomingDesktop(setupTransport,nativeIdentity,msg,
+                    {signal:attempt.controller.signal,videoEnabled,clientVersion:initInfo.clientVersion},
+                    {resolveName:(id,signal)=>incomingName.resolve(id,signal),dialog:nativeCallDialog});
                 return (
                 runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
                     runtime:process.env.ZALO_ZRTC_RUNTIME,
