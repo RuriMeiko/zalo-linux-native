@@ -17,6 +17,11 @@ existing bounded generic error dialog, without forwarding raw errors or caller
 data. Cancellation at each await boundary suppresses the dialog and prevents
 entry into the incoming owner. This source-only change has deterministic tests;
 the running app has not been restarted for it.
+The incoming driver's validation is also inside its error/cleanup boundary:
+missing camera/display configuration, disabled video and invalid call data no
+longer bypass notification. Regression cases prove no worker starts on these
+failures and already-canceled attempts show nothing. Physical device failures
+and actual two-account calls remain separate acceptance checks.
 
 Latest deployed checkpoint (`3f34275`, 2026-09-10): unified call window is now wired to outgoing voice,
 outgoing video and incoming call owners via a dedicated control pipe; remote

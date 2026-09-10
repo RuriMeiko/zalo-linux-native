@@ -29,6 +29,12 @@ This is deployment evidence, not live two-account acceptance.
   generic error without raw signaling data, preserve the original failure even
   when UI delivery fails, and suppress UI/owner entry after cancellation before
   or during either await. This source change has not been live deployed/tested.
+- `test-incoming-desktop.mjs`: validation failures (invalid/oversized media
+  intent, missing native identity/caller, missing camera/display and video opt-in)
+  now use the driver's existing generic error boundary before starting a worker.
+  Tests verify listener cleanup before notification, cancellation suppression,
+  no worker/owner entry, and retention of the original failure if UI delivery
+  also fails. These checks do not verify physical-device availability or live calls.
 - Real Electron 22 fixture `test-call-window-electron.cjs`, operated through
   agent-browser on loopback CDP port 9234: Answer → mute → unmute → End passed.
   This fixture now exercises both control and binary video pipes, with a

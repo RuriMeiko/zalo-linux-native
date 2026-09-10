@@ -31,10 +31,37 @@ for(const scenario of ['accept','ignore','startup-cancel','start-error','missing
   assert.equal(owners,['accept','ignore'].includes(scenario)?1:0);
   if(scenario==='accept')assert.deepEqual(dialogs,['consent','active']);
   if(scenario==='start-error')assert.deepEqual(dialogs,['error']);
+  if(scenario==='missing-identity')assert.deepEqual(dialogs,['error']);
   if(scenario==='startup-cancel')assert.deepEqual(dialogs,[]);
 }
 const videoMessage={...message,data:{...message.data,data:{...message.data.data,params:JSON.stringify({...params,
   video:{enable:1},extendData:JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97}]}})})}}};
+for(const scenario of ['bad-json','oversized','missing-caller','missing-camera','missing-display','disabled-video','already-canceled']) {
+  const transport=new EventEmitter(),controller=new AbortController(),dialogs=[];
+  const input=structuredClone(videoMessage);
+  const options={nativeLocalId:123,clientVersion:0,runtime:'/fixture',videoEnabled:true,
+    device:'/dev/video0',sink:{},signal:controller.signal};
+  if(scenario==='bad-json')input.data.data.params='{private';
+  if(scenario==='oversized')input.data.data.params='x'.repeat(65537);
+  if(scenario==='missing-caller')delete input.data.data.uidN;
+  if(scenario==='missing-camera')delete options.device;
+  if(scenario==='missing-display')delete options.sink;
+  if(scenario==='disabled-video')options.videoEnabled=false;
+  if(scenario==='already-canceled')controller.abort();
+  await assert.rejects(runIncomingDesktop(transport,input,options,{
+    startWorker:()=>assert.fail('Invalid/canceled call must not start worker'),
+    owner:()=>assert.fail('Invalid/canceled call must not enter owner'),
+    dialog:async(kind,details)=>{
+      assert.equal(transport.listenerCount('control'),0,'validation listeners removed before notification');
+      assert.deepEqual(Object.keys(details).sort(),['signal','video']);
+      assert.equal(details.signal,controller.signal);
+      dialogs.push(kind);
+      throw new Error('Notification unavailable');
+    },
+  }),error=>!error.message.includes('private') && !error.message.includes('Notification unavailable'));
+  assert.deepEqual(dialogs,scenario==='already-canceled'?[]:['error']);
+  assert.equal(transport.listenerCount('control'),0);
+}
 const defer=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),resolve};};
 for(const scenario of ['video-error','dialog-error','local-end','parent-abort']) {
   const transport=new EventEmitter(),controller=new AbortController(),ready=defer(),finish=defer();
