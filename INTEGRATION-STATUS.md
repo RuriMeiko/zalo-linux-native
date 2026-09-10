@@ -1,5 +1,16 @@
 # Full-app recovery integration — 2026-09-10
 
+Electron image output now encodes actual single-frame WebP/GIF instead of
+returning PNG bytes for those format requests. Resized nativeImage PNG is sent
+to FFmpeg over pipes; only the pipe protocol is enabled, no shell/temp file,
+30-second timeout and 32-MiB input/output bounds. Native PNG/JPEG stay in-process.
+Real Electron + installed FFmpeg tests encode and decode all four formats across
+landscape/portrait/unequal bounds/no-enlargement cases. Unit tests check format
+signatures, fixed arguments and generic process-error handling. Source-only:
+FFmpeg with libwebp/GIF encoders is an external dependency; animation, alpha/
+color parity and the separate Sharp/vips fallback format behavior remain open.
+Encoder options follow the [FFmpeg codec documentation](https://ffmpeg.org/ffmpeg-codecs.html#libwebp).
+
 The optional zimage vips fallback now uses a unique mode-0700 directory under
 `~/.cache/zalo-native/thumbnails`, not predictable output files in `/tmp`.
 Cache symlink traversal is rejected; the exact output and empty operation

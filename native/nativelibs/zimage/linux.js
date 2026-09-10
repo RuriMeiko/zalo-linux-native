@@ -73,8 +73,11 @@ function thumbnailWithNativeImage(nativeImage, buffer, width, height, format, qu
             const enc = pickEncoder(format);
             const q = Math.max(1, Math.min(100, Math.round(Number(quality) || 80)));
             let data;
-            // nativeImage encoders: JPEG (lossy q) / PNG (lossless). webp/gif
-            // requests fall back to PNG — consumers only re-encode/preview.
+            if (enc === 'webp' || enc === 'gif') {
+                resolve(require('./encode-extra.cjs')(out.toPNG(), enc, q));
+                return;
+            }
+            // Native PNG/JPEG stay in-process; other formats use exact encoders.
             if (enc === 'jpeg') data = out.toJPEG(q);
             else data = out.toPNG();
             resolve(Buffer.from(data));

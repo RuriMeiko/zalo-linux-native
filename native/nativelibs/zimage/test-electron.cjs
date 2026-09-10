@@ -14,10 +14,18 @@ app.whenReady().then(async()=>{
     [40,80,20,20,{width:10,height:20}],
     [80,40,60,10,{width:20,height:10}],
     [8,4,20,20,{width:8,height:4}],
-  ])for(const format of ['png','jpeg']) {
+  ])for(const format of ['png','jpeg','webp','gif']) {
     const source=nativeImage.createFromBitmap(Buffer.alloc(width*height*4,255),{width,height}).toPNG();
     const output=await Image.thumbnail(source,boundW,boundH,format,80);
-    assert.deepEqual(nativeImage.createFromBuffer(output).getSize(),expected,`${format} ${width}x${height} inside ${boundW}x${boundH}`);
+    let decoded=output;
+    if(format==='webp' || format==='gif') {
+      assert.equal(output.toString('ascii',0,4),format==='webp'?'RIFF':'GIF8');
+      const result=require('node:child_process').spawnSync('ffmpeg',[
+        '-hide_banner','-loglevel','error','-i','pipe:0','-frames:v','1','-c:v','png','-f','image2pipe','pipe:1'
+      ],{input:output,timeout:10000,maxBuffer:1024*1024});
+      assert.equal(result.status,0,'Real decoder must accept encoded thumbnail');decoded=result.stdout;
+    }
+    assert.deepEqual(nativeImage.createFromBuffer(decoded).getSize(),expected,`${format} ${width}x${height} inside ${boundW}x${boundH}`);
   }
   await assert.rejects(Image.thumbnail(Buffer.from('not an image'),20,20,'png',80));
   const input=path.join(fixture,'synthetic-input.png'),output=path.join(fixture,'synthetic-output.png');
@@ -33,7 +41,7 @@ app.whenReady().then(async()=>{
     assert.equal(error.code,'ENOENT');callbacks++;
   });
   assert.equal(callbacks,2);
-  console.log('PASS real Electron zimage: landscape/portrait/rectangular bounds, no enlargement, PNG/JPEG decode and invalid input');
+  console.log('PASS real Electron zimage: proportional bounds, no enlargement, PNG/JPEG/WebP/GIF roundtrip and invalid input');
   console.log('PASS real zimage files: callback output decode, write failure rejection and missing-input callback; synthetic files retained under home');
   app.exit(0);
 }).catch(error=>{console.error(error.message);app.exit(1);});
