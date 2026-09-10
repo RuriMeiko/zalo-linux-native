@@ -8,6 +8,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 if(process.argv.length!==2)throw new Error('Usage: node scripts/test-call-control.mjs');
 const tests=[
   'native/qt-call-cap-linux/test-native-identity.js',
+  'native/qt-call-cap-linux/test-incoming-name.js',
   'native/qt-call-cap-linux/test-desktop-signaling.js',
   'native/qt-call-cap-linux/test-outgoing-setup.js',
   'native/android-zrtc/test-incoming-video-control.mjs',

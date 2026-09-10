@@ -24,7 +24,7 @@ This is deployment evidence, not live two-account acceptance.
 - `node native/android-zrtc/test-call-ui-pipe.cjs`: real duplex protocol and
   composed host (mock Electron) verify pre-frame dialing, shared video display,
   controls, cancellation ACK, reuse after clear, lock and disconnect teardown.
-- `node scripts/test-call-control.mjs`: now includes 20 lifecycle suites.
+- `node scripts/test-call-control.mjs`: now includes 21 lifecycle suites.
 - Real Electron 22 fixture `test-call-window-electron.cjs`, operated through
   agent-browser on loopback CDP port 9234: Answer → mute → unmute → End passed.
   This fixture now exercises both control and binary video pipes, with a
@@ -70,14 +70,19 @@ The control decoder now preserves multibyte UTF-8 split across pipe chunks.
 Tests cover Vietnamese/emoji split one byte at a time, snapshot immutability,
 and no previous name retained in a subsequent unnamed call. These changes are
 source-only pending helper reload; live contact-name presentation is not yet
-verified. Incoming name lookup and avatars remain incomplete.
+verified. Incoming names now use the existing renderer `getAliasName` request,
+with a unique UUID echoed by both renderer bundles. The helper checks both the
+UUID and desktop caller ID before accepting a result, and falls back after
+750 ms or cancellation. A delayed response cannot name a new same-contact call.
+Tests execute the actual responder blocks from both bundles with a mock contact
+store. This needs matching renderer/helper deployment; avatars remain incomplete.
 
 ## Remaining before live acceptance
 
 - Test actual two-account signaling/media on the deployed matching main/helper.
 - Check local preview and video latency in actual two-account calls after deployment.
-- Incoming contact name and avatars with bounded, non-logging, account-scoped transport;
-  verify outgoing name on the real window after helper reload.
+- Avatars with bounded, non-logging, account-scoped transport; verify incoming
+  and outgoing names on the real window after renderer/helper reload.
 - Camera off/on is now wired to joined capture shutdown/restart. Validate it
   during a real video call, including remote presentation: the peer may retain
   the last image until camera-state signaling is implemented/verified. No new

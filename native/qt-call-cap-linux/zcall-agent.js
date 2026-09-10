@@ -284,6 +284,7 @@ function getNativePreviewSink() {
     return nativePreviewSink;
 }
 let nativeCallUI;
+const incomingName=new (require('./incoming-name').IncomingName)(sendToHost);
 function getNativeCallUI() {
     if(process.env.ZALO_ZCALL_UI_PIPE!=='4')throw new Error('Native call UI pipe unavailable');
     if(!nativeCallUI) {
@@ -399,6 +400,7 @@ function handleHostMessage(msg) {
         catch (_) {log('schema capture failed');}
     }
     const { type, command, data } = msg || {};
+    if(incomingName.receive(msg))return;
     capture("host->engine", msg);
     if(setupTransport && ['recvSignal','recvSignalError'].includes(type)) {
         setupTransport.receive(msg);return;
@@ -416,7 +418,9 @@ function handleHostMessage(msg) {
             callActive=true;
             const attempt={controller:new AbortController(),promise:null,
                 callId:String(data.data?.callId),callerId:String(data.data?.uidFrom)};incomingAttempt=attempt;
-            attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(({runIncomingDesktop})=>
+            attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(async({runIncomingDesktop})=>{
+                const peerName=await incomingName.resolve(data.data?.uidN,attempt.controller.signal);
+                return (
                 runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
                     runtime:process.env.ZALO_ZRTC_RUNTIME,
                     pcm:{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK},
@@ -426,7 +430,8 @@ function handleHostMessage(msg) {
                     signal:attempt.controller.signal,onPhase:phase=>{
                         setupPhase('incoming-'+phase);
                         if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});
-                    }},{dialog:nativeCallDialog})).catch(()=>setupPhase('incoming-failed')).finally(async()=>{
+                    }},{dialog:(kind,options)=>nativeCallDialog(kind,{...options,peerName})}));
+                }).catch(()=>setupPhase('incoming-failed')).finally(async()=>{
                         await clearNativeCallUI();
                         if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}
                     });
