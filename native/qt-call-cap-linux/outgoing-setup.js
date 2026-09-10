@@ -5,9 +5,11 @@ const {randomInt}=require('crypto');
 // onConfig must validate/apply the decoded response; a 401 response is never
 // treated as remote ringing. 416 must wait for actual native media readiness.
 class OutgoingSetup {
-    constructor(signaling,{onConfig,onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false}={}) {
+    constructor(signaling,{onConfig,onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false,getContext=()=>undefined}={}) {
         if(typeof onConfig!=='function') throw new TypeError('Missing native config consumer');
         if(typeof allowVideo!=='boolean')throw new TypeError('Video opt-in must be boolean');
+        if(typeof getContext!=='function')throw new TypeError('Invalid setup context provider');
+        this.getContext=getContext;
         this.allowVideo=allowVideo;
         this.signaling=signaling;this.onConfig=onConfig;this.onPhase=onPhase;
         this.callId=callId;this.active=null;this.generation=0;
@@ -26,12 +28,13 @@ class OutgoingSetup {
         const current=()=>{if(generation!==this.generation) throw new Error('Outgoing setup canceled');};
         // Publish busy before callbacks can re-enter start().
         this.active=Promise.resolve().then(async()=>{
+            const context=this.getContext();
             current();this.onPhase('requesting-config');current();
             const config=await this.signaling.request(401,{
                 calleeId,callId,codec:'[]',type,
             });
             current();this.onPhase('received-config');current();
-            const result=await this.onConfig(config,{callId,calleeId,video,current,signal:this.abort.signal});
+            const result=await this.onConfig(config,{callId,calleeId,video,current,signal:this.abort.signal,context});
             current();return result;
         });
         return this.active.finally(()=>{this.active=null;});

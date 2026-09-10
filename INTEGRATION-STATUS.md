@@ -88,6 +88,17 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+The production desktop agent now binds its native local ID to the authenticated
+outgoing 401 configuration for the current desktop account. The account ticket
+is captured before sending 401, so delayed responses cannot bind a replacement
+account. Repeated init/device updates preserve the same-account binding;
+switches invalidate it and cancel active outgoing setup. No desktop ID is
+truncated or persisted. `test-native-identity.js` covers binding/conflicts and
+the production `OutgoingSetup` delayed-response boundary. This does not yet
+enable incoming calls: the dispatcher/UI still must consume this identity, and
+a fresh helper has no verified native identity until a validated outgoing
+configuration is obtained. First-call incoming bootstrap remains open.
+
 `native/android-zrtc/incoming-call-owner.mjs` now composes invitation setup,
 explicit consent, answer/API/ACK gates, native media readiness and a supplied
 media task. `test-incoming-call-owner.mjs` verifies local decline, consent

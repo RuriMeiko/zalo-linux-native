@@ -269,6 +269,7 @@ function endCall(reason) {
 }
 
 let initInfo = {};
+const nativeIdentity=new (require('./native-identity').NativeIdentity)();
 const setupEnabled=process.env.ZALO_ZCALL_NATIVE_SETUP==='1';
 const networkEnabled=process.env.ZALO_ZCALL_NATIVE_NETWORK==='1';
 const mediaEnabled=process.env.ZALO_ZCALL_NATIVE_MEDIA==='1';
@@ -294,7 +295,7 @@ if(setupEnabled) {
     const {DesktopSignaling}=require('./desktop-signaling');
     const {OutgoingSetup}=require('./outgoing-setup');
     setupTransport=new DesktopSignaling(sendToHost);
-    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,onConfig:async(config,{callId,calleeId,video,current,signal})=>{
+    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),onConfig:async(config,{callId,calleeId,video,current,signal,context})=>{
         const {callerResponse}=await import('../android-zrtc/caller-response.mjs');
         let mapped;
         try {
@@ -304,7 +305,7 @@ if(setupEnabled) {
             const phases={CONFIG_CALL_ID:'call-id-mismatch',CONFIG_MEDIA:'unsupported-video',CONFIG_DYNAMIC_ZRTP:'unsupported-dynamic-zrtp'};
             setupPhase(phases[error.code] || 'unsupported-config');throw new Error('Unsupported native config');
         }
-        current();
+        current();nativeIdentity.remember(context,mapped.configuration.userId);
         const {NativeWorker}=await import('../android-zrtc/worker-client.mjs');
         const runtime=process.env.ZALO_ZRTC_RUNTIME;
         if(!runtime || !path.isAbsolute(runtime)) throw new Error('Missing native runtime');
@@ -377,7 +378,11 @@ function handleHostMessage(msg) {
         switch (command) {
             case "init":
             case "updateLocal":
+                const previousAccount=nativeIdentity.account;
                 initInfo = data || initInfo;
+                nativeIdentity.setAccount(initInfo.local && initInfo.local.id);
+                if(previousAccount!==nativeIdentity.account && callActive && outgoingSetup)
+                    outgoingSetup.stop().finally(()=>endCall('account changed'));
                 log("init received:", JSON.stringify(data && { local: data.local && data.local.id, os: data.osInfo, client: data.clientVersion }));
                 capture("init", data);
                 if(setupEnabled) sendToHost({type:'update',command:'linux-native-capabilities',data:{signalingErrors:true}});
