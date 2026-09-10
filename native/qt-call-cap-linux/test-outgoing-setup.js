@@ -36,7 +36,7 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
   await pending;
   assert.deepEqual(requests,[{cmd:401,body:{calleeId:data.partner[0].id,callId:789,codec:'[]',type:3}}]);
   assert.throws(()=>new OutgoingSetup({}, {onConfig(){},allowVideo:1}),/boolean/);
-  for(const mode of ['config-error','native-error','cancel','cancel-during-cleanup','notification-error']) {
+  for(const mode of ['config-error','native-error','cancel','cancel-during-cleanup','ui-cancel','notification-error']) {
     const failure=new Error('private signaling error'),events=[];let release;
     const signaling={request:async()=>{if(mode==='config-error')throw failure;return {};},cancel(){}};
     const setup=new OutgoingSetup(signaling,{callId:()=>790,
@@ -45,6 +45,7 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
         if(mode==='cancel-during-cleanup' && !signal.aborted)setup.abort.abort();
       },
       onConfig:async(_config,{signal})=>{
+        if(mode==='ui-cancel') {const error=new Error('Outgoing setup canceled');error.name='AbortError';throw error;}
         if(mode==='cancel') {
           release=()=>{};
           await new Promise(resolve=>signal.addEventListener('abort',resolve,{once:true}));
@@ -57,13 +58,14 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
         assert.equal(events.at(-1),'preparation-joined');events.push('notified');
         if(mode==='notification-error')throw new Error('UI failed');
       }});
-    const pending=assert.rejects(setup.start(data),error=>error===failure);
+    const pending=assert.rejects(setup.start(data),error=>
+      mode.startsWith('cancel') || mode==='ui-cancel' ? error.name==='AbortError' : error===failure);
     if(mode==='cancel') {
       while(!release)await new Promise(resolve=>setImmediate(resolve));
       await setup.stop();
     }
     await pending;
-    assert.equal(events.filter(e=>e==='notified').length,mode.startsWith('cancel')?0:1);
+    assert.equal(events.filter(e=>e==='notified').length,mode.startsWith('cancel') || mode==='ui-cancel'?0:1);
     assert.equal(setup.active,null);
   }
   assert.throws(()=>new OutgoingSetup({}, {onConfig(){},onFailure:true}),/failure/);

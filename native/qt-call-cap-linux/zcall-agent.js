@@ -315,7 +315,7 @@ function setupPhase(phase) {
 }
 if(setupEnabled) {
     const {DesktopSignaling}=require('./desktop-signaling');
-    const {OutgoingSetup}=require('./outgoing-setup');
+    const {OutgoingSetup,isOutgoingCancellation}=require('./outgoing-setup');
     setupTransport=new DesktopSignaling(sendToHost);
     outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),
       onPreparing:options=>networkEnabled && mediaEnabled?
@@ -487,7 +487,7 @@ function handleHostMessage(msg) {
             if(outgoingSetup) {
                 if(callActive) return;
                 callActive=true;
-                outgoingSetup.start(data).catch(()=>setupPhase('setup-failed'))
+                outgoingSetup.start(data).catch(error=>{if(!isOutgoingCancellation(error))setupPhase('setup-failed');})
                     .finally(async()=>{await clearNativeCallUI();endCall('native setup stage finished');});
                 return;
             }

@@ -2,6 +2,13 @@
 const {randomInt}=require('crypto');
 const {peerName:normalizePeerName}=require('../android-zrtc/call-presentation.cjs');
 
+function canceledError() {
+    const error=new Error('Outgoing setup canceled');
+    error.name='AbortError';
+    return error;
+}
+function isOutgoingCancellation(error) {return error?.name==='AbortError';}
+
 // First leg of outgoing setup. Authenticated HTTPS stays in the renderer.
 // onConfig must validate/apply the decoded response; a 401 response is never
 // treated as remote ringing. 416 must wait for actual native media readiness.
@@ -31,7 +38,7 @@ class OutgoingSetup {
             return Promise.reject(new Error('Invalid outgoing call ID'));
         const generation=++this.generation;
         this.abort=new AbortController();
-        const current=()=>{if(generation!==this.generation) throw new Error('Outgoing setup canceled');};
+        const current=()=>{if(generation!==this.generation) throw canceledError();};
         // Publish busy before callbacks can re-enter start().
         this.active=Promise.resolve().then(async()=>{
             const signal=this.abort.signal;
@@ -53,8 +60,9 @@ class OutgoingSetup {
                 // onConfig has joined its worker/media cleanup before rejecting.
                 // Release preparation before asking the same pipe to show error.
                 try {if(typeof finishPreparing==='function')await finishPreparing();}catch {}
-                if(!signal.aborted)try {await this.onFailure({signal,video,peerName});}catch {}
-                throw error;
+                const canceled=signal.aborted || generation!==this.generation || isOutgoingCancellation(error);
+                if(!canceled)try {await this.onFailure({signal,video,peerName});}catch {}
+                throw canceled && !isOutgoingCancellation(error)?canceledError():error;
             } finally {if(typeof finishPreparing==='function')await finishPreparing();}
         });
         return this.active.finally(()=>{this.active=null;});
@@ -64,4 +72,4 @@ class OutgoingSetup {
         if(this.active) await this.active.catch(()=>{});
     }
 }
-module.exports={OutgoingSetup};
+module.exports={OutgoingSetup,isOutgoingCancellation};

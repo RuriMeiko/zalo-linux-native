@@ -8,10 +8,11 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
   if(!Number.isInteger(timeoutMs) || timeoutMs<1) throw new Error('Invalid invitation timeout');
   const {callId,partnerId,session}=mapped.configuration;
   let sent=false,remoteEnded=false,done=false,ringing=false,answered=false,resolve,reject,timer,queue=Promise.resolve();
+  const canceled=()=>{const error=new Error('Invitation canceled');error.name='AbortError';return error;};
   const outcome=new Promise((res,rej)=>{resolve=res;reject=rej;});
   outcome.catch(()=>{}); // may abort while the API request is still awaiting ACK
   const finish=(error,value)=>{if(done)return;done=true;error?reject(error):resolve(value);};
-  const current=()=>{if(signal?.aborted || done) throw new Error('Invitation canceled');};
+  const current=()=>{if(signal?.aborted || done) throw canceled();};
   const native=async(operation,args)=>{
     const reply=await worker.request(operation,args);
     if(reply.code!==0) throw new Error('Native invitation operation failed');
@@ -49,7 +50,7 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
     if(event.requestId===ready.requestId && ['onCallErr','onCallAutoHangup','onCallChangeZRTP'].includes(event.event))
       finish(new Error('Native invitation ended'));
   };
-  const abort=()=>{signaling.cancel(416);signaling.cancel(408);finish(new Error('Invitation canceled'));};
+  const abort=()=>{signaling.cancel(416);signaling.cancel(408);finish(canceled());};
   const onRuntimeFault=()=>{finish(new Error('Native runtime failed'));signaling.cancel(408);};
   signaling.on('control',onControl);worker.on('callEvent',onFault);worker.on('nativeFault',onRuntimeFault);
   worker.exited?.then(()=>{if(!done) onRuntimeFault();});
