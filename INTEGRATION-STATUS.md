@@ -55,6 +55,14 @@ methods with synthetic API responses, not a real account.
 
 ## Still required before release
 
+The project `start.sh` now forwards to the configured native launcher, without
+upstream auto-update, automatic Electron download or implicit sandbox bypass.
+`update.sh` is a read-only independent-main revision check; it no longer deletes
+and replaces installed files. `scripts/test-entrypoints.mjs` checks shell syntax,
+argument forwarding and this non-mutating contract without contacting GitHub or
+launching Electron. Existing installed launchers were not changed. Installer,
+AppImage integration and verified automatic updates remain required work.
+
 ### Launch and publication checkpoint
 
 The launcher now supports explicit `experimentalVideo: true` plus a selected

@@ -38,6 +38,13 @@ The port was created by:
 
 ## Installation
 
+**Native development checkout:** prepare the runtime and local JSON config in
+[NATIVE-LAUNCH.md](NATIVE-LAUNCH.md), then use `bash start.sh --check` before
+launching. Startup does not download dependencies or run an updater. The
+historical installer/AppImage instructions below are retained for upstream
+context; they are **not verified installation instructions for this native
+continuation**. No independent binary release is available from this checkpoint.
+
 ### Option 1: Install script
 1. **Clone the repository**:
    ```bash

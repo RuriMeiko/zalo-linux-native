@@ -38,6 +38,8 @@ node scripts/native-launch.mjs --check
 node scripts/native-launch.mjs
 # Or supply a different config file:
 node scripts/native-launch.mjs /absolute/path/launch.json --check
+# The project entry point forwards the same arguments:
+bash start.sh /absolute/path/launch.json --check
 ```
 
 `--check` verifies runtime files, the pinned ZRTC hash, and exact audio devices.
@@ -46,9 +48,17 @@ support. Close an existing Zalo instance from the tray before launching; existin
 instances are rejected to avoid silently retaining old environment settings.
 
 The launcher requires Node.js, Electron and a separately prepared runtime; it
-does not install packages or download binaries. Unlike the inherited `start.sh`,
-it does not run the upstream updater. The inherited installer/desktop shortcut
-has not yet been replaced or validated for independent distribution.
+does not install packages or download binaries. `start.sh` now delegates to
+this launcher: it no longer downloads Electron, runs an upstream updater or
+silently adds `--no-sandbox`. An existing installation is not migrated by
+editing this checkout; its launcher remains unchanged until explicitly updated.
+The inherited installer/AppImage pipeline is not yet validated for this entry
+point and must not be presented as a ready native distribution.
+
+`bash update.sh --check` only queries the independent repository's `main` hash
+and prints the local Git revision when available. It does not install updates,
+modify files, change branches or dependencies, or compare native runtime
+compatibility. Automated installation with rollback remains a release gate.
 
 ## Experimental video opt-in
 
