@@ -34,8 +34,9 @@ Do not substitute successful module tests for these end-to-end gates.
   ([NATIVE-INSTALL.md](NATIVE-INSTALL.md)) now verifies payload copies and passed
   a full local copy/preflight with its helper resolved inside the installation.
   New installs additionally verify their manifest, generated config and launcher
-  before every start; the currently registered `e10acc3` copy predates this and
-  still needs a recoverable replacement plus menu-launch acceptance.
+  before every start. The registered copy was recoverably replaced at snapshot
+  `529aa91`; its 13,401 entries and device/runtime preflight pass. Actual menu
+  launch and clean-machine acceptance remain open.
   Self-contained runtime acquisition, default-shortcut migration and clean-machine
   verification remain open.
 - [ ] Make native runtime acquisition, pinned versions/hashes and build steps

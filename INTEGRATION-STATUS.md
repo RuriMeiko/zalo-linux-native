@@ -1,5 +1,25 @@
 # Full-app recovery integration — 2026-09-10
 
+## Registered installation replaced with verified snapshot `529aa91`
+
+The non-running menu installation at `~/.local/share/zalo-linux-native` was
+moved intact to the recoverable path
+`~/zalo-native-recovery/installed-e10acc3-before-529aa91`; the active app was
+revalidated as `~/.local/share/zalo`, so it was not stopped or modified. The
+first reinstall attempt ran inside the restricted sandbox, could not see host
+camera/Pulse devices, and stopped before creating the destination. The same
+installer then ran with host device access and completed at the original menu
+path. No recursive deletion or profile operation was performed.
+
+The installed verifier twice passed all 13,401 manifest entries (once directly,
+once through `launch-installed.sh --check`). Generated config/launcher integrity
+is enabled; key testing/integration/viewer/credit docs are present; helper paths
+resolve inside the installation; CDP is absent. Runtime/device preflight and
+`desktop-file-validate` pass. The existing menu path therefore needs no rewrite.
+The installed copy was not launched because a development app/call-test session
+is still active. Runtime/Electron remain external, and menu launch, clean-machine
+startup, licensing and two-account call gates remain open.
+
 New-install integrity source: manifests now include the generated private config
 and launcher as well as tracked payload files. `launch-installed.sh` streams and
 checks every declared regular file's canonical path, mode and SHA-256 before
