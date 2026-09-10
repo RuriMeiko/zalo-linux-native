@@ -44,7 +44,10 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   assert.equal(windows.length,1,'Video renders in the existing call window');
   assert.ok(windows[0].messages.some(m=>m[0]==='linux-call-frame'));
   act(windows[0],'toggle');assert.equal(await active,'toggle');
-  active=client.dialog('active',{signal,video:true,muteControl:true,muted:true});await turn();
+  active=client.dialog('active',{signal,video:true,muteControl:true,muted:true,cameraControl:true,cameraEnabled:true});await turn();
+  act(windows[0],'camera');assert.equal(await active,'camera');
+  active=client.dialog('active',{signal,video:true,muteControl:true,muted:true,cameraControl:true,cameraEnabled:false});await turn();
+  assert.equal(windows[0].messages.filter(m=>m[0]==='linux-call-state').at(-1)[2].cameraEnabled,false);
   act(windows[0],'end');assert.equal(await active,'end');
   await video.clear();assert.ok(!windows[0].destroyed,'Frame clear cannot destroy controls before owner cleanup');
   await client.clear();assert.ok(windows[0].destroyed);

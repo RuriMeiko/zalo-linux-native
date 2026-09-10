@@ -30,7 +30,7 @@ function createCallUIClient(stream) {
   const pipe=channel(stream,message=>{
     if(!pending || message.id!==pending.id || !['result','error'].includes(message.type))throw Error();
     const aborted=pending.signal?.aborted;
-    if(message.type==='result' && ![true,false,'toggle','end'].includes(message.value))throw Error();
+    if(message.type==='result' && ![true,false,'toggle','end','camera'].includes(message.value))throw Error();
     finish(aborted || message.type==='error'?new Error('Call UI request canceled or unavailable'):null,message.value);
   },()=>{closed=true;finish(new Error('Call UI pipe closed'));});
   const request=(type,kind,options={})=>{
@@ -46,7 +46,8 @@ function createCallUIClient(stream) {
       pending={id,resolve,reject,signal:options.signal,abort};
       options.signal?.addEventListener('abort',abort,{once:true});
       try {pipe.send({id,type,...(type==='dialog'?{kind,video:options.video===true,
-        muted:options.muted===true,muteControl:options.muteControl===true}:{})});}
+        muted:options.muted===true,muteControl:options.muteControl===true,
+        cameraControl:options.cameraControl===true,cameraEnabled:options.cameraEnabled!==false}:{})});}
       catch {finish(new Error('Call UI pipe closed'));}
       if(type==='clear' && pending)pending.timer=setTimeout(()=>pipe.close(),5000);
       else if(kind==='error' && pending)pending.timer=setTimeout(abort,15000);
@@ -67,13 +68,13 @@ function attachCallUIHost(stream,createWindow,{locked=false}={}) {
     if(pending || message.id!==lastId+1)throw Error();lastId=message.id;
     if(message.type==='clear'){clear();pipe.send({id:message.id,type:'result',value:true});return;}
     if(message.type!=='dialog' || !['consent','dialing','active','error'].includes(message.kind) ||
-      ['video','muted','muteControl'].some(key=>typeof message[key]!=='boolean'))throw Error();
+      ['video','muted','muteControl','cameraControl','cameraEnabled'].some(key=>typeof message[key]!=='boolean'))throw Error();
     const task={id:message.id,controller:new AbortController()};pending=task;
     Promise.resolve().then(()=>{
       if(closed || locked || task.controller.signal.aborted)throw Error();
       host??=createWindow();
       return host.dialog(message.kind,{signal:task.controller.signal,video:message.video,
-        muted:message.muted,muteControl:message.muteControl});
+        muted:message.muted,muteControl:message.muteControl,cameraControl:message.cameraControl,cameraEnabled:message.cameraEnabled});
     }).then(value=>reply('result',value),()=>reply('error'));
     function reply(type,value) {
       if(pending!==task)return;pending=null;

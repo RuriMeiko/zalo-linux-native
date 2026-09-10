@@ -5,7 +5,10 @@ outgoing video and incoming call owners via a dedicated control pipe; remote
 video frames render in that same window. Electron fixture with synthetic video,
 Answer → mute → unmute → End passed through both pipes. This is not a new live
 two-account acceptance result and is not deployed to the running app yet.
-Camera toggle/local preview/contact presentation remain incomplete. See
+Camera off/on now controls capture shutdown/restart; three real USB camera
+cycles passed with mock native ACK, and Electron control tests passed. Native
+two-account camera-off presentation, local preview and contact presentation
+remain unverified/incomplete. See
 `native/android-zrtc/CALL-WINDOW.md`; the historical deployment notes below
 must not be read as deployment evidence for the latest source.
 

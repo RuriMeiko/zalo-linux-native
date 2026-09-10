@@ -32,11 +32,17 @@ export function callDialog(kind,{video=false,signal,muteControl=false,muted=fals
 // One command at a time; the next dialog only reflects acknowledged state.
 // Joining the in-flight request on cancellation prevents worker teardown from
 // racing a queued mute command. Native request timeout bounds this wait.
-export async function activeCallControls(worker,{video=false,signal},dialog=callDialog) {
-  let muted=false;
+export async function activeCallControls(worker,{video=false,signal,cameraControl},dialog=callDialog) {
+  let muted=false,cameraEnabled=true;
   while(!signal.aborted) {
-    const action=await dialog('active',{video,signal,muteControl:true,muted});
+    const action=await dialog('active',{video,signal,muteControl:true,muted,cameraControl:!!cameraControl,cameraEnabled});
     if(signal.aborted || action==='end')return;
+    if(action==='camera' && video && cameraControl) {
+      try {await cameraControl.setEnabled(!cameraEnabled);}
+      catch {if(signal.aborted)return;throw new Error('Camera control unavailable');}
+      if(signal.aborted)return;
+      cameraEnabled=!cameraEnabled;continue;
+    }
     if(action!=='toggle')throw new Error('Invalid native call control');
     let reply;
     try {reply=await worker.request('microphoneMute',{muted:!muted});}

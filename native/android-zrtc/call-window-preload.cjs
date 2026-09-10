@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('linuxCall',{
     ipcRenderer.on('linux-call-busy',(_event,id)=>onBusy(id));
   },
   act(id,action) {
-    if(Number.isSafeInteger(id) && ['answer','end','toggle'].includes(action))
+    if(Number.isSafeInteger(id) && ['answer','end','toggle','camera'].includes(action))
       ipcRenderer.send('linux-call-action',id,action);
   },
   onFrame(render,clear) {

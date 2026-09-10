@@ -1,8 +1,10 @@
 import {callDialog,activeCallControls} from './native-call-ui.mjs';
+import {createManagedCamera} from './managed-camera.mjs';
 
 export async function withOutgoingCallUI(worker,{signal,video=false,runMedia},runCall,dialog=callDialog) {
   if(video && typeof runMedia!=='function')throw new TypeError('Video media owner required');
   const controller=new AbortController(),abort=()=>controller.abort();
+  const cameraControl=video?createManagedCamera():undefined;
   signal?.addEventListener('abort',abort,{once:true});
   if(signal?.aborted)abort();
   let stage,task,mediaTask,failure,answered=false,cleanup;
@@ -14,7 +16,7 @@ export async function withOutgoingCallUI(worker,{signal,video=false,runMedia},ru
     task=Promise.resolve().then(()=>{
       if(currentStage.signal.aborted)return;
       return kind==='dialing'?dialog(kind,{video,signal:currentStage.signal}):
-        activeCallControls(worker,{video,signal:currentStage.signal},dialog);
+        activeCallControls(worker,{video,signal:currentStage.signal,cameraControl},dialog);
     }).then(()=>{if(!currentStage.signal.aborted)controller.abort();})
       .catch(error=>{if(!currentStage.signal.aborted){failure=error;controller.abort();}})
       .finally(()=>controller.signal.removeEventListener('abort',stop));
@@ -33,7 +35,7 @@ export async function withOutgoingCallUI(worker,{signal,video=false,runMedia},ru
       if(controller.signal.aborted)throw new Error('Outgoing call canceled');
       open('active');
       if(runMedia)mediaTask=Promise.resolve().then(()=>{
-        if(!controller.signal.aborted)return runMedia(worker,{signal:controller.signal});
+        if(!controller.signal.aborted)return runMedia(worker,{signal:controller.signal,cameraControl});
       }).then(()=>{
         if(!controller.signal.aborted)throw new Error('Outgoing media stopped unexpectedly');
       }).catch(error=>{if(!controller.signal.aborted){failure=error;controller.abort();}});

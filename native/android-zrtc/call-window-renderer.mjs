@@ -10,6 +10,7 @@ let revision=0,state,busy=true;
 function controls() {
   for(const id of ['end','answer','mic'])get(id).disabled=busy;
   get('mic').disabled=busy || !state?.muteControl;
+  get('camera').disabled=busy || !state?.cameraControl;
 }
 window.linuxCall.subscribe((id,next)=>{
   revision=id;state=next;busy=false;
@@ -23,9 +24,13 @@ window.linuxCall.subscribe((id,next)=>{
   const micLabel=state.muted?'Bật mic':'Tắt mic';
   get('mic').setAttribute('aria-label',micLabel);get('mic').title=micLabel;
   get('mic').setAttribute('aria-pressed',String(state.muted));get('mic-slash').toggleAttribute('hidden',!state.muted);
+  const cameraLabel=!state.cameraControl?'Điều khiển camera chưa khả dụng':state.cameraEnabled?'Tắt camera':'Bật camera';
+  get('camera').setAttribute('aria-label',cameraLabel);get('camera').title=cameraLabel;
+  get('camera').setAttribute('aria-pressed',String(!state.cameraEnabled));
+  get('camera-slash').toggleAttribute('hidden',state.cameraEnabled);
   get('duration').hidden=!active;get('error').hidden=!error;controls();tick();
 },id=>{if(id===revision){busy=true;controls();}});
-for(const [id,action] of [['end','end'],['answer','answer'],['mic','toggle']])get(id).addEventListener('click',()=>{
+for(const [id,action] of [['end','end'],['answer','answer'],['mic','toggle'],['camera','camera']])get(id).addEventListener('click',()=>{
   if(busy)return;busy=true;controls();window.linuxCall.act(revision,action);
 });
 function tick() {

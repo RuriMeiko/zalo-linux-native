@@ -20,6 +20,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
     if(!window || event.sender!==window.webContents || !pending || id!==revision)return;
     const kind=pending.kind;
     const allowed=kind==='consent'?['answer','end']:kind==='active'?['toggle','end']:['end'];
+    if(kind==='active' && pending.cameraControl)allowed.push('camera');
     if(!allowed.includes(value))return;
     // Lock controls until the owner has acknowledged the next state.
     window.webContents.send('linux-call-busy',revision);
@@ -62,7 +63,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
       });
     },
     clearVideo(){if(window && !disposed)window.webContents.send('linux-call-video-clear');},
-    async dialog(kind,{signal,video=false,muted=false,muteControl=false}={}) {
+    async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true}={}) {
       if(disposed || pending || !['consent','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
       await ensure();
@@ -73,10 +74,11 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
       if(kind==='active' && startedAt===null)startedAt=Date.now();
       return new Promise((resolve,reject)=>{
         const abort=()=>settle(new Error('Call window canceled'));
-        pending={kind,signal,abort,resolve,reject};signal.addEventListener('abort',abort,{once:true});
+        pending={kind,signal,abort,resolve,reject,cameraControl:video && cameraControl};signal.addEventListener('abort',abort,{once:true});
         try {
           window.webContents.send('linux-call-state',++revision,{kind,video:video===true,
-            muted:muted===true,muteControl:muteControl===true,startedAt});
+            muted:muted===true,muteControl:muteControl===true,cameraControl:video && cameraControl===true,
+            cameraEnabled:cameraEnabled===true,startedAt});
           window.show();
         } catch {settle(new Error('Call window unavailable'));}
       });

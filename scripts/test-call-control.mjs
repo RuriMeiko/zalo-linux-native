@@ -15,6 +15,8 @@ const tests=[
   'native/android-zrtc/test-incoming-call-owner.mjs',
   'native/android-zrtc/test-native-call-ui.mjs',
   'native/android-zrtc/test-active-call-controls.mjs',
+  'native/android-zrtc/test-managed-camera.mjs',
+  'native/android-zrtc/test-camera-pump.mjs',
   'native/android-zrtc/test-outgoing-voice-ui.mjs',
   'native/android-zrtc/test-call-window.cjs',
   'native/android-zrtc/test-call-ui-pipe.cjs',
