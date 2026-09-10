@@ -43,6 +43,15 @@ try {
     transport.request=async(command,payload)=>{
       assert.ok([407,402,409].includes(command));assert.equal(payload.callId,789);sent.push(command);
       if(command===402)queueMicrotask(()=>transport.emit('control',{act_type:'voip',act:'answer_ack',data:{callId:789}}));
+      if(command===409) {
+        // Delay the mocked server response. Native capture/playback must
+        // already be stopped while the end-call API is still outstanding.
+        assert.equal((await worker.request('callInfo')).code,-107);
+        assert.equal((await worker.request('videoSnapshot')).code,-61);
+        const stopped=(await worker.request('status')).pcmFrames;
+        await delay(100);
+        assert.deepEqual((await worker.request('status')).pcmFrames,stopped);
+      }
       return {};
     };
     transport.cancel=()=>{};

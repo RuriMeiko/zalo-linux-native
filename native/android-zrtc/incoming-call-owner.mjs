@@ -96,9 +96,15 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     try {
       try {
         await Promise.all([...pending]);await stopping;
-        if(mediaStarted && !remoteEnded)
-          await transport.request(409,{toId:callerId,callId:decoded.key.callId});
-      } finally {await session.dispose();}
+      } finally {
+        // Native PCM is owned by the session, not the video/UI media task.
+        // Stop it before waiting on HTTPS, which can take the full API timeout.
+        try {await session.dispose();}
+        finally {
+          if(mediaStarted && !remoteEnded)
+            await transport.request(409,{toId:callerId,callId:decoded.key.callId});
+        }
+      }
     }
     finally {session.off('phase',phase);owners.delete(worker);}
   }

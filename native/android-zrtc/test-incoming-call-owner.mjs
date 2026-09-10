@@ -82,7 +82,8 @@ for(const apiFailure of [false,true]) {
   f.transport.request=async(command,payload)=>{
     if(command===409){
       assert.deepEqual(payload,{toId:'456',callId:789});
-      assert.equal(f.events.at(-1),'media-joined');
+      assert.equal(f.events.at(-1),'stop');
+      assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));
       if(apiFailure){f.events.push(409);throw new Error('end API unavailable');}
     }
     return original(command,payload);
@@ -94,7 +95,7 @@ for(const apiFailure of [false,true]) {
   const result=apiFailure?assert.rejects(running,/end API unavailable/):running;
   await entered.promise;controller.abort();await result;
   assert.equal(f.events.filter(x=>x===409).length,1);
-  assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf(409));f.clean();
+  assert.ok(f.events.lastIndexOf('stop')<f.events.indexOf(409));f.clean();
   await f.run();f.clean();
 }
 {
@@ -114,5 +115,25 @@ for(const event of ['nativeFault','workerClosed'])for(const during of ['consent'
   assert.equal(f.events.filter(x=>x===409).length,during==='media'?1:0);
   if(during==='media')assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));
   f.clean();await f.run();f.clean();
+}
+{
+  const f=fixture(),controller=new AbortController(),entered=defer(),apiPending=defer(),apiReply=defer();
+  const original=f.transport.request;
+  f.transport.request=async(command,payload)=>{
+    if(command===409){f.events.push(command);apiPending.resolve();return apiReply.promise;}
+    return original(command,payload);
+  };
+  let settled=false;
+  const running=f.run({signal:controller.signal,requestConsent:async()=>true,runMedia:async(_worker,{signal})=>{
+    const aborted=defer();signal.addEventListener('abort',()=>aborted.resolve(),{once:true});
+    entered.resolve();await aborted.promise;f.events.push('media-joined');
+  }}).finally(()=>{settled=true;});
+  await entered.promise;controller.abort();await apiPending.promise;
+  assert.equal(settled,false,'server response still pending');
+  assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));
+  assert.ok(f.events.lastIndexOf('stop')<f.events.indexOf(409),'PCM stops before slow HTTPS');
+  assert.equal(f.worker.listenerCount('callEvent'),0,'native session disposed before server reply');
+  await assert.rejects(f.run(),/already owned/);
+  apiReply.resolve({});await running;f.clean();await f.run();f.clean();
 }
 console.log('PASS incoming owner: bounded consent, exclusive ownership, remote/local hangup, native fault/exit, joined media and listener cleanup');

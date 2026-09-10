@@ -102,6 +102,14 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+Incoming local hangup now joins the UI/video task and disposes the native
+session **before** awaiting desktop 409. Previously native PCM could remain
+active until the end-call API replied or timed out. The owner regression holds
+the 409 reply pending and checks stop ordering and ownership; the real native
+fixture checks frozen PCM counters and unavailable call/video state inside the
+delayed 409 handler. This change is not deployed by restarting the user's
+current test session; a new helper invocation will load the updated module.
+
 The agent now has an opt-in incoming dispatcher (`experimentalIncoming` in the
 launcher). It invokes `incoming-desktop.mjs` and the tested incoming owner,
 using native GTK consent/active-call dialogs and the existing video media pump.
