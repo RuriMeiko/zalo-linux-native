@@ -1,5 +1,13 @@
 # Unified call window — implementation checkpoint
 
+Latest runtime deployment: source checkpoint `6ac64ba` was restarted on
+2026-09-10 after strict device preflight passed. New main/helper PIDs
+1547523/1548043 and inherited control/video/preview pipes were verified.
+See `INTEGRATION-STATUS.md` for rollout evidence and retained backups. Older
+source-only annotations below describe their original checkpoint; those changes
+are now loaded through the fresh helper/main. Live two-account acceptance is
+still pending, especially incoming-first identity bootstrap.
+
 The user supplied three Zalo desktop reference images: centered avatar/ringing,
 incoming answer/end, and active video with a bottom control row. The new
 `call-window.cjs` owns one isolated Electron window per call; its `dialog` method

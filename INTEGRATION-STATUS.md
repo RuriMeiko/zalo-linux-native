@@ -1,5 +1,28 @@
 # Full-app recovery integration — 2026-09-10
 
+## Latest actual restart: source checkpoint `6ac64ba`
+
+This supersedes the deferred rollout and source-only deployment notes below.
+The configured HDMI sink returned and strict host preflight passed. With no
+native call worker found, old main 1155420 was terminated with approval; main
+and helper 1155938 were confirmed gone. A first detached launcher attempt did
+not survive and was confirmed absent. A directly tracked launcher then started
+successfully: launcher PID 1547494, main PID 1547523, helper PID 1548043.
+
+Selected helper environment was verified: runtime remains
+`~/zalo-native-recovery/mute-evidence-20260910/runtime`, control/video/preview
+fds are 4/3/5, incoming opt-in is enabled, source is the Logitech C922 microphone
+and sink is the configured HDMI output. Installed main and compact renderer
+hashes match source. No profile, audio selection or global device default was
+changed. Startup output is private under
+`~/.local/state/zalo-native-test/restart-6ac64ba.log`; account/chat log content
+was not inspected. The tracked launcher must remain running.
+
+The user has been invited to test **incoming first after this restart**, before
+any outgoing call, to validate the uncached identity path. Then verify outgoing
+voice/video, actual remote mute and camera off/on. This is verified deployment,
+not a new two-account acceptance result; no calls were placed by this rollout.
+
 ## Latest rollout check: staged, restart deferred
 
 The installed compact renderer was backed up to
