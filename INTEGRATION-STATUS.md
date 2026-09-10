@@ -1,5 +1,27 @@
 # Full-app recovery integration — 2026-09-10
 
+## Latest rollout check: staged, restart deferred
+
+The installed compact renderer was backed up to
+`~/.local/state/zalo-native-test/preparation-deploy-350aa50/compact.before.js`
+and updated with the correlated incoming-name response. Its SHA-256 now matches
+source (`2155734cc9525898d74a1d454d3ceb42afe485ecaf6c55e8f1a97b2867e00f6c`).
+Installed main and shared-worker already match source. Main resolves call-window
+modules relative to the configured helper in the home checkout, so a matched
+restart is still required to load the new helper/control protocol.
+
+Restart was deliberately not performed: host-side `native-launch.mjs --check`
+fails with `Selected sink is unavailable`. `pactl list short sinks` reports only
+`auto_null`; neither a real HDMI nor Bluetooth output is currently available.
+Both Logitech C922 and C270 microphone sources are present, and the host has
+video0–video3. No audio default, launch configuration or account profile was
+changed. Main PID 1155420 and helper PID 1155938 were revalidated alive; CDP
+listed no call window and the process check found no native call worker. The
+app remains on its previous running code, not a verified newly loaded build.
+Reconnect/select a real output and rerun preflight before attempting restart.
+
+## Source and earlier deployment evidence
+
 New source-only outgoing UI: `preparing` opens before configuration completes
 and remains cancellable throughout native startup. Its Vietnamese status is
 “Đang chuẩn bị cuộc gọi”, with “Hủy”; it does not claim remote ringing. The
