@@ -1,7 +1,7 @@
 import {NativeWorker} from './worker-client.mjs';
 import {runIncomingCall} from './incoming-call-owner.mjs';
 import {decodeIncomingVoice,decodeIncomingVideo,incomingControlKey} from './incoming-control.mjs';
-import {callDialog} from './native-call-ui.mjs';
+import {callDialog,activeCallControls} from './native-call-ui.mjs';
 import {runVideoMedia} from './video-media-session.mjs';
 export async function runIncomingDesktop(transport,message,{nativeLocalId,clientVersion,runtime,pcm,
   videoEnabled=false,device,sink,signal,onPhase=()=>{}},
@@ -43,7 +43,7 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
           .finally(()=>{mediaAbort.abort();controller.abort();});
         try {
           await Promise.all([
-            guard(()=>dialog('active',{video,signal:mediaAbort.signal})),
+            guard(()=>activeCallControls(native,{video,signal:mediaAbort.signal},dialog)),
             ...(video?[guard(()=>videoMedia(native,{device,sink,signal:mediaAbort.signal}))]:[])
           ]);
           if(failure)throw failure;

@@ -14,7 +14,7 @@ for(const scenario of ['accept','ignore','startup-cancel','start-error','missing
     if(scenario==='start-error')throw Error('fixture start failed');
     if(scenario==='startup-cancel')transport.emit('control',{act_type:'voip',act:'cancel',data:{callId:'789',uidFrom:'456'}});
     return {close:async()=>{closes++;}};
-  },dialog:async(kind)=>{dialogs.push(kind);return scenario!=='ignore';},owner:async(worker,_transport,_message,o)=>{
+  },dialog:async(kind)=>{dialogs.push(kind);return kind==='active'?'end':scenario!=='ignore';},owner:async(worker,_transport,_message,o)=>{
     owners++;assert.equal(o.callerId,message.data.data.uidN);assert.equal(o.context.nativeLocalId,123);
     const accepted=await o.requestConsent({video:false,signal:o.signal});
     if(accepted)await o.runMedia(worker,{video:false,signal:o.signal});
@@ -49,7 +49,7 @@ for(const scenario of ['video-error','dialog-error','local-end','parent-abort'])
       await ready.promise;
       if((scenario==='video-error' && kind==='video') || (scenario==='dialog-error' && kind==='dialog'))
         throw Error(scenario);
-      if(scenario==='local-end' && kind==='dialog')return true;
+      if(scenario==='local-end' && kind==='dialog')return 'end';
       await aborted.promise;
       await finish.promise; // joins remain pending after abort is delivered
     } finally {signal.removeEventListener('abort',onAbort);events.push(kind+'-joined');}

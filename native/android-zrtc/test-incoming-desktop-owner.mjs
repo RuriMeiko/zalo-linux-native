@@ -56,7 +56,7 @@ for(const video of [false,true])for(const scenario of ['consent-cancel','answer-
         if(scenario==='consent-cancel'){remoteCancel();await untilAbort(signal);throw Error('dialog canceled');}
         return true;
       }
-      if(scenario==='local-end')return true;
+      if(scenario==='local-end')return 'end';
       queueMicrotask(()=>scenario==='native-fault'?worker.emit('nativeFault'):remoteCancel());
       await untilAbort(signal);events.push('dialog-joined');throw Error('dialog canceled');
     },
