@@ -12,7 +12,7 @@ if (process.platform !== 'linux') { console.log('SKIP: linux-only'); process.exi
 const ff = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' });
 if (ff.error || ff.status !== 0) { console.log('SKIP: ffmpeg not available'); process.exit(0); }
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mp4thumb-'));
+const dir = require('../../../scripts/test-fixture.cjs')('mp4thumb');
 const clip = path.join(dir, 'clip.mp4');
 const r = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error',
     '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=10',

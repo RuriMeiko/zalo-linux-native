@@ -1,5 +1,5 @@
 /* Throwaway functional test for the linux-x64 file-utilities native binding.
- * Run: cd /tmp/ezap && ELECTRON_RUN_AS_NODE=1 ./electron/electron <this file>
+ * Run: node native/nativelibs/file-utilities/test-linux.js
  * Also works with plain node v22.
  */
 'use strict'
@@ -7,12 +7,13 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 
-const DIR = '/tmp/fu-test'
-const HARD = '/tmp/fu-hard'
-const BIG = '/tmp/fu-big'
+const fixture = require('../../../scripts/test-fixture.cjs')('file-utilities')
+const DIR = path.join(fixture, 'tree')
+const HARD = path.join(fixture, 'hardlinks')
+const BIG = path.join(fixture, 'large-tree')
 
 // ---- setup ----------------------------------------------------------------
-for (const d of [DIR, HARD, BIG]) fs.rmSync(d, { recursive: true, force: true })
+console.log('Synthetic fixture retained:', fixture)
 
 fs.mkdirSync(`${DIR}/sub/deep`, { recursive: true })
 fs.mkdirSync(`${DIR}/empty`, { recursive: true })
@@ -73,7 +74,7 @@ function ok(name) {
   ok('workers:0 rejected, workers:4 accepted (ignored, single-threaded)')
 
   // ---- bad args ------------------------------------------------------------
-  assert.throws(() => fu.getDirectorySizeSync('/tmp/definitely-not-here-xyz'), /does not exist or cannot be accessed/)
+  assert.throws(() => fu.getDirectorySizeSync(path.join(fixture, 'missing')), /does not exist or cannot be accessed/)
   assert.throws(() => fu.getDirectorySizeSync(`${DIR}/a.txt`), /not a directory/)
   ok('invalid path errors')
 
@@ -99,7 +100,7 @@ function ok(name) {
   ok(`tree mode (children=${t.children.length}, dirCount=${t.dirCount})`)
 
   const tr = fu.getDirectorySizeSync(DIR, { deep: { maxDepth: 3, includeRoot: true } })
-  assert.strictEqual(tr.children[0].name, 'fu-test')
+  assert.strictEqual(tr.children[0].name, path.basename(DIR))
   assert.strictEqual(tr.children[0].depth, 0)
   assert.strictEqual(tr.children[0].totalSize, EXPECT_TOTAL)
   ok('tree includeRoot prepends root node')
@@ -111,10 +112,10 @@ function ok(name) {
   ok('getDirectorySizeAsync deep branch')
 
   // ---- byGlob --------------------------------------------------------------
-  const g = fu.getDirectorySizeByGlobSync('/tmp/fu-test/**/*.db')
+  const g = fu.getDirectorySizeByGlobSync(`${DIR}/**/*.db`)
   assert.strictEqual(g.totalSize, 4096)
   assert.strictEqual(g.fileCount, 1)
-  const ga = await fu.getDirectorySizeByGlobAsync('/tmp/fu-test/**/*.db')
+  const ga = await fu.getDirectorySizeByGlobAsync(`${DIR}/**/*.db`)
   assert.strictEqual(ga.totalSize, 4096)
   assert.strictEqual(ga.fileCount, 1)
   ok('byGlob absolute pattern sums only matches')
@@ -157,7 +158,7 @@ function ok(name) {
   assert.ok(typeof fi.maxFilenameLength === 'number' && fi.maxFilenameLength > 0)
   assert.ok(typeof fi.supportsCaseSensitiveNames === 'boolean')
   console.log('  detectFilesystem ->', JSON.stringify(fi))
-  const fia = await fu.detectFilesystemAsync('/tmp')
+  const fia = await fu.detectFilesystemAsync(fixture)
   assert.ok(typeof fia.filesystemType === 'string' && fia.filesystemType.length > 0)
   ok(`detectFilesystem (type=${fi.filesystemType})`)
 

@@ -21,7 +21,7 @@ const zfile = require('./index.js');
     assert.strictEqual(typeof zfile.canReadAndWrite, 'function', 'canReadAndWrite');
 
     // --- stat on a real file ---
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zfile-'));
+    const dir = require('../../../scripts/test-fixture.cjs')('zfile');
     const f = path.join(dir, 'a.txt');
     fs.writeFileSync(f, 'hello');
     const st = await zfile.stat(f, false);

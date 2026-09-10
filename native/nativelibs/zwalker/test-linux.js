@@ -14,7 +14,7 @@ const os = require('os');
 const zw = require('./linux.js');
 
 async function main() {
-  const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'zw-parity-'));
+  const tmp = require('../../../scripts/test-fixture.cjs')('zwalker');
 
   async function mk(name, tree) {
     const root = path.join(tmp, name);

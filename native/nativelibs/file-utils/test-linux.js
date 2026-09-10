@@ -2,7 +2,7 @@
  * Self-contained contract test for ./linux.js (file-utils linux port).
  * Run: node test-linux.js  -> prints ALL PASS, exit 0.
  * All temp state lives under a mkdtemp dir; the trash sandbox is redirected
- * via HOME / XDG_DATA_HOME (restored at exit).
+ * via a mocked os.homedir / XDG_DATA_HOME (restored at exit); HOME is unchanged.
  */
 'use strict';
 
@@ -20,12 +20,12 @@ assert.strictEqual(typeof fu.ensureDirSync, 'function');
 assert.strictEqual(typeof fu.isFileExecutable, 'function');
 assert.strictEqual(Object.keys(fu).length, 4, 'exactly the addon consumer surface');
 
-var tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fu-test-'));
-var origHome = process.env.HOME;
+var tmp = require('../../../scripts/test-fixture.cjs')('file-utils');
+var origHomedir = os.homedir;
 var origXdg = process.env.XDG_DATA_HOME;
 
 function cleanup() {
-    process.env.HOME = origHome;
+    os.homedir = origHomedir;
     if (origXdg === undefined) delete process.env.XDG_DATA_HOME;
     else process.env.XDG_DATA_HOME = origXdg;
     try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) {}
@@ -37,10 +37,10 @@ function trashRootFor(rootBase) { return path.join(rootBase, 'Trash'); }
 // ---- sandbox HOME (no XDG_DATA_HOME): trash must land under $HOME/.local/share/Trash ----
 var fakeHome = path.join(tmp, 'home');
 fs.mkdirSync(fakeHome, { recursive: true });
-process.env.HOME = fakeHome;
+os.homedir = () => fakeHome;
 delete process.env.XDG_DATA_HOME;
 // sanity: the port derives from HOME, not the real account home
-assert.ok(os.homedir().indexOf(tmp) === 0, 'os.homedir() honours HOME override');
+assert.ok(os.homedir().indexOf(tmp) === 0, 'os.homedir() boundary is isolated');
 
 var f1 = path.join(tmp, 'src1', 'doomed.txt');
 fs.mkdirSync(path.dirname(f1), { recursive: true });

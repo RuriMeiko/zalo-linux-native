@@ -1,5 +1,13 @@
 # Full-app recovery integration — 2026-09-10
 
+Account-free aggregate regression: `node scripts/test-native-regression.mjs`
+passed all 19 commands, including 25 call-control suites, native filesystem and
+JPEG XL modules, synthetic media, mocked UI/privacy and installer checks.
+Fixed-name destructive `/tmp/fu-*` fixture setup was removed; filesystem tests
+now allocate home recovery directories. Trash tests no longer rewrite HOME.
+See `NATIVE-TESTING.md` for coverage/limitations: legacy zcall stub diagnostics
+do not constitute live call evidence, and GUI/media acceptance remains separate.
+
 Electron image output now encodes actual single-frame WebP/GIF instead of
 returning PNG bytes for those format requests. Resized nativeImage PNG is sent
 to FFmpeg over pipes; only the pipe protocol is enabled, no shell/temp file,
