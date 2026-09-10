@@ -37,7 +37,7 @@ function record(file,message) {
         'invite-sent','peer-ringing','peer-answer-observed','peer-codec-applied','answer-acknowledged','media-started','remote-cleanup-ack','remote-cleanup-failed'].includes(message.data?.phase)) {
         entry.command=message.command;entry.phase=message.data.phase;
     }
-    if(message.type==='control' && ['request','answer','cancel','endcall','ringring'].includes(message.data?.act)) entry.action=message.data.act;
+    if(message.type==='control' && ['request','answer','cancel','endcall','reject','decline','busy','peer_busy','ringring'].includes(message.data?.act)) entry.action=message.data.act;
     const fd=fs.openSync(file,fs.constants.O_WRONLY|fs.constants.O_APPEND|fs.constants.O_CREAT|fs.constants.O_NOFOLLOW,0o600);
     try {fs.fchmodSync(fd,0o600);fs.writeSync(fd,JSON.stringify(entry)+'\n');} finally {fs.closeSync(fd);}
 }

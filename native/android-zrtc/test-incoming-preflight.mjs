@@ -9,8 +9,16 @@ const run=(controller,deps)=>prepareIncomingDesktop({}, {}, message,{signal:cont
     resolveIdentity:async()=>{events.push('identity');return 123;},
     resolveName:async(id,signal)=>{assert.equal(id,message.data.data.uidN);assert.equal(signal,controller.signal);events.push('name');return 'Tên thử';},
     dialog:()=>assert.fail('Unexpected error UI'),
-  }),{nativeLocalId:123,peerName:'Tên thử'});
+  }),{nativeLocalId:123,peerName:'Tên thử',peerAvatar:''});
   assert.deepEqual(events,['identity','name']);
+}
+{
+  const controller=new AbortController();
+  assert.deepEqual(await run(controller,{
+    resolveIdentity:async()=>123,
+    resolveContact:async()=>({peerName:'Tên có ảnh',peerAvatar:'https://s120.avatar.talk.zdn.vn/a.jpg'}),
+    dialog:()=>assert.fail('Unexpected error UI'),
+  }),{nativeLocalId:123,peerName:'Tên có ảnh',peerAvatar:'https://s120.avatar.talk.zdn.vn/a.jpg'});
 }
 for(const stage of ['identity','name']) {
   const controller=new AbortController(),dialogs=[];

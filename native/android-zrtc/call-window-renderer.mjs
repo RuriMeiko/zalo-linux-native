@@ -14,14 +14,23 @@ window.linuxCall.onFrame(frame=>{
 });
 window.addEventListener('pagehide',()=>{videoRenderer.dispose();localRenderer.dispose();},{once:true});
 let revision=0,state,busy=true;
+let avatarRevision=0;
+function setAvatar(url) {
+  const image=get('avatar-image'),fallback=get('avatar-fallback'),current=++avatarRevision;
+  image.hidden=true;fallback.hidden=false;
+  image.onload=()=>{if(current===avatarRevision){image.hidden=false;fallback.hidden=true;}};
+  image.onerror=()=>{if(current===avatarRevision){image.hidden=true;fallback.hidden=false;}};
+  if(url)image.src=url;else image.removeAttribute('src');
+}
 function controls() {
   for(const id of ['end','answer','mic'])get(id).disabled=busy;
   get('mic').disabled=busy || !state?.muteControl;
   get('camera').disabled=busy || !state?.cameraControl;
 }
 window.linuxCall.subscribe((id,next)=>{
-  revision=id;state=next;busy=false;
+  revision=id;state=next;busy=state.ready===false;
   get('name').textContent=state.peerName || 'Cuộc gọi Zalo';
+  setAvatar(state.peerAvatar);
   const incoming=state.kind==='consent',active=state.kind==='active',error=state.kind==='error';
   get('status').textContent=incoming?(state.video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'):
     state.kind==='preparing'?'Đang chuẩn bị cuộc gọi':state.kind==='dialing'?'Đang đổ chuông':error?'Cuộc gọi bị gián đoạn':state.muted?'Mic đã tắt':'Đang trong cuộc gọi';

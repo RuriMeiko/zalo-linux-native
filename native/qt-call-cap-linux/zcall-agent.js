@@ -321,8 +321,8 @@ if(setupEnabled) {
       onPreparing:options=>networkEnabled && mediaEnabled?
         require('../android-zrtc/outgoing-preparation.cjs').outgoingPreparation(nativeCallDialog,options):async()=>{},
       onFailure:options=>networkEnabled && mediaEnabled?nativeCallDialog('error',options):Promise.resolve(),
-      onConfig:async(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing})=>{
-        const outgoingDialog=(kind,options)=>nativeCallDialog(kind,{...options,peerName});
+      onConfig:async(config,{callId,calleeId,video,peerName,peerAvatar,current,signal,context,finishPreparing})=>{
+        const outgoingDialog=(kind,options)=>nativeCallDialog(kind,{...options,peerName,peerAvatar});
         const {callerResponse}=await import('../android-zrtc/caller-response.mjs');
         let mapped;
         try {
@@ -418,13 +418,19 @@ function handleHostMessage(msg) {
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
             process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
             callActive=true;
+            let incomingVideo=false;
+            try {incomingVideo=JSON.parse(data.data?.params)?.video?.enable===1;}catch {}
+            let announced;
+            try {announced=getNativeCallUI().notifyIncoming({video:incomingVideo});}
+            catch {announced=Promise.reject(new Error('Incoming notification unavailable'));}
             const attempt={controller:new AbortController(),promise:null,
                 callId:String(data.data?.callId),callerId:String(data.data?.uidFrom)};incomingAttempt=attempt;
-            attempt.promise=import('../android-zrtc/incoming-desktop.mjs').then(async({runIncomingDesktop})=>{
+            attempt.promise=Promise.resolve(announced).catch(()=>setupPhase('incoming-notification-failed'))
+              .then(()=>import('../android-zrtc/incoming-desktop.mjs')).then(async({runIncomingDesktop})=>{
                 const {prepareIncomingDesktop}=await import('../android-zrtc/incoming-preflight.mjs');
-                const {nativeLocalId,peerName}=await prepareIncomingDesktop(setupTransport,nativeIdentity,msg,
+                const {nativeLocalId,peerName,peerAvatar}=await prepareIncomingDesktop(setupTransport,nativeIdentity,msg,
                     {signal:attempt.controller.signal,videoEnabled,clientVersion:initInfo.clientVersion},
-                    {resolveName:(id,signal)=>incomingName.resolve(id,signal),dialog:nativeCallDialog});
+                    {resolveContact:(id,signal)=>incomingName.resolveContact(id,signal),dialog:nativeCallDialog});
                 return (
                 runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
                     runtime:process.env.ZALO_ZRTC_RUNTIME,
@@ -435,7 +441,7 @@ function handleHostMessage(msg) {
                     signal:attempt.controller.signal,onPhase:phase=>{
                         setupPhase('incoming-'+phase);
                         if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});
-                    }},{dialog:(kind,options)=>nativeCallDialog(kind,{...options,peerName})}));
+                    }},{dialog:(kind,options)=>nativeCallDialog(kind,{...options,peerName,peerAvatar})}));
                 }).catch(()=>setupPhase('incoming-failed')).finally(async()=>{
                         await clearNativeCallUI();
                         if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}

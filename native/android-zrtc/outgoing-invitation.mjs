@@ -20,10 +20,11 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
   };
   const onControl=control=>{
     const data=control?.data;
-    if(control?.act_type!=='voip' || !data || String(data.callId)!==String(callId) ||
-       String(data.uidFrom)!==String(partnerId) || done) return;
-    if(control.act==='cancel' || control.act==='endcall') {
-      remoteEnded=true;finish(null,{reason:'remote-ended',callReady:false});
+    const remoteId=data?.uidFrom ?? data?.uidN;
+    const peerMatches=[partnerId,calleeId].some(id=>String(remoteId)===String(id));
+    if(control?.act_type!=='voip' || !data || String(data.callId)!==String(callId) || !peerMatches || done) return;
+    if(['cancel','endcall','reject','decline','busy','peer_busy'].includes(control.act)) {
+      remoteEnded=true;finish(null,{reason:answered?'remote-ended':'remote-declined',callReady:false});
       signaling.cancel(408);return;
     }
     queue=queue.then(async()=>{
@@ -47,8 +48,11 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
     }).catch(error=>finish(error));
   };
   const onFault=event=>{
-    if(event.requestId===ready.requestId && ['onCallErr','onCallAutoHangup','onCallChangeZRTP'].includes(event.event))
-      finish(new Error('Native invitation ended'));
+    if(event.requestId!==ready.requestId)return;
+    if(event.event==='onCallAutoHangup') {
+      remoteEnded=true;finish(null,{reason:answered?'remote-ended':'remote-declined',callReady:false});return;
+    }
+    if(['onCallErr','onCallChangeZRTP'].includes(event.event))finish(new Error('Native invitation ended'));
   };
   const abort=()=>{signaling.cancel(416);signaling.cancel(408);finish(canceled());};
   const onRuntimeFault=()=>{finish(new Error('Native runtime failed'));signaling.cancel(408);};

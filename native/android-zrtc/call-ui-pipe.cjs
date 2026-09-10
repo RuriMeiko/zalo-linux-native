@@ -1,6 +1,6 @@
 'use strict';
 const {StringDecoder}=require('node:string_decoder');
-const {peerName}=require('./call-presentation.cjs');
+const {peerName,peerAvatar}=require('./call-presentation.cjs');
 // Small control protocol on an inherited duplex pipe. Only a bounded display
 // name is included, never account credentials or contact identifiers. Video
 // pixels remain on their separate bounded/backpressured binary pipe.
@@ -49,15 +49,17 @@ function createCallUIClient(stream) {
       };
       pending={id,resolve,reject,signal:options.signal,abort};
       options.signal?.addEventListener('abort',abort,{once:true});
-      try {pipe.send({id,type,...(type==='dialog'?{kind,video:options.video===true,
+      try {pipe.send({id,type,...(['dialog','notify'].includes(type)?{kind,video:options.video===true,
         muted:options.muted===true,muteControl:options.muteControl===true,
-        cameraControl:options.cameraControl===true,cameraEnabled:options.cameraEnabled!==false,peerName:peerName(options.peerName)}:{})});}
+        cameraControl:options.cameraControl===true,cameraEnabled:options.cameraEnabled!==false,
+        peerName:peerName(options.peerName),peerAvatar:peerAvatar(options.peerAvatar)}:{})});}
       catch {finish(new Error('Call UI pipe closed'));}
       if(type==='clear' && pending)pending.timer=setTimeout(()=>pipe.close(),5000);
       else if(kind==='error' && pending)pending.timer=setTimeout(abort,15000);
     });
   };
-  return {dialog:(kind,options)=>request('dialog',kind,options),clear:()=>request('clear'),close:()=>pipe.close()};
+  return {dialog:(kind,options)=>request('dialog',kind,options),notifyIncoming:options=>request('notify','consent',options),
+    clear:()=>request('clear'),close:()=>pipe.close()};
 }
 function attachCallUIHost(stream,createWindow,{locked=false}={}) {
   if(typeof locked!=='boolean')throw new TypeError('Call lock must be boolean');
@@ -71,15 +73,17 @@ function attachCallUIHost(stream,createWindow,{locked=false}={}) {
     }
     if(pending || message.id!==lastId+1)throw Error();lastId=message.id;
     if(message.type==='clear'){clear();pipe.send({id:message.id,type:'result',value:true});return;}
-    if(message.type!=='dialog' || !['consent','preparing','dialing','active','error'].includes(message.kind) ||
+    if(!['dialog','notify'].includes(message.type) ||
+      (message.type==='dialog'?!['consent','preparing','dialing','active','error'].includes(message.kind):message.kind!=='consent') ||
       ['video','muted','muteControl','cameraControl','cameraEnabled'].some(key=>typeof message[key]!=='boolean'))throw Error();
     const task={id:message.id,controller:new AbortController()};pending=task;
     Promise.resolve().then(()=>{
       if(closed || locked || task.controller.signal.aborted)throw Error();
       host??=createWindow();
-      return host.dialog(message.kind,{signal:task.controller.signal,video:message.video,
+      const options={signal:task.controller.signal,video:message.video,
         muted:message.muted,muteControl:message.muteControl,cameraControl:message.cameraControl,cameraEnabled:message.cameraEnabled,
-        peerName:peerName(message.peerName)});
+        peerName:peerName(message.peerName),peerAvatar:peerAvatar(message.peerAvatar)};
+      return message.type==='notify'?host.notifyIncoming(options):host.dialog(message.kind,options);
     }).then(value=>reply('result',value),()=>reply('error'));
     function reply(type,value) {
       if(pending!==task)return;pending=null;

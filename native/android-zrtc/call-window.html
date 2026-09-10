@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src https:; media-src 'none'; object-src 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Zalo — Cuộc gọi</title><link rel="stylesheet" href="call-window.css"></head>
 <body><main>
 <section class="identity" aria-label="Cuộc gọi">
-<div class="avatar" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="23" r="10"/><path d="M13 53c0-23 38-23 38 0"/></svg></div>
+<div class="avatar" aria-hidden="true"><img id="avatar-image" hidden alt=""><svg id="avatar-fallback" viewBox="0 0 64 64"><circle cx="32" cy="23" r="10"/><path d="M13 53c0-23 38-23 38 0"/></svg></div>
 <h1 id="name">Cuộc gọi Zalo</h1><p id="status" role="status">Đang kết nối…</p><time id="duration" hidden>00:00</time>
 </section>
 <canvas id="remote" hidden aria-label="Video từ người đang gọi"></canvas>

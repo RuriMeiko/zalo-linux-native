@@ -1,6 +1,6 @@
 "use strict";
 const {randomInt}=require('crypto');
-const {peerName:normalizePeerName}=require('../android-zrtc/call-presentation.cjs');
+const {peerName:normalizePeerName,peerAvatar:normalizePeerAvatar}=require('../android-zrtc/call-presentation.cjs');
 
 function canceledError() {
     const error=new Error('Outgoing setup canceled');
@@ -34,6 +34,7 @@ class OutgoingSetup {
         const callId=this.callId();
         const calleeId=data.partner[0].id,type=data.type,video=type===3;
         const peerName=normalizePeerName(data.partner[0].name);
+        const peerAvatar=normalizePeerAvatar(data.partner[0].avatar);
         if(!Number.isInteger(callId) || callId<1 || callId>0x7fffffff)
             return Promise.reject(new Error('Invalid outgoing call ID'));
         const generation=++this.generation;
@@ -46,7 +47,7 @@ class OutgoingSetup {
             let finishPreparing=async()=>{};
             try {
             current();
-            finishPreparing=this.onPreparing({signal,video,peerName,cancel});
+            finishPreparing=this.onPreparing({signal,video,peerName,peerAvatar,cancel});
             if(typeof finishPreparing!=='function')throw new TypeError('Missing preparation cleanup');
             const context=this.getContext();
             current();this.onPhase('requesting-config');current();
@@ -54,14 +55,14 @@ class OutgoingSetup {
                 calleeId,callId,codec:'[]',type,
             });
             current();this.onPhase('received-config');current();
-            const result=await this.onConfig(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing});
+            const result=await this.onConfig(config,{callId,calleeId,video,peerName,peerAvatar,current,signal,context,finishPreparing});
             current();return result;
             } catch(error) {
                 // onConfig has joined its worker/media cleanup before rejecting.
                 // Release preparation before asking the same pipe to show error.
                 try {if(typeof finishPreparing==='function')await finishPreparing();}catch {}
                 const canceled=signal.aborted || generation!==this.generation || isOutgoingCancellation(error);
-                if(!canceled)try {await this.onFailure({signal,video,peerName});}catch {}
+                if(!canceled)try {await this.onFailure({signal,video,peerName,peerAvatar});}catch {}
                 throw canceled && !isOutgoingCancellation(error)?canceledError():error;
             } finally {if(typeof finishPreparing==='function')await finishPreparing();}
         });

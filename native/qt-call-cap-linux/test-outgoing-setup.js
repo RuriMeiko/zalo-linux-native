@@ -53,7 +53,7 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
         events.push('worker-joined');throw failure;
       },
       onFailure:async options=>{
-        assert.deepEqual(Object.keys(options).sort(),['peerName','signal','video']);
+        assert.deepEqual(Object.keys(options).sort(),['peerAvatar','peerName','signal','video']);
         assert.equal(options.signal.aborted,false);
         assert.equal(events.at(-1),'preparation-joined');events.push('notified');
         if(mode==='notification-error')throw new Error('UI failed');

@@ -37,6 +37,8 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   const host=attach(hostStream,videoHost,{BrowserWindow:Window,ipcMain},{locked:false},previewHost);
   const preview=createVideoPipeSink(previewClient);
   const client=createCallUIClient(clientStream),video=createVideoPipeSink(videoClient);
+  await client.notifyIncoming({video:true});await turn();
+  assert.equal(windows.length,1);assert.equal(windows[0].messages.at(-1)[2].ready,false);
   const preparingAbort=new AbortController();
   const preparing=client.dialog('preparing',{signal:preparingAbort.signal,video:true,peerName:'Liên hệ thử'});
   const prepared=assert.rejects(preparing,/canceled/);await turn();
@@ -45,10 +47,11 @@ const watchdog=setTimeout(()=>{console.error('FAIL unified call pipe test stalle
   assert.equal(windows[0].messages.at(-1)[2].startedAt,null);
   preparingAbort.abort();await prepared;
   const dialingAbort=new AbortController();
-  const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true,peerName:'Liên hệ thử tiếng Việt 🎥'});
+  const dialing=client.dialog('dialing',{signal:dialingAbort.signal,video:true,peerName:'Liên hệ thử tiếng Việt 🎥',peerAvatar:'https://s120.avatar.talk.zdn.vn/a.jpg'});
   const aborted=assert.rejects(dialing,/canceled/);await turn();
   assert.equal(windows.length,1,'Dialing opens before any frame');
   assert.equal(windows[0].messages.at(-1)[2].peerName,'Liên hệ thử tiếng Việt 🎥','Fragmented UTF-8 must preserve names');
+  assert.equal(windows[0].messages.at(-1)[2].peerAvatar,'https://s120.avatar.talk.zdn.vn/a.jpg');
   dialingAbort.abort();await aborted;
   const signal=new AbortController().signal;
   let active=client.dialog('active',{signal,video:true,muteControl:true,muted:false});await turn();

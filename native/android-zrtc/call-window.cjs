@@ -1,10 +1,29 @@
 'use strict';
 const path=require('node:path');
-const {peerName:normalizePeerName}=require('./call-presentation.cjs');
+const {peerName:normalizePeerName,peerAvatar:normalizePeerAvatar}=require('./call-presentation.cjs');
 // One window per call. The owner closes it only after media shutdown; changing
 // dialog stages or waiting for a mute ACK must not destroy the window.
-module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
+module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
   let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false;
+  let notification=null;
+  const clearAttention=()=>{
+    try {notification?.close();}catch {} notification=null;
+    try {window?.flashFrame?.(false);}catch {}
+    try {window?.setAlwaysOnTop?.(false);}catch {}
+  };
+  const requestAttention=({video,peerName})=>{
+    clearAttention();
+    try {window?.setAlwaysOnTop?.(true,'floating');}catch {}
+    try {window?.show();window?.focus?.();window?.moveTop?.();window?.flashFrame?.(true);}catch {}
+    try {
+      if(Notification?.isSupported?.()) {
+        const title=video?'Zalo — Cuộc gọi video đến':'Zalo — Cuộc gọi thoại đến';
+        notification=new Notification({title,body:peerName?`Từ ${peerName}`:'Có người đang gọi cho bạn',silent:false,timeoutType:'never'});
+        notification.on?.('click',()=>{try {window?.show();window?.focus?.();window?.moveTop?.();}catch {}});
+        notification.show();
+      }
+    } catch {notification=null;}
+  };
   const framePending=new Map();let frameSerial=0;
   const painted=(event,id,ok)=>{
     if(!window || event.sender!==window.webContents || !framePending.has(id))return;
@@ -14,6 +33,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
   ipcMain.on('linux-call-painted',painted);
   const settle=(error,value)=>{
     const current=pending;if(!current)return;
+    if(current.kind==='consent')clearAttention();
     pending=null;current.signal.removeEventListener('abort',current.abort);
     if(error)current.reject(error);else current.resolve(value);
   };
@@ -65,7 +85,18 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
       });
     },
     clearVideo(source='remote'){if(window && !disposed)window.webContents.send('linux-call-video-clear',source);},
-    async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true,peerName=''}={}) {
+    async notifyIncoming({video=false,peerName='',peerAvatar=''}={}) {
+      if(disposed)throw new Error('Call window unavailable');
+      await ensure();
+      if(disposed || pending)throw new Error('Call window unavailable');
+      const safeName=normalizePeerName(peerName),safeAvatar=normalizePeerAvatar(peerAvatar);
+      window.webContents.send('linux-call-state',++revision,{kind:'consent',ready:false,video:video===true,
+        muted:false,muteControl:false,cameraControl:false,cameraEnabled:true,
+        peerName:safeName,peerAvatar:safeAvatar,startedAt:null});
+      requestAttention({video:video===true,peerName:safeName});
+      return true;
+    },
+    async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true,peerName='',peerAvatar=''}={}) {
       if(disposed || pending || !['consent','preparing','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
       await ensure();
@@ -78,15 +109,17 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain}) {
         const abort=()=>settle(new Error('Call window canceled'));
         pending={kind,signal,abort,resolve,reject,cameraControl:video && cameraControl};signal.addEventListener('abort',abort,{once:true});
         try {
-          window.webContents.send('linux-call-state',++revision,{kind,video:video===true,
+          const safeName=normalizePeerName(peerName),safeAvatar=normalizePeerAvatar(peerAvatar);
+          window.webContents.send('linux-call-state',++revision,{kind,ready:true,video:video===true,
             muted:muted===true,muteControl:muteControl===true,cameraControl:video && cameraControl===true,
-            cameraEnabled:cameraEnabled===true,peerName:normalizePeerName(peerName),startedAt});
-          window.show();
+            cameraEnabled:cameraEnabled===true,peerName:safeName,peerAvatar:safeAvatar,startedAt});
+          if(kind==='consent')requestAttention({video:video===true,peerName:safeName});
+          else {clearAttention();window.show();}
         } catch {settle(new Error('Call window unavailable'));}
       });
     },
     dispose() {
-      if(disposed)return;disposed=true;settle(new Error('Call window closed'));
+      if(disposed)return;disposed=true;clearAttention();settle(new Error('Call window closed'));
       ipcMain.removeListener('linux-call-action',action);
       ipcMain.removeListener('linux-call-painted',painted);
       for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();

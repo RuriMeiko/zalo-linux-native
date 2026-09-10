@@ -31,7 +31,7 @@ for(const mode of ['answer','remote-end','timeout','error','abort','wrong-peer',
       timeoutMs:40,onPhase:phase=>phases.push(phase)});
     if(['answer','remote-end','cleanup-error'].includes(mode)) {
       const result=await pending;assert.equal(result.callReady,false);
-      assert.equal(result.reason,mode==='remote-end'?'remote-ended':'answer-observed');
+      assert.equal(result.reason,mode==='remote-end'?'remote-declined':'answer-observed');
       assert.equal(phases.filter(p=>p==='peer-ringing').length,mode==='remote-end'?0:1);
     } else await assert.rejects(pending,/timeout|failed|canceled/);
     assert.equal(frames[0].command,416);
@@ -45,6 +45,31 @@ for(const mode of ['answer','remote-end','timeout','error','abort','wrong-peer',
     if(mode==='cleanup-error') assert.ok(phases.includes('remote-cleanup-failed'));
     assert.equal(worker.listenerCount('callEvent'),0);assert.equal(signaling.listenerCount('control'),0);
   } finally {signaling.close();}
+}
+// Desktop builds may identify the peer with either the native partner ID or
+// the noised callee ID, and may spell a pre-answer refusal as reject/busy.
+for(const act of ['reject','decline','busy','peer_busy']) {
+  const worker=new EventEmitter(),abort=new AbortController();
+  worker.request=async op=>({code:0,data:op==='audioCodecs'?'[{"name":"opus/16000/1","payload":112}]':'{}'});
+  const signaling=new DesktopSignaling(message=>queueMicrotask(()=>{
+    signaling.receive({type:'recvSignal',command:message.command,data:undefined});
+    if(message.command===416)signaling.receive({type:'control',data:{act_type:'voip',act,
+      data:{callId:'789',uidFrom:'9999999999999999999'}}});
+  }));
+  assert.equal((await inviteOutgoing(worker,signaling,mapped,ready,
+    {calleeId:'9999999999999999999',signal:abort.signal})).reason,'remote-declined');
+  signaling.close();
+}
+{
+  const worker=new EventEmitter();
+  worker.request=async op=>({code:0,data:op==='audioCodecs'?'[{"name":"opus/16000/1","payload":112}]':'{}'});
+  const signaling=new DesktopSignaling(message=>queueMicrotask(()=>{
+    signaling.receive({type:'recvSignal',command:message.command,data:undefined});
+    if(message.command===416)worker.emit('callEvent',{requestId:ready.requestId,event:'onCallAutoHangup'});
+  }));
+  assert.equal((await inviteOutgoing(worker,signaling,mapped,ready,
+    {calleeId:'9999999999999999999'})).reason,'remote-declined');
+  signaling.close();
 }
 // Canceling an unanswered video invitation must stop peer ringing with the
 // video callType. It must never use the connected-call endpoint.
@@ -113,7 +138,8 @@ for(const mode of ['remote-during-ack','remote-before-answer-task','runtime-faul
     if(mode==='runtime-fault') worker.emit('nativeFault','fixture');
     if(mode==='worker-exit') exitWorker({code:1});
   }
-  if(mode.startsWith('remote')) assert.equal((await pending).reason,'remote-ended');
+  if(mode.startsWith('remote')) assert.equal((await pending).reason,
+    mode==='remote-before-answer-task'?'remote-declined':'remote-ended');
   else await assert.rejects(pending,/runtime failed/);
   assert.equal(mediaStarted,false);
   assert.equal(signaling.pending.size,0);

@@ -1,7 +1,12 @@
 const assert=require('node:assert/strict');
 const {EventEmitter}=require('node:events');
 const create=require('./call-window.cjs');
-const ipcMain=new EventEmitter(),windows=[];
+const ipcMain=new EventEmitter(),windows=[],notifications=[];
+class Notification extends EventEmitter {
+  static isSupported(){return true;}
+  constructor(options){super();this.options=options;notifications.push(this);}
+  show(){this.shown=true;} close(){this.closed=true;}
+}
 class Window extends EventEmitter {
   constructor(options){super();this.options=options;windows.push(this);this.messages=[];
     this.webContents=new EventEmitter();
@@ -10,13 +15,14 @@ class Window extends EventEmitter {
     this.webContents.send=(...args)=>this.messages.push(args);
   }
   async loadFile(file){assert.ok(file.endsWith('call-window.html'));}
-  show(){this.shown=true;}
+  show(){this.shown=true;} focus(){this.focused=true;} moveTop(){this.movedTop=true;}
+  flashFrame(value){this.flashing=value;} setAlwaysOnTop(value){this.alwaysOnTop=value;}
   destroy(){this.destroyed=true;}
   isDestroyed(){return !!this.destroyed;}
 }
 const turn=()=>new Promise(resolve=>setImmediate(resolve));
 (async()=>{
-  const host=create({BrowserWindow:Window,ipcMain});
+  const host=create({BrowserWindow:Window,ipcMain,Notification});
   const preparingStage=new AbortController();
   const preparing=host.dialog('preparing',{signal:preparingStage.signal});
   const preparationCanceled=assert.rejects(preparing,/canceled/);await turn();
@@ -53,10 +59,18 @@ const turn=()=>new Promise(resolve=>setImmediate(resolve));
   window.emit('close',{preventDefault(){}});assert.equal(await active,'end');
   host.dispose();assert.ok(window.destroyed);assert.equal(ipcMain.listenerCount('linux-call-action'),0);
   await assert.rejects(host.dialog('dialing',{signal}),/unavailable/);
-  const incoming=create({BrowserWindow:Window,ipcMain});
-  const consent=incoming.dialog('consent',{signal});await turn();
+  const incoming=create({BrowserWindow:Window,ipcMain,Notification});
+  await incoming.notifyIncoming({video:true});
+  assert.equal(windows[1].messages.at(-1)[2].ready,false);
+  assert.equal(notifications.length,1);assert.ok(notifications[0].shown);
+  const consent=incoming.dialog('consent',{signal,video:true,peerName:'Người gọi thử',peerAvatar:'https://s120.avatar.talk.zdn.vn/a.jpg'});await turn();
   const second=windows[1],id=second.messages.at(-1)[1];
+  assert.equal(second.messages.at(-1)[2].peerAvatar,'https://s120.avatar.talk.zdn.vn/a.jpg');
+  assert.ok(second.focused && second.movedTop && second.flashing && second.alwaysOnTop);
+  assert.equal(notifications.length,2);assert.ok(notifications[0].closed);assert.ok(notifications[1].shown);
+  assert.deepEqual(notifications[1].options,{title:'Zalo — Cuộc gọi video đến',body:'Từ Người gọi thử',silent:false,timeoutType:'never'});
   ipcMain.emit('linux-call-action',{sender:second.webContents},id,'answer');assert.equal(await consent,true);
+  assert.ok(notifications[1].closed);assert.equal(second.flashing,false);assert.equal(second.alwaysOnTop,false);
   second.emit('close',{preventDefault(){}});
   assert.equal(await incoming.dialog('active',{signal,muteControl:true}),'end','Close during command/stage gap must not be lost');
   incoming.dispose();
