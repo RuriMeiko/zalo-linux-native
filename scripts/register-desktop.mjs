@@ -3,6 +3,7 @@ import {readFile,writeFile,lstat,realpath} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {verifyInstallation} from './verify-installation.mjs';
 
 export function desktopEntry(installation) {
   if(typeof installation!=='string' || !path.isAbsolute(installation) || path.normalize(installation)!==installation ||
@@ -17,17 +18,15 @@ export async function registerDesktop(installation,{home=homedir(),check=false}=
   const relative=path.relative(home,installation);
   if(!relative || relative==='..' || relative.startsWith('../') || path.isAbsolute(relative))throw new Error('Installation must be inside home');
   if(await realpath(installation)!==installation)throw new Error('Installation must not traverse symlinks');
-  for(const name of ['launch-installed.sh','INSTALL-COMPLETE.json']) {
-    const file=path.join(installation,name),info=await lstat(file);
-    if(!info.isFile() || (name.endsWith('.sh') && !(info.mode&0o100)))throw new Error('Missing regular executable launcher or installation marker');
-  }
-  const marker=JSON.parse(await readFile(path.join(installation,'INSTALL-COMPLETE.json'),'utf8'));
-  if(marker.format!==1 || !Number.isInteger(marker.fileCount) || marker.fileCount<1)throw new Error('Invalid installation marker');
+  await verifyInstallation(installation,{requireGenerated:true});
   const directory=path.join(home,'.local/share/applications');
   if(await realpath(directory)!==directory)throw new Error('Applications directory must exist without symlink traversal');
   const target=path.join(directory,'zalo-linux-native.desktop');
-  try {await lstat(target);throw new Error('Menu entry already exists; preserve or remove it explicitly before registering');}
-  catch(error){if(error.code!=='ENOENT')throw error;}
+  try {
+    const info=await lstat(target);
+    if(check && info.isFile() && await realpath(target)===target && await readFile(target,'utf8')===contents)return target;
+    throw new Error('Menu entry already exists; preserve or remove it explicitly before registering');
+  } catch(error){if(error.code!=='ENOENT')throw error;}
   if(!check)await writeFile(target,contents,{flag:'wx',mode:0o644});
   return target;
 }

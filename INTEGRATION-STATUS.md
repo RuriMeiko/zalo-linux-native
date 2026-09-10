@@ -1,5 +1,12 @@
 # Full-app recovery integration — 2026-09-10
 
+Desktop registration now calls the complete installation verifier before any
+menu write. Read-only `--check` accepts an existing entry only when it is a
+canonical regular file whose contents exactly match; mismatch and write-mode
+overwrite remain rejected. Synthetic tamper/existing-entry tests pass. The real
+registered installation's 13,401 files and current menu entry both passed this
+source `--check` without writes or launching an app.
+
 ## Registered installation replaced with verified snapshot `529aa91`
 
 The non-running menu installation at `~/.local/share/zalo-linux-native` was

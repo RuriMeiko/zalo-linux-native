@@ -95,7 +95,10 @@ This creates only `~/.local/share/applications/zalo-linux-native.desktop` and
 does not launch the app. It uses the installation's `launch-installed.sh`, so
 Node must be available in the desktop session's PATH; Electron/runtime remain
 external. The generic `internet-chat` icon follows the desktop icon theme.
-An existing entry is never overwritten. To unregister, remove that specific
+Before either mode, the complete installed payload/config/launcher manifest is
+verified. `--check` accepts an existing menu entry only when its canonical file
+and contents exactly match the desired entry. Write mode never overwrites an
+existing entry, and a mismatched entry fails in both modes. To unregister, remove that specific
 `.desktop` file; do not remove the app or account profile. Installation paths
 containing percent, equals or control characters are rejected. Exec arguments
 are quoted according to the [freedesktop specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/exec-variables.html),
@@ -103,7 +106,8 @@ not passed through a shell.
 
 `node scripts/test-register-desktop.mjs` exercises a synthetic home under the
 persistent recovery directory, including check-only, quoted space paths,
-no overwrite and symlink rejection. The generated entry passed
+full payload tampering, exact/mismatched existing entries, no overwrite and
+symlink rejection. The generated entry passed
 `desktop-file-validate`. Actual menu appearance and launch in a clean desktop
 session remain acceptance checks. On 2026-09-10 a real menu entry was registered
 for `~/.local/share/zalo-linux-native`. It was subsequently replaced recoverably
