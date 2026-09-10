@@ -10,7 +10,9 @@ import {validateConfig,preflight} from './native-launch.mjs';
 const exec=promisify(execFile);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const payload=['bootstrap.js','package.json','version.txt','libs','main-dist','pc-dist','native','scripts',
-  'start.sh','update.sh','CREDITS.md','README.md','NATIVE-LAUNCH.md','NATIVE-INSTALL.md','RELEASE-CHECKLIST.md','PORT-CHECKLIST.md'];
+  'start.sh','update.sh','CREDITS.md','README.md','NATIVE-LAUNCH.md','NATIVE-INSTALL.md','NATIVE-TESTING.md',
+  'INTEGRATION-STATUS.md','LINUX-DESKTOP-EXTRAS.md','CALL-LINUX.md','CALL-SMOKE.md','HEADER-REGRESSION.md',
+  'RELEASE-CHECKLIST.md','PORT-CHECKLIST.md'];
 export function installPlan({source,destination,home=homedir(),config,files}) {
   const c=validateConfig(config);
   const under=(parent,child)=>{const r=path.relative(parent,child);return !!r && r!=='..' && !r.startsWith('../') && !path.isAbsolute(r);};
@@ -23,7 +25,7 @@ export function installPlan({source,destination,home=homedir(),config,files}) {
     f.split('/').some(p=>!p || p==='.' || p==='..') || path.isAbsolute(f) || /[\0\r\n]/.test(f)))
     throw new Error('Invalid tracked payload paths');
   const selected=files.filter(f=>payload.some(p=>f===p || f.startsWith(p+'/')));
-  for(const required of ['bootstrap.js','package.json','scripts/native-launch.mjs','native/qt-call-cap-linux/zcall-agent.js'])
+  for(const required of ['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/verify-installation.mjs','native/qt-call-cap-linux/zcall-agent.js'])
     if(!selected.includes(required))throw new Error('Incomplete application payload');
   if(new Set(selected).size!==selected.length)throw new Error('Duplicate payload path');
   return {source,destination,home,files:selected,config:{...c,appDir:destination}};
@@ -56,12 +58,16 @@ export async function copyInstallation(input) {
       if(createHash('sha256').update(await readFile(target)).digest('hex')!==item.sha256)
         throw new Error('Payload changed during installation');
     }
-    await writeFile(path.join(plan.destination,'launch.json'),JSON.stringify(plan.config,null,2)+'\n',{flag:'wx',mode:0o600});
-    await writeFile(path.join(plan.destination,'launch-installed.sh'),
-      '#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"\nexec node "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n',
+    const configText=JSON.stringify(plan.config,null,2)+'\n';
+    const launcherText='#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"\nnode "$ZALO_INSTALLED_DIR/scripts/verify-installation.mjs" "$ZALO_INSTALLED_DIR" --require-generated\nexec node "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n';
+    await writeFile(path.join(plan.destination,'launch.json'),configText,{flag:'wx',mode:0o600});
+    await writeFile(path.join(plan.destination,'launch-installed.sh'),launcherText,
       {flag:'wx',mode:0o755});
-    await writeFile(path.join(plan.destination,'INSTALL-COMPLETE.json'),JSON.stringify({format:1,fileCount:checked.length,
-      externalRuntime:true,files:checked.map(({file,sha256,mode})=>({file,sha256,mode}))},null,2)+'\n',{flag:'wx',mode:0o600});
+    const generated=[{file:'launch.json',sha256:createHash('sha256').update(configText).digest('hex'),mode:0o600},
+      {file:'launch-installed.sh',sha256:createHash('sha256').update(launcherText).digest('hex'),mode:0o755}];
+    const files=[...checked.map(({file,sha256,mode})=>({file,sha256,mode})),...generated];
+    await writeFile(path.join(plan.destination,'INSTALL-COMPLETE.json'),JSON.stringify({format:1,fileCount:files.length,
+      externalRuntime:true,generatedIntegrity:true,files},null,2)+'\n',{flag:'wx',mode:0o600});
   } catch(error) {throw new Error('Installation incomplete; destination retained for inspection', {cause:error});}
 }
 async function main() {

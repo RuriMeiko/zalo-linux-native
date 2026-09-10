@@ -33,12 +33,28 @@ content before distributing a copy, especially inherited proprietary files.
 
 The installed entry point resolves its own directory, including paths with
 spaces. `launch.json` is mode 0600; `launch-installed.sh` is mode 0755. A final
-`INSTALL-COMPLETE.json` contains each copied file's SHA-256 and mode. Every copied
-file is compared with its inspected hash before the completion marker is written.
+`INSTALL-COMPLETE.json` contains each copied file's SHA-256 and mode, plus those
+of the generated private config and launcher. Every copied file is compared with
+its inspected hash before the completion marker is written. Every installed
+launch first runs `scripts/verify-installation.mjs --require-generated`, which
+streams all listed files and verifies regular-file type, canonical path, mode and
+hash. A mismatch blocks startup; it is not automatically overwritten or repaired.
 No marker means the copy did not complete. Partial directories are kept for
 inspection; there is no automatic deletion, overwrite or rollback of your files.
 The runtime and Electron paths remain external and are not portable by merely
 moving this directory to another machine.
+
+Manual integrity check:
+
+```sh
+node /home/your-user/ZaloNative/scripts/verify-installation.mjs \
+  /home/your-user/ZaloNative --require-generated
+```
+
+Installations made before generated-file integrity metadata must be recreated in
+a new directory; the verifier deliberately will not pretend they have complete
+coverage. This mechanism detects accidental/local payload changes, not a hostile
+attacker able to replace both the verifier and manifest.
 
 No menu shortcut or updater is installed. The app retains its existing profile
 behavior, so running another copy is not an isolated second account. Do not
@@ -46,10 +62,13 @@ launch it concurrently with your current app to test installation.
 
 ## Evidence and remaining gates
 
-`node scripts/test-install-native.mjs` creates a small synthetic fixture under
+`node scripts/test-install-native.mjs` and
+`node scripts/test-verify-installation.mjs` create small synthetic fixtures under
 `~/zalo-native-recovery/`, tests real copying/hash verification, private config,
 executable launcher, read-only check, existing destination refusal, and traversal/
-symlink refusal. Fixtures are retained for inspection. It does not launch Electron.
+symlink refusal. They also test malformed/duplicate manifests, mode/hash tampering
+and generated-file coverage. Fixtures are retained for inspection. They do not
+launch Electron.
 
 On 2026-09-10, real-checkout `--check` validated 13,367 tracked payload files
 before the installer/docs themselves were committed. This is not clean-machine

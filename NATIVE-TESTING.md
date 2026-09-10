@@ -6,10 +6,10 @@ From the checkout on Linux x86_64 with the native addons built and FFmpeg on PAT
 node scripts/test-native-regression.mjs
 ```
 
-This runs 19 commands, including the 25-suite call-control runner, native module
+This runs 20 commands, including the 25-suite call-control runner, native module
 contracts, filesystem behavior, JPEG XL addon, synthetic video thumbnail,
 image encoder boundaries, bundled header/viewer/privacy checks and installer/
-menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped
+integrity-verifier/menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped
 test prevents an overall PASS. Run outside a restricted subprocess sandbox if
 it prevents the entrypoint tests from executing Bash/Node normally.
 

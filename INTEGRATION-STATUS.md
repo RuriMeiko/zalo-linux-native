@@ -1,5 +1,16 @@
 # Full-app recovery integration — 2026-09-10
 
+New-install integrity source: manifests now include the generated private config
+and launcher as well as tracked payload files. `launch-installed.sh` streams and
+checks every declared regular file's canonical path, mode and SHA-256 before
+launching. Malformed/duplicate/traversal entries, symlinks, modified modes or
+contents fail closed; no automatic overwrite occurs. Installer and dedicated
+verifier fixtures pass, followed by all 20 aggregate regression commands.
+Critical docs including testing/integration/viewer/header/call guidance are now
+part of the tracked install allowlist. Existing installation snapshot `e10acc3`
+predates this metadata and has not been replaced yet; it must not be described as
+self-verifying. Runtime/Electron and licensing/clean-machine gates remain open.
+
 Account-free aggregate regression: `node scripts/test-native-regression.mjs`
 passed all 19 commands, including 25 call-control suites, native filesystem and
 JPEG XL modules, synthetic media, mocked UI/privacy and installer checks.

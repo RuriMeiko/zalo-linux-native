@@ -33,6 +33,9 @@ Do not substitute successful module tests for these end-to-end gates.
   ([NATIVE-LAUNCH.md](NATIVE-LAUNCH.md)). The user-local development installer
   ([NATIVE-INSTALL.md](NATIVE-INSTALL.md)) now verifies payload copies and passed
   a full local copy/preflight with its helper resolved inside the installation.
+  New installs additionally verify their manifest, generated config and launcher
+  before every start; the currently registered `e10acc3` copy predates this and
+  still needs a recoverable replacement plus menu-launch acceptance.
   Self-contained runtime acquisition, default-shortcut migration and clean-machine
   verification remain open.
 - [ ] Make native runtime acquisition, pinned versions/hashes and build steps

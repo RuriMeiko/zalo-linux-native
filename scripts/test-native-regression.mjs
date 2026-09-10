@@ -10,7 +10,7 @@ const tests=[
   ['native/nativelibs/zimage/test-vips-temp.cjs'],['native/nativelibs/zimage/test-encode-extra.cjs'],
   ['scripts/test-linux-header.cjs'],['scripts/test-linux-header.cjs','--shared'],
   ['scripts/test-viewer-extras.cjs'],['scripts/test-signaling-log-privacy.cjs'],
-  ['scripts/test-install-native.mjs'],['scripts/test-register-desktop.mjs'],['scripts/test-entrypoints.mjs'],
+  ['scripts/test-install-native.mjs'],['scripts/test-verify-installation.mjs'],['scripts/test-register-desktop.mjs'],['scripts/test-entrypoints.mjs'],
 ];
 for(const args of tests) {
   const result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});

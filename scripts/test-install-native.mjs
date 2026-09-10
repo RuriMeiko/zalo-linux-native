@@ -4,9 +4,10 @@ import {mkdir,mkdtemp,writeFile,readFile,stat,symlink,lstat} from 'node:fs/promi
 import {homedir} from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {verifyInstallation} from './verify-installation.mjs';
 const source='/home/test/source',destination='/home/test/installed',home='/home/test';
 const config={appDir:source,electron:'/opt/electron/electron',runtime:'/home/test/runtime',source:'mic',sink:'speaker'};
-const files=['bootstrap.js','package.json','scripts/native-launch.mjs','native/qt-call-cap-linux/zcall-agent.js',
+const files=['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/verify-installation.mjs','native/qt-call-cap-linux/zcall-agent.js',
   'CREDITS.md','reverse-engineering/account-capture.json','.git/config','launch.json'];
 const args={source,destination,home,config,files};
 const p=installPlan(args);
@@ -33,17 +34,20 @@ await inspectInstallation(plan);
 await assert.rejects(lstat(fixtureDestination),{code:'ENOENT'});
 await copyInstallation(plan);
 const marker=JSON.parse(await readFile(path.join(fixtureDestination,'INSTALL-COMPLETE.json'),'utf8'));
-assert.equal(marker.fileCount,selected.length);assert.equal(marker.externalRuntime,true);
+assert.equal(marker.fileCount,selected.length+2);assert.equal(marker.externalRuntime,true);assert.equal(marker.generatedIntegrity,true);
 for(const item of marker.files) {
   const contents=await readFile(path.join(fixtureDestination,item.file));
   assert.equal(createHash('sha256').update(contents).digest('hex'),item.sha256);
-  assert.deepEqual(contents,await readFile(path.join(fixtureSource,item.file)));
+  if(selected.includes(item.file))assert.deepEqual(contents,await readFile(path.join(fixtureSource,item.file)));
 }
 assert.equal((await stat(path.join(fixtureDestination,'launch.json'))).mode&0o777,0o600);
 assert.equal((await stat(path.join(fixtureDestination,'launch-installed.sh'))).mode&0o777,0o755);
 const installedConfig=JSON.parse(await readFile(path.join(fixtureDestination,'launch.json'),'utf8'));
 assert.equal(installedConfig.appDir,fixtureDestination);assert.equal(installedConfig.runtime,config.runtime);
 assert.ok(!Object.hasOwn(installedConfig,'cdpPort'),'Installer must not enable diagnostics implicitly');
+assert.deepEqual(await verifyInstallation(fixtureDestination,{requireGenerated:true}),
+  {fileCount:selected.length+2,generatedIntegrity:true});
+assert.match(await readFile(path.join(fixtureDestination,'launch-installed.sh'),'utf8'),/verify-installation\.mjs.*--require-generated/);
 await assert.rejects(copyInstallation(plan),/already exists/);
 await symlink(path.join(fixtureSource,'bootstrap.js'),path.join(fixtureSource,'native','linked.js'));
 const unsafe={...plan,destination:path.join(fixture,'rejected'),files:[...selected,'native/linked.js']};
@@ -53,5 +57,8 @@ await assert.rejects(lstat(unsafe.destination),{code:'ENOENT'});
 await symlink(fixture,path.join(fixture,'alias'));
 await assert.rejects(copyInstallation({...plan,destination:path.join(fixture,'alias','rejected')}),/symlinks/);
 await assert.rejects(copyInstallation({...plan,files:[...selected,'../escape']}),/payload paths/);
+await writeFile(path.join(fixtureDestination,'launch.json'),'tampered\n');
+await assert.rejects(verifyInstallation(fixtureDestination,{requireGenerated:true}),/launch\.json/);
+await assert.rejects(verifyInstallation('relative'),/absolute/);
 console.log('PASS installer: home-only plan, read-only preflight, real copy/hash manifest, private config, executable launcher, existing/symlink/traversal rejection');
 console.log(`Synthetic fixture retained: ${fixture}`);
