@@ -105,6 +105,19 @@ passes five real initialization/stop cycles and verifies exactly one
 payload-free event on orderly process shutdown. This does not yet demonstrate
 hardware unplug recovery or crash handling in the real desktop UI.
 
+`node native/android-zrtc/test-incoming-owner-native.mjs
+/home/rurimeiko/zalo-native-recovery/runtime` also passes against the real
+rebuilt native worker. Three complete owner cycles each perform explicit
+synthetic consent, mocked 407/402/ACK, native media start, at least 20 newly
+encoded and decoded H.264 frames, exact 480x360 I420 pixel verification, silent
+PCM advancement, and local 409 cleanup. Frame counters are checked as per-cycle
+deltas, not accumulated totals. After each cycle, call info and snapshots are
+unavailable and PCM counters remain stopped. Transport/native call listeners
+are removed. The fixture uses only UDP localhost and a uniquely named temporary
+PulseAudio null sink, unloaded in cleanup; it never captures the camera or real
+microphone, contacts an account, or saves frame data. Desktop signaling and
+consent are still simulated: this does not replace actual incoming UI wiring.
+
 - Connect incoming consent/UI and media ownership to the actual app, including
   verified native identity mapping and remote reject/end-call signaling.
 - Rebuild and package the worker reproducibly with reviewed dependencies; run
