@@ -104,6 +104,17 @@ name no longer needs to block development or require destructive recreation.
 
 ### CDP trial — outgoing voice UI
 
+User follow-up confirms the voice call connected and End worked, while mute
+was unreliable. The user also reports video visible at both ends after answer,
+but no outgoing dialing UI or mic/end/camera controls for video. This is useful
+live evidence, not full acceptance of the call feature or mute behavior.
+
+The outgoing video branch now uses the shared dialing/active UI coordinator.
+Capture begins only after answer/native readiness; cleanup joins camera and UI
+before native stop and server end acknowledgment. Tests cover local/remote end
+and camera failure. This source change has not restarted the live app. Camera
+toggle remains unimplemented, and the reported mute issue is still open.
+
 With explicit user approval, the app was relaunched with loopback-only CDP
 port 9222 and the isolated `mute-check/runtime` build. Current renderer bundles
 (compact header, lock forwarding and signaling-log redaction) were copied after

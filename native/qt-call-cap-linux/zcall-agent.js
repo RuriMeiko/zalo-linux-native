@@ -330,10 +330,12 @@ if(setupEnabled) {
                 const {inviteOutgoing}=await import('../android-zrtc/outgoing-invitation.mjs');
                 const {acceptOutgoingAnswer}=await import('../android-zrtc/outgoing-answer.mjs');
                 if(video) {
-                    const {withCameraSession}=await import('../android-zrtc/camera-call-session.mjs');
+                    const {withOutgoingCallUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');
                     const {runVideoMedia}=await import('../android-zrtc/video-media-session.mjs');
-                    return await withCameraSession(worker,{device,signal,onPhase:setupPhase},({signal:videoSignal,onMediaStarted})=>
-                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,onPhase:setupPhase,
+                    return await withOutgoingCallUI(worker,{signal,video:true,
+                        runMedia:(mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,device,sink:videoSink})},
+                        ({signal:videoSignal,onAnswered,beforeCleanup})=>
+                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:videoSignal,onPhase:setupPhase,beforeCleanup,
                             onAnswer:async(control,owner)=>{
                                 const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
                                     {calleeId,signal:videoSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});
@@ -342,8 +344,8 @@ if(setupEnabled) {
                                 if(state.code!==0)throw new Error('Video state unavailable');
                                 const media=JSON.parse(state.data);
                                 if(!media.videoCall || !media.canTransferMedia || media.codecId!==4)throw new Error('Peer did not negotiate native H.264 video');
-                                current();owner.current();onMediaStarted();return answer;
-                            }}), (mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,sink:videoSink}));
+                                current();owner.current();await onAnswered();return answer;
+                            }}));
                 }
                 if(mediaEnabled) {
                     const {withOutgoingVoiceUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');

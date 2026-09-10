@@ -1,10 +1,11 @@
 import {callDialog,activeCallControls} from './native-call-ui.mjs';
 
-export async function withOutgoingVoiceUI(worker,{signal},runCall,dialog=callDialog) {
+export async function withOutgoingCallUI(worker,{signal,video=false,runMedia},runCall,dialog=callDialog) {
+  if(video && typeof runMedia!=='function')throw new TypeError('Video media owner required');
   const controller=new AbortController(),abort=()=>controller.abort();
   signal?.addEventListener('abort',abort,{once:true});
   if(signal?.aborted)abort();
-  let stage,task,failure,answered=false,cleanup;
+  let stage,task,mediaTask,failure,answered=false,cleanup;
   const stopUI=async()=>{stage?.abort();await task;};
   const open=kind=>{
     const currentStage=new AbortController();stage=currentStage;
@@ -12,14 +13,14 @@ export async function withOutgoingVoiceUI(worker,{signal},runCall,dialog=callDia
     if(controller.signal.aborted)stop();
     task=Promise.resolve().then(()=>{
       if(currentStage.signal.aborted)return;
-      return kind==='dialing'?dialog(kind,{signal:currentStage.signal}):
-        activeCallControls(worker,{signal:currentStage.signal},dialog);
+      return kind==='dialing'?dialog(kind,{video,signal:currentStage.signal}):
+        activeCallControls(worker,{video,signal:currentStage.signal},dialog);
     }).then(()=>{if(!currentStage.signal.aborted)controller.abort();})
       .catch(error=>{if(!currentStage.signal.aborted){failure=error;controller.abort();}})
       .finally(()=>controller.signal.removeEventListener('abort',stop));
   };
   const beforeCleanup=()=>cleanup??=(async()=>{
-    await stopUI();
+    controller.abort();await stopUI();await mediaTask;
     const reply=await worker.request('stop');
     if(reply?.code!==0)throw new Error('Outgoing audio shutdown failed');
   })();
@@ -31,6 +32,11 @@ export async function withOutgoingVoiceUI(worker,{signal},runCall,dialog=callDia
       answered=true;await stopUI();
       if(controller.signal.aborted)throw new Error('Outgoing call canceled');
       open('active');
+      if(runMedia)mediaTask=Promise.resolve().then(()=>{
+        if(!controller.signal.aborted)return runMedia(worker,{signal:controller.signal});
+      }).then(()=>{
+        if(!controller.signal.aborted)throw new Error('Outgoing media stopped unexpectedly');
+      }).catch(error=>{if(!controller.signal.aborted){failure=error;controller.abort();}});
     }});
     if(failure)throw failure;
     return result;
@@ -39,3 +45,4 @@ export async function withOutgoingVoiceUI(worker,{signal},runCall,dialog=callDia
     signal?.removeEventListener('abort',abort);controller.abort();await beforeCleanup();
   }
 }
+export const withOutgoingVoiceUI=withOutgoingCallUI;
