@@ -102,6 +102,13 @@ name no longer needs to block development or require destructive recreation.
 
 ### Incoming lifecycle owner checkpoint
 
+Incoming startup/media failures now show a generic GTK error dialog after the
+worker has closed. It suggests checking network and devices, contains no raw
+exception or account strings, and auto-closes after 15 seconds. User abort and
+matched remote cancellation suppress it. Tests cover error display ordering,
+voice/video text, timeout exit, privacy and cancellation suppression. The
+dialog is not a diagnostic claim identifying which device or network failed.
+
 Disposal now removes the native event listener even if the worker rejects the
 stop request (for example after a crash). Owner tests inject this failure both
 during consent and active media and verify listener/ownership release. Desktop

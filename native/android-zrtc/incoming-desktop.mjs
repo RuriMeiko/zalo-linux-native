@@ -17,21 +17,21 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
   if(typeof callerId!=='string' || !/^[1-9][0-9]{0,19}$/.test(callerId))throw new Error('Missing authenticated desktop caller');
   if(video && (!/^\/dev\/video[0-9]+$/.test(device??'') || !sink))throw new Error('Incoming video device/display unavailable');
   const controller=new AbortController(),abort=()=>controller.abort();
+  let remoteCanceled=false,failure;
   const earlyControl=event=>{
     if(!['cancel','endcall'].includes(event?.act))return;
     try {const key=incomingControlKey({type:'control',data:event});
-      if(key.callId===decoded.key.callId && key.callerId===decoded.key.callerId)controller.abort();
+      if(key.callId===decoded.key.callId && key.callerId===decoded.key.callerId){remoteCanceled=true;controller.abort();}
     }catch {}
   };
-  let worker,ownerStarted=false;
-  const duringStartup=event=>{if(!ownerStarted)earlyControl(event);};
+  let worker;
+  const duringStartup=earlyControl;
   signal.addEventListener('abort',abort,{once:true});transport.on('control',duringStartup);
   try {
     if(signal.aborted)abort();
     if(controller.signal.aborted)throw new Error('Incoming call canceled');
     worker=await startWorker(runtime,{network:true,pcm,cpuVideo:video,experimentalVideoNetwork:video});
     if(controller.signal.aborted)throw new Error('Incoming call canceled');
-    ownerStarted=true;
     return await owner(worker,transport,message,{context,callerId,signal:controller.signal,onPhase,
       requestConsent:options=>dialog('consent',options),
       runMedia:async(native,options)=>{
@@ -49,8 +49,16 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
           if(failure)throw failure;
         } finally {options.signal.removeEventListener('abort',stopMedia);mediaAbort.abort();}
       }});
-  } finally {
+  } catch(error) {failure=error;throw error;}
+  finally {
     controller.abort();signal.removeEventListener('abort',abort);transport.off('control',duringStartup);
-    if(worker)await worker.close();
+    try {if(worker)await worker.close();}
+    finally {
+      // Never interpolate raw errors, account data or remote strings. The
+      // original failure still propagates if the notification cannot open.
+      if(failure && !signal.aborted && !remoteCanceled) {
+        try {await dialog('error',{video,signal});}catch {}
+      }
+    }
   }
 }

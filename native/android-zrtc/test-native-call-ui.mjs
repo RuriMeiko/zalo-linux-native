@@ -19,5 +19,16 @@ for(const outcome of ['accept','ignore','abort','failure']) {
   controller.abort();assert.equal(kills,outcome==='abort'?1:0,'abort listener removed after close');
 }
 const stopped=new AbortController();stopped.abort();
+for(const video of [false,true])for(const code of [0,5]) {
+  const controller=new AbortController(),child=new EventEmitter();
+  const result=callDialog('error',{video,signal:controller.signal,error:'PRIVATE',callerId:'PRIVATE'},(_file,args)=>{
+    assert.ok(args.includes('--error'));assert.ok(args.includes('--timeout=15'));
+    assert.ok(args.includes('--ok-label=Đóng'));assert.ok(args.includes('--no-markup'));
+    assert.ok(!args.join(' ').includes('PRIVATE'));
+    assert.equal(args.join(' ').includes('camera'),video);
+    return child;
+  });
+  child.emit('close',code);assert.equal(await result,true);
+}
 await assert.rejects(callDialog('consent',{signal:stopped.signal},()=>{throw Error('must not spawn');}),/canceled/);
 console.log('PASS native GTK call UI boundary: accept/ignore, abort and process join, spawn failure redaction, listener cleanup');

@@ -2,10 +2,12 @@ import {spawn} from 'node:child_process';
 // Use GTK window controls and explicit buttons. Never put account/session data
 // in process arguments or interpret remote strings as markup.
 export function callDialog(kind,{video=false,signal},launch=spawn) {
-  if(!['consent','active'].includes(kind) || !signal || typeof signal.addEventListener!=='function')
+  if(!['consent','active','error'].includes(kind) || !signal || typeof signal.addEventListener!=='function')
     return Promise.reject(new Error('Invalid native call dialog'));
   if(signal.aborted)return Promise.reject(new Error('Call dialog canceled'));
-  const args=kind==='consent'?['--question','--title=Zalo — Cuộc gọi đến','--no-markup',
+  const args=kind==='error'?['--error','--title=Zalo — Cuộc gọi bị gián đoạn','--no-markup',
+    '--text=Không thể tiếp tục cuộc gọi. Hãy kiểm tra kết nối mạng và thiết bị mic, loa'+(video?', camera':'')+' rồi thử lại.',
+    '--ok-label=Đóng','--timeout=15']:kind==='consent'?['--question','--title=Zalo — Cuộc gọi đến','--no-markup',
     `--text=${video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'}`,'--ok-label=Trả lời','--cancel-label=Bỏ qua']:
     ['--info','--title=Zalo — Cuộc gọi','--no-markup','--text=Đã trả lời. Bạn có thể kết thúc cuộc gọi tại đây.','--ok-label=Kết thúc'];
   return new Promise((resolve,reject)=>{
@@ -17,7 +19,7 @@ export function callDialog(kind,{video=false,signal},launch=spawn) {
     child.once('close',code=>{
       cleanup();
       if(signal.aborted)reject(new Error('Call dialog canceled'));
-      else if(failed || ![0,1].includes(code))reject(new Error('Native call dialog unavailable'));
+      else if(failed || ![0,1,...(kind==='error'?[5]:[])].includes(code))reject(new Error('Native call dialog unavailable'));
       else resolve(kind==='consent'?code===0:true);
     });
     signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();

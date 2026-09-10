@@ -30,6 +30,8 @@ for(const scenario of ['accept','ignore','startup-cancel','start-error','missing
   assert.equal(closes,['missing-identity','start-error'].includes(scenario)?0:1);
   assert.equal(owners,['accept','ignore'].includes(scenario)?1:0);
   if(scenario==='accept')assert.deepEqual(dialogs,['consent','active']);
+  if(scenario==='start-error')assert.deepEqual(dialogs,['error']);
+  if(scenario==='startup-cancel')assert.deepEqual(dialogs,[]);
 }
 const videoMessage={...message,data:{...message.data,data:{...message.data.data,params:JSON.stringify({...params,
   video:{enable:1},extendData:JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97}]}})})}}};
@@ -62,7 +64,14 @@ for(const scenario of ['video-error','dialog-error','local-end','parent-abort'])
       assert.equal(await o.requestConsent({video:true,signal:o.signal}),true);
       await o.runMedia(worker,{video:true,signal:o.signal});
     },
-    dialog:async(kind,{signal})=>kind==='consent'?true:task('dialog',signal),
+    dialog:async(kind,{signal})=>{
+      if(kind==='consent')return true;
+      if(kind==='error'){
+        assert.equal(events.at(-1),'closed','error shown only after worker closed');
+        events.push('error-shown');return true;
+      }
+      return task('dialog',signal);
+    },
     videoMedia:async(_worker,{signal})=>task('video',signal),
   });
   const outcome=scenario.endsWith('error')?assert.rejects(running,new RegExp(scenario)):running;
@@ -71,7 +80,7 @@ for(const scenario of ['video-error','dialog-error','local-end','parent-abort'])
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(!events.includes('closed'),'worker must remain alive until media tasks join');
   finish.resolve();await outcome;
-  assert.equal(events.at(-1),'closed');
+  assert.equal(events.at(-1),scenario.endsWith('error')?'error-shown':'closed');
   assert.ok(events.includes('video-joined') && events.includes('dialog-joined'));
   assert.equal(transport.listenerCount('control'),0);
 }
