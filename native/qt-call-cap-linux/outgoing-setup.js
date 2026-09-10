@@ -6,11 +6,13 @@ const {peerName:normalizePeerName}=require('../android-zrtc/call-presentation.cj
 // onConfig must validate/apply the decoded response; a 401 response is never
 // treated as remote ringing. 416 must wait for actual native media readiness.
 class OutgoingSetup {
-    constructor(signaling,{onConfig,onPreparing=()=>async()=>{},onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false,getContext=()=>undefined}={}) {
+    constructor(signaling,{onConfig,onPreparing=()=>async()=>{},onFailure=async()=>{},onPhase=()=>{},callId=()=>randomInt(1,0x80000000),allowVideo=false,getContext=()=>undefined}={}) {
         if(typeof onConfig!=='function') throw new TypeError('Missing native config consumer');
         if(typeof allowVideo!=='boolean')throw new TypeError('Video opt-in must be boolean');
         if(typeof getContext!=='function')throw new TypeError('Invalid setup context provider');
         if(typeof onPreparing!=='function')throw new TypeError('Invalid preparation callback');
+        if(typeof onFailure!=='function')throw new TypeError('Invalid failure callback');
+        this.onFailure=onFailure;
         this.onPreparing=onPreparing;
         this.getContext=getContext;
         this.allowVideo=allowVideo;
@@ -47,6 +49,12 @@ class OutgoingSetup {
             current();this.onPhase('received-config');current();
             const result=await this.onConfig(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing});
             current();return result;
+            } catch(error) {
+                // onConfig has joined its worker/media cleanup before rejecting.
+                // Release preparation before asking the same pipe to show error.
+                try {if(typeof finishPreparing==='function')await finishPreparing();}catch {}
+                if(!signal.aborted)try {await this.onFailure({signal,video,peerName});}catch {}
+                throw error;
             } finally {if(typeof finishPreparing==='function')await finishPreparing();}
         });
         return this.active.finally(()=>{this.active=null;});

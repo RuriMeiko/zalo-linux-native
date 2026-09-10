@@ -22,6 +22,14 @@ Reconnect/select a real output and rerun preflight before attempting restart.
 
 ## Source and earlier deployment evidence
 
+Outgoing configuration/native failures now request the existing bounded generic
+error dialog after preparation cleanup, instead of only recording setup-failed
+and disappearing. Explicit cancellation and cancellation during cleanup suppress
+notification. The callback receives no raw error/signaling/account identifiers;
+notification failure cannot replace the original setup error. Regression tests
+pass within the 24-suite runner. This helper change is not yet reloaded in the
+installed running process.
+
 The launcher now separates app startup from physical call-device readiness.
 Runtime files/hash are still required; missing selected devices produce terminal
 warnings on normal launch, while `--check` remains strict. Host-side preflight

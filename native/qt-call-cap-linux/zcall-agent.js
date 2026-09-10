@@ -320,6 +320,7 @@ if(setupEnabled) {
     outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),
       onPreparing:options=>networkEnabled && mediaEnabled?
         require('../android-zrtc/outgoing-preparation.cjs').outgoingPreparation(nativeCallDialog,options):async()=>{},
+      onFailure:options=>networkEnabled && mediaEnabled?nativeCallDialog('error',options):Promise.resolve(),
       onConfig:async(config,{callId,calleeId,video,peerName,current,signal,context,finishPreparing})=>{
         const outgoingDialog=(kind,options)=>nativeCallDialog(kind,{...options,peerName});
         const {callerResponse}=await import('../android-zrtc/caller-response.mjs');

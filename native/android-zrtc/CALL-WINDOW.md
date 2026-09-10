@@ -18,6 +18,14 @@ This is deployment evidence, not live two-account acceptance.
 
 ## Verified on 2026-09-10
 
+- Outgoing setup now invokes the existing generic error dialog after a failed
+  configuration/native consumer has unwound and the preparation dialog has
+  joined. `test-outgoing-setup.js` covers configuration/native failure, failed
+  notification delivery, explicit cancel and cancel during cleanup. Only
+  signal/video/bounded display name are passed to presentation, never raw
+  signaling errors. Canceled setup suppresses the notification. This latest
+  wiring is source-tested, not a new installed/live-call verification.
+
 - Latest source checkpoint `233db7e` was exercised in isolated Electron 22 via
   agent-browser on loopback CDP 9234. The new
   `test-call-window-electron.cjs --preparation-only` composes the real outgoing

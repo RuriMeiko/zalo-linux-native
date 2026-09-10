@@ -36,5 +36,36 @@ const data={partner:[{id:'9999999999999999999'}],type:1};
   await pending;
   assert.deepEqual(requests,[{cmd:401,body:{calleeId:data.partner[0].id,callId:789,codec:'[]',type:3}}]);
   assert.throws(()=>new OutgoingSetup({}, {onConfig(){},allowVideo:1}),/boolean/);
+  for(const mode of ['config-error','native-error','cancel','cancel-during-cleanup','notification-error']) {
+    const failure=new Error('private signaling error'),events=[];let release;
+    const signaling={request:async()=>{if(mode==='config-error')throw failure;return {};},cancel(){}};
+    const setup=new OutgoingSetup(signaling,{callId:()=>790,
+      onPreparing:({signal})=>async()=>{
+        events.push('preparation-joined');
+        if(mode==='cancel-during-cleanup' && !signal.aborted)setup.abort.abort();
+      },
+      onConfig:async(_config,{signal})=>{
+        if(mode==='cancel') {
+          release=()=>{};
+          await new Promise(resolve=>signal.addEventListener('abort',resolve,{once:true}));
+        }
+        events.push('worker-joined');throw failure;
+      },
+      onFailure:async options=>{
+        assert.deepEqual(Object.keys(options).sort(),['peerName','signal','video']);
+        assert.equal(options.signal.aborted,false);
+        assert.equal(events.at(-1),'preparation-joined');events.push('notified');
+        if(mode==='notification-error')throw new Error('UI failed');
+      }});
+    const pending=assert.rejects(setup.start(data),error=>error===failure);
+    if(mode==='cancel') {
+      while(!release)await new Promise(resolve=>setImmediate(resolve));
+      await setup.stop();
+    }
+    await pending;
+    assert.equal(events.filter(e=>e==='notified').length,mode.startsWith('cancel')?0:1);
+    assert.equal(setup.active,null);
+  }
+  assert.throws(()=>new OutgoingSetup({}, {onConfig(){},onFailure:true}),/failure/);
   console.log('PASS outgoing setup: default voice gate, explicit video type 3, immutable intent, 401 transport, busy/cancel/error/timeout; no false ringing');
 })().catch(e=>{console.error(e);process.exitCode=1;});
