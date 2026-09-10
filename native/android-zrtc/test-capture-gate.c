@@ -33,5 +33,7 @@ int main(void) {
             zrtc_capture_gate_end(&gate);
         }
     }
-    puts("PASS capture gate: silent muted PCM, restored samples, synchronized acknowledgment, 1000 cycles");
+    ZrtcCaptureStats stats = zrtc_capture_gate_stats(&gate);
+    assert(stats.muted == 0 && stats.input_nonzero == 2001 && stats.output_nonzero == 1001 && stats.muted_frames == 1000);
+    puts("PASS capture gate: silent muted PCM, restored samples, synchronized acknowledgment, aggregate counters, 1000 cycles");
 }

@@ -14,6 +14,7 @@
 #include "capture-gate.h"
 static ZrtcCaptureGate capture_gate = ZRTC_CAPTURE_GATE_INIT;
 void zrtc_linux_audio_set_muted(int muted) { zrtc_capture_gate_set(&capture_gate, muted); }
+ZrtcCaptureStats zrtc_linux_audio_capture_stats(void) { return zrtc_capture_gate_stats(&capture_gate); }
 
 typedef struct Handle {
     char *kind;

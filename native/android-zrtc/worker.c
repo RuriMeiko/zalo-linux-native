@@ -153,6 +153,8 @@ static void offline(void) {
 }
 static void json_string(const char *s);
 static void response(uint32_t id, int code, jstring data) {
+    /* Take gate lock before stdout lock: a recording callback may emit events. */
+    const ZrtcCaptureStats capture = zrtc_linux_audio_capture_stats();
     flockfile(out);
     fprintf(out, "{\"type\":\"response\",\"id\":%u,\"code\":%d,\"initialized\":%s,\"configured\":%s,\"callReady\":false,\"offline\":%s,\"data\":",
             id, code, initialized ? "true" : "false", configured ? "true" : "false", network_enabled ? "false" : "true");
@@ -162,6 +164,8 @@ static void response(uint32_t id, int code, jstring data) {
        Read back native state, not a shadow of the requested option. */
     fprintf(out, ",\"enableChangeZrtp\":%s", config && ((const unsigned char *)(uintptr_t)config)[0x2d] ? "true" : "false");
     fprintf(out, ",\"videoFramesSubmitted\":%lu",linux_video_peer_frames());
+    fprintf(out, ",\"captureGate\":{\"muted\":%s,\"inputNonzero\":%lu,\"outputNonzero\":%lu,\"mutedFrames\":%lu}",
+        capture.muted ? "true" : "false", capture.input_nonzero, capture.output_nonzero, capture.muted_frames);
     fprintf(out, ",\"pcmFrames\":{\"recorded\":%lu,\"played\":%lu}}\n",
         zrtc_linux_audio_frames(1), zrtc_linux_audio_frames(0));
     if (data) (*env)->ReleaseStringUTFChars(env, data, text);

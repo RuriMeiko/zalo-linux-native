@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {execFile} from 'node:child_process';
+import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {setTimeout as delay} from 'node:timers/promises';
 import dgram from 'node:dgram';
@@ -8,9 +8,16 @@ import {NativeWorker} from './worker-client.mjs';
 import {runIncomingCall} from './incoming-call-owner.mjs';
 import {decodeVideoSnapshot} from './video-snapshot.mjs';
 const runtime=process.argv[2];
-if(!runtime)throw new Error('Usage: test-incoming-owner-native.mjs RUNTIME');
+const tone=process.argv[3]==='--tone';
+if(!runtime || process.argv.length>4 || (process.argv[3] && !tone))throw new Error('Usage: test-incoming-owner-native.mjs RUNTIME [--tone]');
 const exec=promisify(execFile),sink=`zrtc_owner_${process.pid}`;
-const server=dgram.createSocket('udp4');let moduleId,worker;
+const server=dgram.createSocket('udp4');let moduleId,toneModule,worker;
+const children=[];
+function launch(command,args) {
+  const child=spawn(command,args,{stdio:['pipe','pipe','ignore']});
+  const closed=new Promise(resolve=>{child.once('error',()=>resolve());child.once('close',()=>resolve());});
+  children.push({child,closed});return child;
+}
 try {
   await new Promise((resolve,reject)=>{server.once('error',reject);server.bind(0,'127.0.0.1',resolve);});
   server.on('message',(packet,remote)=>{
@@ -27,7 +34,14 @@ try {
   });
   moduleId=(await exec('pactl',['load-module','module-null-sink',`sink_name=${sink}`,'rate=48000','channels=1'])).stdout.trim();
   assert.match(moduleId,/^\d+$/);
-  worker=await NativeWorker.start(runtime,{cpuVideo:true,network:true,experimentalVideoNetwork:true,pcm:{source:sink+'.monitor',sink}});
+  if(tone) {
+    toneModule=(await exec('pactl',['load-module','module-null-sink',`sink_name=${sink}_tone`,'rate=48000','channels=1'])).stdout.trim();
+    assert.match(toneModule,/^\d+$/);
+    const generator=launch('ffmpeg',['-hide_banner','-loglevel','error','-nostdin','-re','-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-ac','1','-f','s16le','pipe:1']);
+    const player=launch('pacat',['--playback','--raw','--rate=48000','--channels=1','--format=s16le',`--device=${sink}_tone`]);
+    player.stdin.on('error',()=>{});generator.stdout.pipe(player.stdin);
+  }
+  worker=await NativeWorker.start(runtime,{cpuVideo:true,network:true,experimentalVideoNetwork:true,pcm:{source:sink+(tone?'_tone':'')+'.monitor',sink}});
   const faults=[];worker.on('nativeFault',kind=>faults.push(kind));
   assert.equal((await worker.request('configure',{userId:123,partnerId:456,callId:789,session:'fixture',
     settings:'{}',zrtcConfig:'{}',videoCall:true,supportVideoCall:true,protocol:1,enableChangeZrtp:false})).code,0);
@@ -59,6 +73,27 @@ try {
       signal:controller.signal,requestConsent:async()=>true,runMedia:async(native,{signal})=>{
         assert.equal((await native.request('microphoneMute',{muted:true})).code,0);
         assert.equal((await native.request('microphoneMute',{muted:false})).code,0);
+        if(tone) {
+          const waitChange=async(before,field)=>{
+            for(let attempt=0;attempt<150;attempt++) {
+              const state=(await native.request('status')).captureGate;
+              assert.ok(state,'Rebuilt worker with capture diagnostics required');
+              if(state[field]>before[field]+10)return state;await delay(20);
+            }
+            assert.fail('Tone did not reach the native recording gate');
+          };
+          let gate=(await native.request('status')).captureGate;
+          assert.ok(gate,'Rebuilt worker with capture diagnostics required');
+          gate=await waitChange(gate,'outputNonzero');
+          const muted=await native.request('microphoneMute',{muted:true});
+          assert.equal(muted.code,0);assert.equal(muted.captureGate.muted,true);
+          const afterMute=await waitChange(muted.captureGate,'inputNonzero');
+          assert.ok(afterMute.mutedFrames>muted.captureGate.mutedFrames);
+          assert.equal(afterMute.outputNonzero,muted.captureGate.outputNonzero,'No nonzero PCM may enter native recording after mute ACK');
+          const unmuted=await native.request('microphoneMute',{muted:false});
+          assert.equal(unmuted.code,0);assert.equal(unmuted.captureGate.muted,false);
+          await waitChange(unmuted.captureGate,'outputNonzero');
+        }
         const before=(await native.request('status')).pcmFrames;
         const baseline=JSON.parse((await native.request('videoStats')).data);
         for(let frame=0;frame<30;frame++) {
@@ -90,6 +125,15 @@ try {
   assert.deepEqual(faults,[]);
 } finally {
   try {if(worker)assert.deepEqual(await worker.close(),{code:0,signal:null});}
-  finally {server.close();if(moduleId && /^\d+$/.test(moduleId))await exec('pactl',['unload-module',moduleId]);}
+  finally {
+    server.close();
+    await Promise.all(children.map(async({child,closed})=>{
+      child.kill('SIGTERM');const timer=setTimeout(()=>child.kill('SIGKILL'),1000);
+      await closed;clearTimeout(timer);
+    }));
+    if(toneModule && /^\d+$/.test(toneModule))await exec('pactl',['unload-module',toneModule]);
+    if(moduleId && /^\d+$/.test(moduleId))await exec('pactl',['unload-module',moduleId]);
+  }
 }
-console.log('PASS real incoming owner: 3 consent/API/ACK/media/local-end cycles, synthetic H264 pixels and silent PCM; mocked signaling, no real account');
+console.log(tone?'PASS real native mute: 3 tone/mute/unmute cycles at recording gate, synthetic H264, joined cleanup; virtual audio, loopback signaling, no real account':
+  'PASS real incoming owner: 3 consent/API/ACK/media/local-end cycles, synthetic H264 pixels and silent PCM; mocked signaling, no real account');
