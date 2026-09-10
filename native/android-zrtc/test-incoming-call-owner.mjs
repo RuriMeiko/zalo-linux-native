@@ -1,0 +1,82 @@
+import assert from 'node:assert/strict';
+import {EventEmitter} from 'node:events';
+import {runIncomingCall} from './incoming-call-owner.mjs';
+const extension=JSON.stringify({callType:1,video:{codec:[{name:'h264',payload:97}]}});
+const codec='[{"name":"opus/16000/1","payload":112}]';
+const params={id:789,protocol:1,sessId:'fixture',settings:{},zrtc_config:{},rtpIP:'127.0.0.1:9000',
+  rtcpIP:'127.0.0.1:9001',video:{enable:1},extendData:extension};
+const message={type:'control',data:{act_type:'voip',act:'request',data:{uidFrom:'456',uidTo:'123',
+  callId:'789',codec,params:JSON.stringify(params)}}};
+const ended={act_type:'voip',act:'endcall',data:{uidFrom:'456',callId:'789'}};
+const defer=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),resolve};};
+function fixture() {
+  const events=[];
+  class Worker extends EventEmitter {
+    async request(op,args={}) {
+      events.push(op);
+      if(op==='incomingCall')this.emit('callEvent',{event:'onIncomingCall',requestId:2,args:[]});
+      if(op==='callState')this.emit('callEvent',{event:'onCallState',requestId:2,args:[args.state==='CONFIRMED'?5:3]});
+      if(op==='videoStats')return {code:0,data:JSON.stringify({codecId:4,videoCall:true,canTransferMedia:true,captureThreadRunning:true})};
+      if(op==='callInfo')return {code:0,data:JSON.stringify({rtpAddress:params.rtpIP,rtcpAddress:params.rtcpIP,sessionId:'fixture'})};
+      if(op==='audioCodecs')return {code:0,data:codec};
+      if(op==='extendData')return {code:0,data:extension};
+      return {code:0,id:op==='incomingCall'?2:1};
+    }
+  }
+  const worker=new Worker(),transport=new EventEmitter();
+  transport.request=async command=>{
+    events.push(command);
+    if(command===402)queueMicrotask(()=>transport.emit('control',{act_type:'voip',act:'answer_ack',data:{callId:789}}));
+    return {};
+  };
+  transport.cancel=()=>{};
+  const options={context:{nativeLocalId:123,video:true},callerId:'456',requestConsent:async()=>false,
+    runMedia:async()=>{throw new Error('must not start media');}};
+  return {worker,transport,events,options,run:extra=>runIncomingCall(worker,transport,message,{...options,...extra}),
+    clean(){assert.equal(worker.listenerCount('callEvent'),0);assert.equal(transport.listenerCount('control'),0);}};
+}
+{
+  const f=fixture();
+  assert.deepEqual(await f.run(),{accepted:false,callReady:false});
+  assert.ok(!f.events.includes(402));f.clean();
+  await f.run();f.clean(); // ownership is reusable after local decline
+}
+{
+  const f=fixture();
+  await assert.rejects(f.run({signal:{}}),/abort signal/);f.clean();
+  await assert.rejects(f.run({ringTimeoutMs:10,requestConsent:()=>new Promise(()=>{})}),/consent timeout/);
+  assert.ok(f.events.includes('stop'));assert.ok(!f.events.includes(402));f.clean();
+  await f.run();f.clean();
+}
+{
+  const f=fixture(),entered=defer(),late=defer();
+  const running=f.run({requestConsent:()=>{entered.resolve();return late.promise;}});
+  const rejected=assert.rejects(running,/canceled/);
+  await entered.promise;
+  await assert.rejects(f.run(),/already owned/);
+  f.transport.emit('control',ended);
+  await rejected;late.resolve(true);await Promise.resolve();
+  assert.ok(!f.events.includes(402));f.clean();
+}
+{
+  const f=fixture(),entered=defer(),join=defer(),aborted=defer();
+  const running=f.run({requestConsent:async()=>true,runMedia:async(_worker,{signal})=>{
+    signal.addEventListener('abort',()=>aborted.resolve(),{once:true});
+    entered.resolve();await join.promise;f.events.push('media-joined');
+  }});
+  await entered.promise;
+  const stops=f.events.filter(x=>x==='stop').length;
+  f.transport.emit('control',{...ended,data:{...ended.data,uidFrom:'999'}});
+  assert.equal(f.events.filter(x=>x==='stop').length,stops);
+  f.transport.emit('control',ended);await aborted.promise;
+  assert.equal(f.events.filter(x=>x==='stop').length,stops,'do not stop worker while media owns it');
+  await assert.rejects(f.run(),/already owned/);
+  join.resolve();assert.deepEqual(await running,{accepted:true,callReady:false});
+  assert.ok(f.events.lastIndexOf('stop')>f.events.indexOf('media-joined'));f.clean();
+}
+{
+  const f=fixture();
+  await assert.rejects(f.run({onPhase:()=>{throw new Error('UI unavailable');}}),/UI unavailable|canceled/);
+  f.clean();await f.run();f.clean();
+}
+console.log('PASS incoming owner: consent timeout/late answer, exclusive ownership, remote cancel, media join before native stop, cleanup');

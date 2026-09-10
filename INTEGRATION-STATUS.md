@@ -55,6 +55,24 @@ methods with synthetic API responses, not a real account.
 
 ## Still required before release
 
+### Incoming lifecycle owner checkpoint
+
+`native/android-zrtc/incoming-call-owner.mjs` now composes invitation setup,
+explicit consent, answer/API/ACK gates, native media readiness and a supplied
+media task. `test-incoming-call-owner.mjs` verifies local decline, consent
+timeout even when the UI promise never settles, ignored late consent, exclusive
+worker ownership, matching remote cancellation, media-task joining before
+native stop, and listener cleanup/reuse. These tests use synthetic transport
+and worker events; the owner is **not yet called by the desktop agent**.
+
+Integration contracts: the caller must supply authenticated transport and
+independently verified desktop/native caller identity mapping. Consent UI must
+close on its abort signal and must not start media. The media task must stop
+and join its camera/audio/render resources on abort; the owner deliberately
+does not release the native worker while that task is still running. Local
+decline currently cleans up locally only: remote rejection/end signaling and
+native fault routing still need implementation before UI wiring is complete.
+
 - Connect incoming consent/UI and media ownership to the actual app, including
   verified native identity mapping and remote reject/end-call signaling.
 - Rebuild and package the worker reproducibly with reviewed dependencies; run

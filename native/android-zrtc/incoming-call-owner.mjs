@@ -1,0 +1,90 @@
+import {IncomingSession} from './incoming-session.mjs';
+import {decodeIncomingVoice,decodeIncomingVideo,incomingControlKey} from './incoming-control.mjs';
+const owners=new WeakSet();
+// Consent may be backed by a window that disappears without resolving its
+// promise. Detach our wait on abort; still observe late rejection. The UI must
+// use the supplied signal to close itself and must never start media itself.
+function consentResult(requestConsent,args) {
+  return new Promise((resolve,reject)=>{
+    const aborted=()=>{cleanup();reject(new Error('Incoming consent canceled'));};
+    const cleanup=()=>args.signal.removeEventListener('abort',aborted);
+    args.signal.addEventListener('abort',aborted,{once:true});
+    if(args.signal.aborted){aborted();return;}
+    Promise.resolve().then(()=>{
+      if(args.signal.aborted)throw new Error('Incoming consent canceled');
+      return requestConsent(args);
+    }).then(value=>{cleanup();resolve(value);},error=>{cleanup();reject(error);});
+  });
+}
+// The application supplies an authenticated transport, verified native identity
+// and an abort-aware consent UI. No account values are logged by this owner.
+export async function runIncomingCall(worker,transport,message,{context,callerId,
+  requestConsent,runMedia,signal,onPhase=()=>{},ringTimeoutMs=60000,ackTimeoutMs=15000}={}) {
+  if(typeof requestConsent!=='function' || typeof runMedia!=='function' ||
+    typeof callerId!=='string' || !/^[1-9][0-9]{0,19}$/.test(callerId) ||
+    !Number.isInteger(ringTimeoutMs) || ringTimeoutMs<1 || ringTimeoutMs>120000 ||
+    !Number.isInteger(ackTimeoutMs) || ackTimeoutMs<1 || ackTimeoutMs>120000 || typeof onPhase!=='function')
+    throw new TypeError('Explicit incoming UI, media owner, caller and timeout required');
+  if(!worker || typeof worker.request!=='function' || typeof worker.on!=='function' || typeof worker.off!=='function' ||
+    !transport || typeof transport.request!=='function' || typeof transport.on!=='function' || typeof transport.off!=='function' ||
+    (signal!==undefined && (typeof signal?.aborted!=='boolean' || typeof signal.addEventListener!=='function' || typeof signal.removeEventListener!=='function')))
+    throw new TypeError('Incoming worker, transport and abort signal required');
+  const video=context?.video===true;
+  // Reject unsupported identity/media before registering ownership or devices.
+  const decoded=video?decodeIncomingVideo(message,{...context,experimentalVideo:true}):decodeIncomingVoice(message,context);
+  if(owners.has(worker))throw new Error('Incoming worker already owned');
+  if(signal?.aborted)throw new Error('Incoming call canceled');
+  const controller=new AbortController(),session=new IncomingSession(worker,transport,{allowVideo:video});
+  owners.add(worker);
+  let failure,ringTimer,stopping,mediaRunning=false;
+  const pending=new Set();
+  const cancel=()=>{
+    controller.abort();
+    if(!mediaRunning)stopping??=session.stop().catch(error=>{failure??=error;});
+  };
+  const abort=()=>cancel();
+  const control=event=>{
+    if(!['answer_ack','cancel','endcall'].includes(event?.act))return;
+    const envelope={type:'control',data:event};
+    // An unrelated malformed control must not tear down this call.
+    if(event.act!=='answer_ack') {
+      let key;try {key=incomingControlKey(envelope);}catch {return;}
+      if(key.callId!==decoded.key.callId || key.callerId!==decoded.key.callerId)return;
+      cancel();return;
+    } else if(String(event.data?.callId)!==String(decoded.key.callId))return;
+    const task=session.control(envelope,context).then(result=>{
+      if(result.handled && event.act!=='answer_ack')cancel();
+    }).catch(error=>{failure??=error;cancel();}).finally(()=>pending.delete(task));
+    pending.add(task);
+  };
+  const phase=value=>{
+    try {onPhase(value);}catch(error){failure??=error;queueMicrotask(cancel);}
+  };
+  const check=()=>{if(controller.signal.aborted)throw failure??new Error('Incoming call canceled');};
+  try {
+    session.on('phase',phase);transport.on('control',control);
+    signal?.addEventListener('abort',abort,{once:true});
+    if(signal?.aborted)cancel();check();
+    await session.control(message,context);check();
+    ringTimer=setTimeout(()=>{failure=new Error('Incoming consent timeout');cancel();},ringTimeoutMs);
+    let accepted;
+    try {accepted=await consentResult(requestConsent,{video,callerId,signal:controller.signal});}
+    catch(error){throw failure??error;}
+    clearTimeout(ringTimer);check();
+    if(accepted!==true)return {accepted:false,callReady:false};
+    await session.answer({callerId,userAccepted:true});check();
+    await session.waitForAnswerAck({timeoutMs:ackTimeoutMs,signal:controller.signal});check();
+    await session.startMedia();check();
+    mediaRunning=true;
+    try {await runMedia(worker,{video,signal:controller.signal});}
+    finally {mediaRunning=false;}
+    if(!controller.signal.aborted)throw new Error('Incoming media stopped unexpectedly');
+    if(failure)throw failure;
+    return {accepted:true,callReady:false};
+  } finally {
+    clearTimeout(ringTimer);controller.abort();
+    signal?.removeEventListener('abort',abort);transport.off('control',control);
+    try {await Promise.all([...pending]);await stopping;await session.dispose();}
+    finally {session.off('phase',phase);owners.delete(worker);}
+  }
+}
