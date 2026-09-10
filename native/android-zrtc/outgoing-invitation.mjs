@@ -1,7 +1,8 @@
 // Holds native ownership across the invitation/peer response. Does not claim
 // accepted media from an API ACK or an observed answer control message.
 export async function inviteOutgoing(worker,signaling,mapped,ready,
-  {calleeId,signal,onPhase=()=>{},onAnswer,timeoutMs=45000}={}) {
+  {calleeId,signal,onPhase=()=>{},onAnswer,beforeCleanup=async()=>{},timeoutMs=45000}={}) {
+  if(typeof beforeCleanup!=='function')throw new TypeError('Invalid invitation cleanup');
   if(typeof calleeId!=='string' || !/^[1-9][0-9]{0,19}$/.test(calleeId)) throw new Error('Invalid invitation peer');
   if(!Number.isInteger(timeoutMs) || timeoutMs<1) throw new Error('Invalid invitation timeout');
   const {callId,partnerId,session}=mapped.configuration;
@@ -73,9 +74,10 @@ export async function inviteOutgoing(worker,signaling,mapped,ready,
     done=true;await queue;
     // End the remote attempt on local cancellation/failure or completion of
     // observation-only mode; an integrated answer retains ownership above.
-    if(sent && !remoteEnded) {
+    try {await beforeCleanup();}
+    finally {if(sent && !remoteEnded) {
       try {await signaling.request(409,{toId:calleeId,callId});onPhase('remote-cleanup-ack');}
       catch {onPhase('remote-cleanup-failed');}
-    }
+    }}
   }
 }

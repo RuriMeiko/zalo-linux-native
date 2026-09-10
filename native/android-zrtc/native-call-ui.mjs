@@ -2,10 +2,11 @@ import {spawn} from 'node:child_process';
 // Use GTK window controls and explicit buttons. Never put account/session data
 // in process arguments or interpret remote strings as markup.
 export function callDialog(kind,{video=false,signal,muteControl=false,muted=false},launch=spawn) {
-  if(!['consent','active','error'].includes(kind) || !signal || typeof signal.addEventListener!=='function')
+  if(!['consent','active','error','dialing'].includes(kind) || !signal || typeof signal.addEventListener!=='function')
     return Promise.reject(new Error('Invalid native call dialog'));
   if(signal.aborted)return Promise.reject(new Error('Call dialog canceled'));
-  const args=kind==='error'?['--error','--title=Zalo — Cuộc gọi bị gián đoạn','--no-markup',
+  const args=kind==='dialing'?['--info','--title=Zalo — Cuộc gọi đi','--no-markup',
+    '--text=Đang gọi… Chờ bên kia trả lời.','--ok-label=Kết thúc']:kind==='error'?['--error','--title=Zalo — Cuộc gọi bị gián đoạn','--no-markup',
     '--text=Không thể tiếp tục cuộc gọi. Hãy kiểm tra kết nối mạng và thiết bị mic, loa'+(video?', camera':'')+' rồi thử lại.',
     '--ok-label=Đóng','--timeout=15']:kind==='consent'?['--question','--title=Zalo — Cuộc gọi đến','--no-markup',
     `--text=${video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'}`,'--ok-label=Trả lời','--cancel-label=Bỏ qua']:

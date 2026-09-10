@@ -345,11 +345,17 @@ if(setupEnabled) {
                                 current();owner.current();onMediaStarted();return answer;
                             }}), (mediaWorker,options)=>runVideoMedia(mediaWorker,{...options,sink:videoSink}));
                 }
-                return await inviteOutgoing(worker,setupTransport,mapped,result,
-                    {calleeId,signal,onPhase:setupPhase,onAnswer:mediaEnabled
-                        ? (control,owner)=>acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
-                            {calleeId,signal,onPhase:setupPhase,current:()=>{current();owner.current();}})
-                        : undefined});
+                if(mediaEnabled) {
+                    const {withOutgoingVoiceUI}=await import('../android-zrtc/outgoing-voice-ui.mjs');
+                    return await withOutgoingVoiceUI(worker,{signal},({signal:voiceSignal,onAnswered,beforeCleanup})=>
+                        inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal:voiceSignal,onPhase:setupPhase,beforeCleanup,
+                            onAnswer:async(control,owner)=>{
+                                const answer=await acceptOutgoingAnswer(worker,setupTransport,control,mapped.configuration,
+                                    {calleeId,signal:voiceSignal,onPhase:setupPhase,current:()=>{current();owner.current();}});
+                                current();owner.current();await onAnswered();return answer;
+                            }}));
+                }
+                return await inviteOutgoing(worker,setupTransport,mapped,result,{calleeId,signal,onPhase:setupPhase});
             }
             const reply=await worker.request('configure',mapped.configuration);
             if(reply.code!==0) throw new Error('Native configuration rejected');
