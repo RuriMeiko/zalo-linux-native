@@ -37,6 +37,10 @@ This is deployment evidence, not live two-account acceptance.
 - Camera controller: `test-managed-camera.mjs` checks joined off, off before
   first-frame readiness, resume ACK, stable timestamp origin across restart,
   capture failures, UI ACK ordering and continued remote-video ownership.
+  A subsequent regression test reproduced false camera-off success when preview
+  cleanup throws after capture cancellation. The controller now ignores only
+  the expected `AbortError`, propagates other cleanup failures and rejects the
+  off acknowledgement. This source fix does not imply a running helper reloaded it.
 - `node native/android-zrtc/test-managed-camera-device.mjs /dev/video0` passed
   on the user's Logitech USB camera: three off/on cycles, no additional frames
   reaching the mock worker after off ACK, and new frames on resume. Frames were

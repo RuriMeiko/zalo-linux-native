@@ -4,7 +4,7 @@ import {runCamera} from './camera-pump.mjs';
 export function createManagedCamera() {
   let bound=false,finished=false,worker,options,capture,signal,stopRun;
   let captureAbort,captureTask,queue=Promise.resolve(),enabled=true,failure;
-  const canceled=()=>new Error('Camera control canceled');
+  const canceled=()=>{const error=new Error('Camera control canceled');error.name='AbortError';return error;};
   const stop=()=>{captureAbort?.abort();stopRun?.();};
   const start=()=>{
     captureAbort=new AbortController();const current=captureAbort;
@@ -16,7 +16,11 @@ export function createManagedCamera() {
         if(!signal.aborted && !current.signal.aborted){ready=true;resolveReady();}
       }});
     }).then(()=>{if(!current.signal.aborted)throw new Error('Camera stopped unexpectedly');})
-      .catch(error=>{if(!current.signal.aborted && !signal.aborted){failure=error;stop();}})
+      .catch(error=>{
+        // AbortError is expected during an intentional capture stop. Other
+        // errors (notably preview cleanup) must not acknowledge camera-off.
+        if(!signal.aborted && (!current.signal.aborted || error?.name!=='AbortError')){failure=error;stop();}
+      })
       .finally(()=>{if(!ready)rejectReady(failure??canceled());});
     return readyTask;
   };

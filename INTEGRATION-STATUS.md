@@ -102,7 +102,7 @@ The launcher now supports explicit `experimentalVideo: true` plus a selected
 flags. Configuration tests pass, but no real camera was opened in this check.
 See `NATIVE-LAUNCH.md` for the development-only opt-in and validation limits.
 
-GitHub CLI authentication remains invalid. A read-only SSH authentication check
+An earlier GitHub CLI authentication check failed. A read-only SSH authentication check
 using `ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=10
 -o StrictHostKeyChecking=yes -T git@github.com` successfully authenticated as
 `RuriMeiko` (GitHub's expected no-shell response exits with code 1). The default
@@ -115,7 +115,10 @@ published `main`, including the incoming trial commit `b9ec2fb`.
 A subsequent public repository API check confirmed that the supplied
 `RuriMeiko/zalo-linux-native` repository already has `fork: false` and public
 visibility. SSH `push --dry-run main:main` succeeded, followed by actual pushes.
-The remote default branch still requires changing to `main`.
+A later authorized GitHub CLI check returned repository admin permission.
+Default branch was changed to `main` on 2026-09-10 and verified independently
+with Git SSH: `HEAD -> refs/heads/main`, hash `19a76cd6399fa8e29e1826914e99fb1f07502473`.
+The repository remains `fork: false`; old branches and predecessor history were retained.
 The viewer-specific publication concern has been resolved; third-party notices
 remain applicable (see `RELEASE-CHECKLIST.md`). The independent repository
 name no longer needs to block development or require destructive recreation.

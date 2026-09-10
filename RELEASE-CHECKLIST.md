@@ -49,22 +49,23 @@ Do not substitute successful module tests for these end-to-end gates.
 - [x] Confirm independent project name, owner and visibility: GitHub repository
   API on 2026-09-10 reports `RuriMeiko/zalo-linux-native`, public, `fork: false`.
   The user-supplied destination is already independent; no deletion/recreation
-  or fork detachment is needed. Its default branch remains
-  `port/linux-native-modules`. Read back with `git ls-remote --symref` on
-  2026-09-10: remote `main` exists at `a49188eaaabca79be3752489c3bf53e2dc18a748`.
-- [ ] Change GitHub default branch to `main` (pushing main does not do this).
-- [ ] Authenticate the GitHub CLI locally; never put a token into chat or source files.
+  or fork detachment is needed.
+- [x] Change GitHub default branch to `main`: authorized repository PATCH
+  succeeded on 2026-09-10, returning `default_branch: main` and `fork: false`.
+  Independent Git SSH readback confirmed `HEAD -> refs/heads/main` at
+  `19a76cd6399fa8e29e1826914e99fb1f07502473`. Old branches/history were not deleted.
+- [x] Verify GitHub CLI authorization: repository API returned `admin: true`;
+  no token was displayed, entered into chat or written into source files.
 - [ ] Inspect the exact staged file list and secret-scan the proposed publication.
 - [ ] Preserve applicable attribution/license notices and source provenance.
 - [x] Push development commits to the independent remote's `main`; remote hash
   readback confirms publication. This is source publication, not a binary release.
 - [ ] Publish an accurately labelled release only when its acceptance gates pass.
 
-The earlier GitHub CLI token check failed, but SSH publication works and
-development commits have been pushed repeatedly. The default branch is still
-the old branch as verified above; redistribution review and a validated binary
-release remain pending. Changing default-branch settings requires an authorized
-GitHub API/CLI or browser session, not an SSH Git push.
+An earlier GitHub CLI check failed; a fresh check later succeeded with admin
+permission and enabled the default-branch change above. Development commits
+have been pushed repeatedly. Redistribution review and a validated binary
+release remain pending; repository independence is not release readiness.
 
 Pre-publication review found no matches for the checked private-key/GitHub-token
 and long session-key assignment patterns in the new native modules, scripts,

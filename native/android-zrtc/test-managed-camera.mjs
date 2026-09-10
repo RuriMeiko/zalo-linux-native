@@ -44,5 +44,13 @@ try {
   await turn();await mediaCamera.setEnabled(false);assert.equal(remoteEnded,false);
   await mediaCamera.setEnabled(true);assert.equal(captures,2);assert.equal(remoteEnded,false);
   mediaAbort.abort();await media;assert.equal(remoteEnded,true);
+  // A canceled camera can still fail while clearing its preview. Do not turn
+  // that cleanup error into a successful "camera off" acknowledgement.
+  const cleanupCamera=createManagedCamera(),cleanupAbort=new AbortController();
+  const cleanupRun=cleanupCamera.run({}, {device:'/dev/video0',signal:cleanupAbort.signal},
+    async(_worker,{signal,onReady})=>{onReady();await abort(signal);throw Error('preview cleanup failed');});
+  const failedRun=assert.rejects(cleanupRun,/preview cleanup failed/);
+  await turn();await assert.rejects(cleanupCamera.setEnabled(false),/canceled/);
+  await failedRun;
   console.log('PASS camera controls: joined off, off before first frame, resume readiness, stable timestamps, faults, acknowledged UI, no audio command');
 } finally {clearTimeout(watchdog);}
