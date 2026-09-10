@@ -68,6 +68,31 @@ IDs and identity encryption it verifies endpoint, parameter names, fixed
 status zero and request code 11305. It performs no network request and does
 not assert that fixture callType zero means user rejection.
 
+## UI and end-call cross-check
+
+The `Hang up immediately!` branch in `ZmInCallActivity` sets `qz.q.Y` at
+`0x098bc8`; a conditional branch sets `qz.q.X` at `0x098bec`, while another
+invokes `qz.q.V0(true)` at `0x098c2c` (the setter for field W). Thus the UI
+changes multiple flags before teardown. Their names must not be interpreted
+as caller/callee labels without checking initialization.
+
+The cancellation callsite `vz.p1.g` is guarded by `qz.q.X()` and `G0()` being
+true, and `v0()` being false (`0x0784ce` through `0x0784fa`). Getter `X()` is
+field **e0**, not field X. `U0(boolean)` sets e0. This distinction matters:
+matching obfuscated field and method names would produce an incorrect trace.
+
+Separately, `vz.s0.W4` at `0x06c864` forwards explicit status into
+`IVoipZalo.voiceEndCall` at `0x06c918`. It is reached through `h2`; one callsite
+in `i00.j0.U` at `0x04c02c` supplies status 2 for event reason -17, otherwise
+zero (`0x04bf7a` through `0x04bfa2`). This is not the desktop HTTP builder's
+fixed status 3. Android's internal event reasons must not be copied into the
+desktop payload without establishing endpoint semantics.
+
+The desktop signaling test also extracts the actual `sendEndCall` builder and
+verifies `/api/voicecall/endcall`, `uidTo`, fixed status 3 and request code
+11306. This covers the builder already used for ending accepted incoming
+media, not permission to reuse it for declining unanswered invitations.
+
 ## Reproduce without private data
 
 Run `dexdump -d` on the pinned DEX and filter for these method references:

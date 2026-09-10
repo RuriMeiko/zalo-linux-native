@@ -102,6 +102,25 @@ const vm=require('node:vm');
     assert.equal(canceled.body,null);
     assert.deepEqual(JSON.parse(url.searchParams.get('params')),
         {callerId:'456',callId:123,callType:0,status:0,imei:'fixture-imei'});
+    // End and cancel have different endpoint schemas. Keep the real end
+    // builder covered: incoming media ownership currently uses command 409.
+    const endStart=cancelEnd;
+    const endEnd=bundle.indexOf('                static sendHoldRequestCall(',endStart);
+    assert.ok(endEnd>endStart);
+    const EndAPI=vm.runInNewContext('(class {'+bundle.slice(endStart,endEnd)+'})',{
+        g:{b:{getVoiceCallDomain:()=> 'https://fixture.invalid'}},
+        r:{default:{encodeAES:text=>text}},
+        w:{a:{getZaloClientID:()=> 'fixture-imei'}},
+    });
+    EndAPI._getCommonParams=CancelAPI._getCommonParams;
+    EndAPI._get=CancelAPI._get;
+    const ended=EndAPI.sendEndCall('456',123);
+    const endURL=new URL(ended.url);
+    assert.equal(endURL.pathname,'/api/voicecall/endcall');
+    assert.equal(ended.code,11306);
+    assert.equal(ended.body,null);
+    assert.deepEqual(JSON.parse(endURL.searchParams.get('params')),
+        {uidTo:'456',callId:123,status:3,imei:'fixture-imei'});
     const errors=[];
     renderer._sendToNative=m=>{errors.push(m);integrated.receive(m);};
     renderer.handleSendSignalError(401,{error_code:9},{callId:123});
