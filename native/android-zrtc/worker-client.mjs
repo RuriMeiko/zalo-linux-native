@@ -49,7 +49,7 @@ export function encodeCommand(id, operation, config = {}) {
       !Number.isInteger(height) || height<2 || height>1080 || height%2 ||
       ![0,90,180,270].includes(rotation) || typeof timestampNs!=='bigint' ||
       timestampNs<0n || timestampNs>0x7fffffffffffffffn || pixels.length!==width*height*3/2)
-      throw new Error('Invalid NV12 video frame');
+      throw new Error('Invalid NV21 video frame');
     const header=Buffer.alloc(20);
     header.writeUInt32LE(width);header.writeUInt32LE(height,4);header.writeUInt32LE(rotation,8);
     header.writeBigUInt64LE(timestampNs,12);parts.push(header,pixels);

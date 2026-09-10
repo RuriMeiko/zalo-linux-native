@@ -8,7 +8,7 @@ Incoming CPU-video initialization is also explicitly unsupported for now.
 
 ## What is now connected
 
-Logitech C922 `/dev/video0` -> ffmpeg MJPEG-to-NV12 -> bounded binary worker
+Logitech C922 `/dev/video0` -> ffmpeg MJPEG-to-NV21 -> bounded binary worker
 commands -> Linux VideoSource -> original VideoCapturer owned by the original
 Peer. The original Peer capture callback remains registered, including its FPS
 and media-transfer conditions. No invented EGL context or Java camera object is
@@ -148,7 +148,7 @@ account interoperability still needs separate validation.
 
 Verified on 2026-09-09: three clean cycles received **81 H.264 RTP packets /
 6,243 RTP bytes**. Independent FFmpeg decoding produced **27 frames per cycle**
-at **480×360**; every decoded frame's pixel checksum matched the flat NV12
+at **480×360**; every decoded frame's pixel checksum matched the flat NV21
 fixture. The native default encoder downscales the 640×480 capture input;
 capture dimensions must not be advertised as decoded/output dimensions.
 PCM capture/playback and teardown still pass in the same test.
@@ -185,7 +185,7 @@ node native/android-zrtc/test-outgoing-answer-pcm.mjs RUNTIME_DIR --video-camera
 ```
 
 `camera-pump.mjs` provides reusable V4L2 MJPEG 640×480@30 capture via FFmpeg,
-NV12 framing and sequential submission to the native worker. There is only one
+NV21 framing and sequential submission to the native worker. There is only one
 outstanding frame request and one camera owner per worker. It requires an
 explicit `/dev/videoN` path; continuous capture requires an AbortSignal. The
 caller must await the pump's completion before destroying the worker. Stall,
@@ -522,7 +522,7 @@ receive/send loopback, strict incoming signaling mapping and actual user calls.
 
 The same fixture now supports `--pcm`, loading its own silent PulseAudio null
 sink and never opening physical devices. Verified on 2026-09-09: three incoming
-cycles set original native `CONFIRMED`, submitted 30 synthetic NV12 frames,
+cycles set original native `CONFIRMED`, submitted 30 synthetic NV21 frames,
 and each produced **27 encoded frames / 1,541 encoded bytes** through the native
 Peer. Native media-transfer/capture-thread flags were active; recorded/played
 PCM counters both advanced. Stop froze the counters and left no PCM children;

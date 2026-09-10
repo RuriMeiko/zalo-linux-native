@@ -33,13 +33,13 @@ LinuxVideoSource *linux_video_source_create(void *h,LinuxVideoFrameCallback cb,v
     pool_init((unsigned char *)s->native+0x30);
     set_callback(s->native,s);return s;
 }
-int linux_video_source_submit(LinuxVideoSource *s,const void *nv12,size_t size,
+int linux_video_source_submit(LinuxVideoSource *s,const void *nv21,size_t size,
     int width,int height,int rotation,int64_t timestamp_ns) {
-    if(!s || !nv12 || width<2 || height<2 || width>1920 || height>1080 ||
+    if(!s || !nv21 || width<2 || height<2 || width>1920 || height>1080 ||
         width%2 || height%2 || timestamp_ns<0 ||
         (rotation!=0 && rotation!=90 && rotation!=180 && rotation!=270) ||
         size!=(size_t)width*(size_t)height*3/2)return -EINVAL;
-    s->receive(s->native,nv12,(int)size,width,height,rotation,timestamp_ns);return 0;
+    s->receive(s->native,nv21,(int)size,width,height,rotation,timestamp_ns);return 0;
 }
 void linux_video_source_destroy(LinuxVideoSource *s) {
     if(!s)return;

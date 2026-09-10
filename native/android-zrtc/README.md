@@ -449,7 +449,7 @@ Tests exercise actual offline worker initialization/codec negotiation and three
 cancel/retry cycles, without injecting readiness or sending 407:
 
 ```sh
-node native/android-zrtc/test-incoming-control.mjs /home/rurimeiko/.cache/zrtc-native-21.12.01
+node native/android-zrtc/test-incoming-control.mjs ~/.cache/zrtc-native-21.12.01
 ```
 
 Online transport, verified identity supply, incoming UI, answer, outgoing call,
@@ -551,7 +551,7 @@ probe for the pinned ELF. It constructs the original `WebRtcVideoCoding` owner
 (allocation 0xf00 verified at Peer::_init 0x2d6c05) and uses its software
 `initialize()` overload (0x397ba0), without Java/EGL texture initialization.
 Native logs identify x264/H.264 baseline encoding. It connects the CPU
-VideoSource adapter to original `deliverFrame` with 60 synthetic NV12 inputs.
+VideoSource adapter to original `deliverFrame` with 60 synthetic NV21 inputs.
 
 Three cycles each produced 57 original encoded-image callbacks totaling
 10,542 bytes. Callback slot 4 is verified by SendData at 0x39a41a; buffer and
@@ -585,12 +585,11 @@ sole assertion of image variation. This checks real decodability and changing
 content, not pixel-perfect fidelity, RTP delivery or remote video calling.
 
 Live voice success — 2026-09-09 14:32 ICT: launched the installed app with the
-repository agent, network/setup/media opt-ins, UGREEN source
-`bluez_input.58:9A:30:7C:DD:B3` and sink
-`bluez_output.58_9A_30_7C_DD_B3.1`. The headset was switched from A2DP to
+repository agent, network/setup/media opt-ins and an explicitly selected
+Bluetooth source/sink. Hardware addresses are intentionally omitted. The headset was switched from A2DP to
 `headset-head-unit` for duplex audio. Device validation now permits the colon
 present in actual Bluetooth source names (still checked against pactl devices).
-CDP clicked the voice button in Nguyễn Ngọc Thu Hà's conversation. Live
+CDP clicked the voice button for the user-selected test contact. Live
 401 → native readiness → 416 → answer → codec update → 408 ACK → media-started
 completed at 14:32:43 ICT. The worker remained alive with uncorked native PCM
 capture and playback streams. The user explicitly confirmed hearing audio in

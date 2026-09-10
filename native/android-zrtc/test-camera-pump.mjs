@@ -8,6 +8,7 @@ let child,spawns=0,kills=[];
 function capture(chunks,{stall=false,code=0}={}) {
   return (command,args,options)=>{
     spawns++;assert.equal(command,'ffmpeg');assert.equal(args[args.indexOf('-i')+1],'/dev/video0');
+    assert.equal(args[args.indexOf('-pix_fmt')+1],'nv21');
     assert.equal(options.stdio[0],'ignore');
     child=new EventEmitter();child.exitCode=null;child.signalCode=null;
     child.stdout=stall?new Readable({read(){}}):Readable.from(chunks);

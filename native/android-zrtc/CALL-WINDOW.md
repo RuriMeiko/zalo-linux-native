@@ -93,7 +93,7 @@ This is deployment evidence, not live two-account acceptance.
   reaching the mock worker after off ACK, and new frames on resume. Frames were
   discarded in memory, not saved or transmitted. This is real V4L2/FFmpeg
   acquisition with mock native ACK, **not remote two-account video acceptance**.
-- Local preview now consumes the same NV12 frames acknowledged by the native
+- Local preview now consumes the same NV21 frames acknowledged by the native
   worker. A 160×120 I420 downscale travels on its own bounded binary pipe; no
   second camera capture is opened. The renderer allows one pending remote frame
   and one pending local frame, with separate acknowledgements. Preview memory

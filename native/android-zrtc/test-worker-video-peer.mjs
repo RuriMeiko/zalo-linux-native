@@ -7,8 +7,8 @@ await assert.rejects(NativeWorker.start(runtime,{cpuVideo:true,experimentalVideo
 const worker=await NativeWorker.start(runtime,{cpuVideo:true});
 const faults=[];worker.on('nativeFault',kind=>faults.push(kind));
 const frame={pixels:Buffer.alloc(640*480*3/2,128),width:640,height:480,rotation:0,timestampNs:0n};
-assert.throws(()=>encodeCommand(1,'videoFrame',{...frame,width:639}),/NV12/);
-assert.throws(()=>encodeCommand(1,'videoFrame',{...frame,timestampNs:-1n}),/NV12/);
+assert.throws(()=>encodeCommand(1,'videoFrame',{...frame,width:639}),/NV21/);
+assert.throws(()=>encodeCommand(1,'videoFrame',{...frame,timestampNs:-1n}),/NV21/);
 assert.throws(()=>encodeCommand(1,'configure',{supportVideoCall:1}),/boolean/);
 try {
   assert.equal((await worker.request('videoFrame',frame)).code,-107);

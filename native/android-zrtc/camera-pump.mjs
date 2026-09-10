@@ -1,4 +1,4 @@
-// Linux V4L2 -> FFmpeg NV12 -> one outstanding native frame request.
+// Linux V4L2 -> FFmpeg NV21 (VU) -> one outstanding native frame request.
 // The caller owns the worker and must await this pump before stopping it.
 import {spawn} from 'node:child_process';
 import {previewFrame} from './local-preview.mjs';
@@ -33,7 +33,9 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
     const args=['-hide_banner','-loglevel','error','-nostdin','-f','v4l2','-input_format','mjpeg',
       '-video_size',`${width}x${height}`,'-framerate','30','-i',device];
     if(frameLimit!==undefined)args.push('-frames:v',String(frameLimit));
-    args.push('-pix_fmt','nv12','-f','rawvideo','pipe:1');
+    // ZRTC's Android OnByteBufferFrameCaptured path consumes NV21, not NV12.
+    // Feeding UV here swaps chroma and produces the blue/red cast seen by peers.
+    args.push('-pix_fmt','nv21','-f','rawvideo','pipe:1');
     child=spawnCapture('ffmpeg',args,{stdio:['ignore','pipe','pipe']});
     closed=new Promise(resolve=>{
       child.once('error',()=>{failure=new Error('Unable to start camera capture');resolve({code:null,signal:null});});
@@ -66,7 +68,7 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
     if(signal?.aborted)throw aborted();
     if(failure)throw failure;
     if(exit.code!==0 || exit.signal)throw new Error('Camera capture failed or disconnected');
-    if(pending.length)throw new Error('Camera ended with a partial NV12 frame');
+    if(pending.length)throw new Error('Camera ended with a partial NV21 frame');
     if(frameLimit!==undefined && frames!==frameLimit)throw new Error('Camera ended before frame limit');
     if(frameLimit===undefined)throw new Error('Camera capture ended unexpectedly');
     return {frames,width,height};

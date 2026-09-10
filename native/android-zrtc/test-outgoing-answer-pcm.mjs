@@ -59,7 +59,7 @@ async function decodeReceived(packets) {
     const fields=frame.split(',').map(field=>field.trim());
     assert.equal(Number(fields[4]),480*360*3/2);
     hashes.add(fields[5]);
-    if(!motion && !camera) assert.equal(fields[5],expected,'Received frame must reproduce the synthetic NV12 fixture');
+    if(!motion && !camera) assert.equal(fields[5],expected,'Received frame must reproduce the neutral synthetic NV21 fixture');
   }
   if(motion) assert.ok(hashes.size>=10,'Motion must produce distinct decoded frames');
   console.log(`Independent FFmpeg decoded ${frames.length} received frames at 480x360; ${motion||camera?hashes.size+' distinct images':'pixels verified'}`);

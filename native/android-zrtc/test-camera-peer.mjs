@@ -1,4 +1,4 @@
-// Real camera -> NV12 IPC -> actual Peer-owned VideoCapturer, offline only.
+// Real camera -> NV21 IPC -> actual Peer-owned VideoCapturer, offline only.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {NativeWorker} from './worker-client.mjs';
@@ -13,7 +13,7 @@ try {
   assert.equal(ready.code,0);assert.equal(ready.initialized,true);
   capture=spawn('ffmpeg',['-hide_banner','-loglevel','error','-nostdin',
     '-f','v4l2','-input_format','mjpeg','-video_size','640x480','-framerate','30',
-    '-i','/dev/video0','-frames:v','30','-pix_fmt','nv12','-f','rawvideo','pipe:1'],
+    '-i','/dev/video0','-frames:v','30','-pix_fmt','nv21','-f','rawvideo','pipe:1'],
     {stdio:['ignore','pipe','pipe']});
   exited=new Promise((resolve,reject)=>{capture.once('error',reject);capture.once('close',(code,signal)=>resolve({code,signal}));});
   let diagnostic='';capture.stderr.on('data',chunk=>{diagnostic=(diagnostic+chunk).slice(-4096);});
@@ -33,7 +33,7 @@ try {
   assert.deepEqual(await exited,{code:0,signal:null},diagnostic);
   assert.equal(frames,30);assert.equal(pending.length,0);assert.deepEqual(faults,[]);
   assert.equal((await worker.request('stop')).code,0);
-  console.log('PASS Logitech -> NV12 IPC -> actual Peer capturer: 30 frames; offline, no remote video');
+  console.log('PASS Logitech -> NV21 IPC -> actual Peer capturer: 30 frames; offline, no remote video');
 } finally {
   clearTimeout(timer);
   if(capture && capture.exitCode===null && capture.signalCode===null)capture.kill('SIGKILL');
