@@ -215,12 +215,13 @@ carry the exact numeric requested `id`; late successes/errors are ignored.
 Used configuration IDs are not reused (bounded to 4,096 per connection).
 Command-only responses for other commands still require connection replacement
 after ambiguous cancellation/timeout. Regression tests cover both policies.
-First-incoming identity acquisition is now source-wired using a distinct 401
-probe: strict response mapping, matching recipient/caller native IDs and the
-current account ticket are required before remembering an identity or creating
-an incoming worker. Its fixture tests pass for voice/video, mismatches, account
-switch and cancellation/retry. This has not been deployed or tested against a
-real server while an incoming call is pending; it is not live acceptance.
+First-incoming identity acquisition is source-wired from the authenticated
+renderer control delivered for the current account. Its bounded native `uidTo`
+is bound to that account ticket before the incoming worker is created, and a
+cached identity must match. The earlier distinct 401 probe was removed after
+live testing showed that starting a competing outgoing configuration while a
+cold incoming call was pending made the server tear down the real call. Fixture
+tests cover voice/video envelopes, conflicts, missing account and cancellation.
 Incoming preflight now reports identity/name preparation failures through the
 existing bounded generic error dialog, without forwarding raw errors or caller
 data. Cancellation at each await boundary suppresses the dialog and prevents
@@ -420,8 +421,7 @@ A real GTK consent dialog was opened and aborted successfully without any call
 or device capture. No real-account incoming acceptance was performed.
 
 Older notes below saying the owner is not invoked by the agent describe the
-previous checkpoint, superseded by this opt-in wiring. First-incoming identity
-bootstrap and true remote rejection are still missing. The installed helper
+previous checkpoint, superseded by this opt-in wiring. The installed helper
 has now been restarted with this trial; see the deployment checkpoint above.
 
 The production desktop agent now binds its native local ID to the authenticated

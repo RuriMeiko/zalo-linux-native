@@ -137,14 +137,13 @@ store. This needs matching renderer/helper deployment; avatars remain incomplete
   by the existing call. Preview is mirrored locally only, not in transmitted frames.
 - Validate reported microphone failure with real audio, not fixture text changes.
 - Incoming red button remains **Bỏ qua** (local ignore), not verified remote reject.
-- First-incoming identity bootstrap is now source-wired: an uncached helper
-  validates the offer shape, requests a separate authenticated 401 config and
-  requires its native local/partner IDs to match the incoming recipient/caller.
-  No incoming worker or 416 invitation is created by that probe. Its session
-  is never used as incoming media config. Account tickets, cancellation and
-  exact config IDs protect against stale bindings. Tests use mocked server
-  responses; server behavior during a real pending incoming call is unverified.
-  Deploy and validate fresh-login incoming voice/video before release claims.
+- First-incoming identity bootstrap binds the bounded native recipient in the
+  authenticated renderer control to the current desktop account ticket. A
+  cached native identity must match, and account switches/cancellation still
+  invalidate the attempt. It deliberately sends no parallel 401: live testing
+  showed that the old probe competed with and disconnected a cold incoming
+  call. Deploy and validate fresh-login incoming voice/video before release
+  claims.
 
 Visual direction follows the supplied references: dark charcoal, centered avatar,
 restrained system typography, red end and green answer. OS window decorations are

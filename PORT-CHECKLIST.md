@@ -25,8 +25,8 @@ Do not publish a PR; finish native functionality before release claims.
 - Shared call window, remote display, local preview, mic and camera toggles are
   implemented and deployed. Native tone tests verify recording-ingress mute;
   USB tests verify capture off/on. Neither substitutes for remote-account QA.
-- Still open: live verification of first-incoming identity bootstrap, true remote rejection,
-  contact name/avatar presentation, device switching, screen sharing, remote
+- Still open: live verification of the corrected cold first-incoming identity path,
+  device switching, screen sharing, remote
   camera-state signaling, and current two-account voice/video QA.
 - The user has asked to be notified when the next test build is ready. Do not
   repeatedly request manual testing while these implementation gaps remain.
