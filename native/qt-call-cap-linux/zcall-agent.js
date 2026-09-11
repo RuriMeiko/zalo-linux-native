@@ -412,6 +412,7 @@ function handleHostMessage(msg) {
         setupTransport.receive(msg);return;
     }
     if(setupTransport && type==='control') {
+        log('CONTROL MSG RECEIVED:', JSON.stringify(msg));
         setupTransport.receive(msg);
         if(incomingAttempt && data?.act_type==='voip' && ['cancel','endcall'].includes(data.act) &&
             String(data.data?.callId)===incomingAttempt.callId && String(data.data?.uidFrom)===incomingAttempt.callerId)
@@ -419,6 +420,7 @@ function handleHostMessage(msg) {
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
             process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
             callActive=true;
+            log('incoming request data:', JSON.stringify(data));
             let incomingVideo=false;
             try {incomingVideo=JSON.parse(data.data?.params)?.video?.enable===1;}catch {}
             let announced;
@@ -429,11 +431,18 @@ function handleHostMessage(msg) {
             attempt.promise=Promise.resolve(announced).catch(()=>setupPhase('incoming-notification-failed'))
               .then(()=>import('../android-zrtc/incoming-desktop.mjs')).then(async({runIncomingDesktop})=>{
                 const {prepareIncomingDesktop}=await import('../android-zrtc/incoming-preflight.mjs');
-                const {nativeLocalId,peerName,peerAvatar}=await prepareIncomingDesktop(setupTransport,nativeIdentity,msg,
+                let preflightResult;
+                try {
+                  preflightResult=await prepareIncomingDesktop(setupTransport,nativeIdentity,msg,
                     {signal:attempt.controller.signal,videoEnabled,clientVersion:initInfo.clientVersion},
                     {resolveContact:(id,signal)=>incomingName.resolveContact(id,signal),dialog:nativeCallDialog});
-                return (
-                runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
+                } catch(err) {
+                  log('PREFLIGHT FAILED WITH ERROR:', err?.stack || err?.message || String(err));
+                  throw err;
+                }
+                const {nativeLocalId,peerName,peerAvatar}=preflightResult;
+                try {
+                  return (await runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
                     runtime:process.env.ZALO_ZRTC_RUNTIME,
                     pcm:{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK},
                     videoEnabled,device:process.env.ZALO_ZCALL_VIDEO_DEVICE,
@@ -443,7 +452,14 @@ function handleHostMessage(msg) {
                         setupPhase('incoming-'+phase);
                         if(phase==='ringing')sendToHost({type:'update',command:'callState',data:{state:'ringing'}});
                     }},{dialog:(kind,options)=>nativeCallDialog(kind,{...options,peerName,peerAvatar})}));
-                }).catch(()=>setupPhase('incoming-failed')).finally(async()=>{
+                } catch(err) {
+                  log('RUN INCOMING DESKTOP FAILED:', err?.stack || err?.message || String(err));
+                  throw err;
+                }
+                }).catch(error=>{
+                    log('incoming failed with error:', error?.stack || error?.message || String(error));
+                    setupPhase('incoming-failed');
+                }).finally(async()=>{
                         await clearNativeCallUI();
                         if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}
                     });
