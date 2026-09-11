@@ -52,6 +52,17 @@ The port was created by:
 > Note: Newer versions of Electron cause errors — v22.3.27 is required.
 
 ## 📦 Hướng dẫn cài đặt & Sử dụng (Installation & Usage)
+### 🤖 Cài đặt tự động bằng AI Agent (Claude Code, Cursor, Aider, Codex, ChatGPT,...)
+Bạn chỉ cần copy link tài liệu chuẩn LLM dưới đây và đưa cho AI Agent của bạn để nó tự động thiết lập từ A đến Z:
+
+> **Link cho AI Agent:**  
+> `https://raw.githubusercontent.com/RuriMeiko/zalo-linux-native/main/llms.txt`
+
+**Câu lệnh mẫu (Prompt):**
+> *"Hãy đọc hướng dẫn tại https://raw.githubusercontent.com/RuriMeiko/zalo-linux-native/main/llms.txt và tiến hành kiểm tra môi trường, tải Electron 22.3.27, tạo cấu hình và cài đặt Zalo Linux Native trên máy của tôi."*
+
+---
+
 
 ### 1. Yêu cầu hệ thống (Prerequisites)
 - **Hệ điều hành**: Linux x86_64 (Ubuntu, Debian, Fedora, Arch Linux,...).

@@ -1,0 +1,217 @@
+# Zalo Linux Native — LLM & Agent Installation Guide
+> Unofficial native desktop port of Zalo (Vietnamese messaging application) for Linux x86_64.
+> This file is formatted for AI Coding Agents (Claude Code, Cursor, Aider, Codex, ChatGPT, Copilot) to automatically inspect, configure, and install Zalo Linux Native without manual intervention.
+
+## Quick Links
+- Repository: https://github.com/RuriMeiko/zalo-linux-native
+- Issues: https://github.com/RuriMeiko/zalo-linux-native/issues
+- Raw Agent URL: https://raw.githubusercontent.com/RuriMeiko/zalo-linux-native/main/llms.txt
+
+---
+
+## 🤖 Instructions for AI Agents (Automated Execution Plan)
+
+When a user instructs: "Install Zalo Linux Native" or provides this link, execute the following steps in sequence:
+
+### Step 1: Verify Host Platform & Dependencies
+Ensure the target system is Linux x86_64 and required packages are installed:
+
+```bash
+# 1. Verify architecture
+uname -m # Must be x86_64
+
+# 2. Check or install required system tools: Node.js (>=18), pactl (PulseAudio/PipeWire), unzip, curl
+if command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get update && sudo apt-get install -y pulseaudio-utils unzip curl libpulse0
+elif command -v dnf >/dev/null 2>&1; then
+  sudo dnf install -y pulseaudio-utils unzip curl libpulse
+elif command -v pacman >/dev/null 2>&1; then
+  sudo pacman -Sy --noconfirm libpulse unzip curl
+fi
+
+# 3. Check Node.js
+node -v # Ensure Node.js 18, 20, or 22 is available
+```
+
+---
+
+### Step 2: Clone or Update Repository
+```bash
+if [ -d "zalo-linux-native" ]; then
+  cd zalo-linux-native && git pull
+else
+  git clone https://github.com/RuriMeiko/zalo-linux-native.git
+  cd zalo-linux-native
+fi
+```
+
+---
+
+### Step 3: Install Electron v22.3.27 (Mandatory)
+> **CRITICAL CONSTRAINT:** Newer versions of Electron (v23+) will fail due to internal V8 and ABI changes. You MUST use Electron **v22.3.27**.
+
+```bash
+ELECTRON_DIR="$HOME/.local/electron-v22.3.27"
+if [ ! -x "$ELECTRON_DIR/electron" ]; then
+  mkdir -p "$ELECTRON_DIR"
+  echo "Downloading Electron v22.3.27..."
+  curl -L -o /tmp/electron-v22.3.27.zip \
+    https://github.com/electron/electron/releases/download/v22.3.27/electron-v22.3.27-linux-x64.zip
+  unzip -q -o /tmp/electron-v22.3.27.zip -d "$ELECTRON_DIR"
+  chmod +x "$ELECTRON_DIR/electron"
+  rm -f /tmp/electron-v22.3.27.zip
+fi
+"$ELECTRON_DIR/electron" --version # Should output v22.3.27
+```
+
+---
+
+### Step 4: Auto-Generate `launch.json`
+Run this one-line Node.js helper to automatically query PulseAudio/PipeWire for available microphones and speakers, check for camera devices, and write a valid `launch.json`:
+
+```bash
+node -e "
+import {execSync} from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
+const home = os.homedir();
+const appDir = process.cwd();
+const electronPath = path.join(home, '.local', 'electron-v22.3.27', 'electron');
+
+// 1. Detect microphone (PulseAudio source, ignoring .monitor playback outputs)
+let source = '';
+try {
+  const sources = execSync('pactl list sources short', {encoding: 'utf8'}).trim().split('\n');
+  for (const line of sources) {
+    const parts = line.split('\t');
+    const name = parts[1] || parts[0];
+    if (name && !name.endsWith('.monitor')) {
+      source = name;
+      break;
+    }
+  }
+} catch (e) {
+  console.warn('Unable to query sources with pactl:', e.message);
+}
+
+// 2. Detect speaker (PulseAudio sink)
+let sink = '';
+try {
+  const sinks = execSync('pactl list sinks short', {encoding: 'utf8'}).trim().split('\n');
+  if (sinks.length > 0) {
+    const parts = sinks[0].split('\t');
+    sink = parts[1] || parts[0];
+  }
+} catch (e) {
+  console.warn('Unable to query sinks with pactl:', e.message);
+}
+
+// 3. Detect camera
+const videoDevice = fs.existsSync('/dev/video0') ? '/dev/video0' : undefined;
+
+// 4. Runtime path (defaults to user runtime or recovery location)
+let runtime = path.join(home, 'zalo-native-recovery', 'mute-evidence-20260910', 'runtime');
+if (!fs.existsSync(runtime)) {
+  const alt = path.join(home, 'zalo-native-recovery', 'runtime');
+  if (fs.existsSync(alt)) runtime = alt;
+}
+
+const config = {
+  appDir: appDir,
+  electron: electronPath,
+  runtime: runtime,
+  source: source || 'alsa_input.pci-0000_00_1f.3.analog-stereo',
+  sink: sink || 'alsa_output.pci-0000_00_1f.3.analog-stereo',
+  noSandbox: true,
+  experimentalVideo: Boolean(videoDevice),
+  ...(videoDevice ? {videoDevice} : {}),
+  experimentalIncoming: true,
+  log: true
+};
+
+fs.writeFileSync('launch.json', JSON.stringify(config, null, 2) + '\n', {mode: 0o600});
+console.log('Generated launch.json successfully:');
+console.log(JSON.stringify(config, null, 2));
+"
+```
+
+---
+
+### Step 5: Validate Configuration Preflight
+```bash
+bash start.sh launch.json --check
+```
+*Expected result:* `PASS native runtime and configured device presence; no call or camera capture started`.
+
+---
+
+### Step 6: Install to User Directory (`~/.local/share/zalo`)
+Install as an independent, manifest-verified deployment:
+
+```bash
+TARGET_DIR="$HOME/.local/share/zalo"
+
+# If previous target exists, ensure clean re-install or sync
+if [ -d "$TARGET_DIR" ]; then
+  echo "Installation directory $TARGET_DIR already exists."
+else
+  node scripts/install-native.mjs launch.json "$TARGET_DIR"
+fi
+
+# Verify installation manifest integrity
+node "$TARGET_DIR/scripts/verify-installation.mjs" "$TARGET_DIR" --require-generated
+```
+
+---
+
+### Step 7: Create Desktop Menu Shortcut
+Register the application in the system desktop menu (GNOME, KDE, XFCE):
+
+```bash
+node scripts/register-desktop.mjs "$HOME/.local/share/zalo"
+```
+*Creates:* `~/.local/share/applications/zalo-native.desktop` with proper icon and launch script.
+
+---
+
+### Step 8: Launching Zalo
+```bash
+# To start the installed application:
+bash "$HOME/.local/share/zalo/launch-installed.sh"
+
+# Or from source directory:
+bash start.sh launch.json
+```
+
+---
+
+## 📞 Calling Feature Status Matrix
+
+| Feature | Status | Notes |
+|---|---|---|
+| **Text Chat & Messaging** | ✅ Working | Fully functional |
+| **Media & File Transfer** | ✅ Working | Fast upload, image preview, video thumbnail |
+| **Backup Decryption (`db-cross-v4`)** | ✅ Working | Full recovery of ZDB4.0 containers |
+| **JPEG-XL Support (`zjxl`)** | ✅ Working | Bundled libjxl NAPI addon |
+| **Outgoing Calls (Caller)** | ✅ Working | Audible 2-way audio & camera work properly |
+| **Incoming Calls (Callee)** | 🚧 In Progress | Window opens, but answering/hanging up is not yet fully stable |
+
+---
+
+## 🪵 Diagnostics & Troubleshooting
+
+- **Logs location**: `~/.config/ZaloData/zcall-agent.log`
+- **Follow logs in real-time**:
+  ```bash
+  tail -f ~/.config/ZaloData/zcall-agent.log
+  ```
+- **Process management**:
+  ```bash
+  # Check if running
+  pgrep -a -f 'zalo'
+  # Stop cleanly
+  pkill -f 'electron.*zalo'
+  ```
+- **Single-instance conflict**: If Zalo refuses to start, close any existing background Zalo processes or remove stale socket locks in `/tmp/socketzalo*`.
