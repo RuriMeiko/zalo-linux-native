@@ -262,6 +262,7 @@ function endCall(reason) {
     if (!callActive) return;
     callActive = false;
     log("ending call:", reason);
+    try { setupTransport?.reset?.(); } catch {}
     // Mirror the renderer's own teardown so the window leaves dialing:
     // callState free + the "end" sendSignal that handleEndAllCall emits.
     sendToHost({ type: "update", command: "callState", data: { state: "free" } });
@@ -421,6 +422,7 @@ function handleHostMessage(msg) {
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
             process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
             callActive=true;
+            try { setupTransport?.reset?.(); } catch {}
             log('incoming request data:', JSON.stringify(data));
             let incomingVideo=false;
             try {
@@ -516,6 +518,7 @@ function handleHostMessage(msg) {
             if(outgoingSetup) {
                 if(callActive) return;
                 callActive=true;
+                try { setupTransport?.reset?.(); } catch {}
                 outgoingSetup.start(data).catch(error=>{if(!isOutgoingCancellation(error))setupPhase('setup-failed');})
                     .finally(async()=>{await clearNativeCallUI();endCall('native setup stage finished');});
                 return;

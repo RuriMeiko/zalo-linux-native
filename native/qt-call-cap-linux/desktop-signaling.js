@@ -98,6 +98,13 @@ class DesktopSignaling extends EventEmitter {
         }
         this.pending.clear();this.removeAllListeners();
     }
+    reset() {
+        for(const entry of this.pending.values()) {
+            clearTimeout(entry.timer);entry.reject(new Error('Signaling transport reset'));
+        }
+        this.pending.clear();
+        this.expired.clear();
+    }
     cancel(command) {
         const entry=this.pending.get(command);
         if(!entry) return false;
