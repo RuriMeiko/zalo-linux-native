@@ -26,7 +26,7 @@ function controls() {
   const incoming=state?.kind==='consent',error=state?.kind==='error';
   for(const id of ['end','answer','mic'])get(id).disabled=busy;
   if(incoming || error) get('end').disabled=false;
-  get('mic').disabled=busy || !state?.muteControl;
+  if(incoming) get('answer').disabled=false;
   get('camera').disabled=busy || !state?.cameraControl;
 }
 window.linuxCall.subscribe((id,next)=>{
@@ -49,7 +49,9 @@ window.linuxCall.subscribe((id,next)=>{
   get('duration').hidden=!active;get('error').hidden=!error;controls();tick();
 },id=>{if(id===revision){busy=true;controls();}});
 for(const [id,action] of [['end','end'],['answer','answer'],['mic','toggle'],['camera','camera']])get(id).addEventListener('click',()=>{
-  if(busy)return;busy=true;controls();window.linuxCall.act(revision,action);
+  const incoming=state?.kind==='consent';
+  if(!incoming && busy)return;
+  busy=true;controls();window.linuxCall.act(revision,action);
 });
 function tick() {
   if(state?.startedAt==null)return;

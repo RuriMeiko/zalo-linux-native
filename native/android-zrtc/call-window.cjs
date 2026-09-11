@@ -4,7 +4,7 @@ const {peerName:normalizePeerName,peerAvatar:normalizePeerAvatar}=require('./cal
 // One window per call. The owner closes it only after media shutdown; changing
 // dialog stages or waiting for a mute ACK must not destroy the window.
 module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
-  let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false,lastKind=null;
+  let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false,answerQueued=false,lastKind=null;
   let notification=null;
   const clearAttention=()=>{
     try {notification?.close();}catch {} notification=null;
@@ -38,7 +38,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     if(error)current.reject(error);else current.resolve(value);
   };
   const dispose=()=>{
-    if(disposed)return;disposed=true;lastKind=null;clearAttention();settle(new Error('Call window closed'));
+    if(disposed)return;disposed=true;lastKind=null;endQueued=false;answerQueued=false;clearAttention();settle(new Error('Call window closed'));
     ipcMain.removeListener('linux-call-action',action);
     ipcMain.removeListener('linux-call-painted',painted);
     for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
@@ -49,7 +49,11 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     if(!pending) {
       if(value==='end') {
         endQueued=true;
+        window.webContents.send('linux-call-busy',revision);
         if(lastKind==='error') dispose();
+      } else if(value==='answer') {
+        answerQueued=true;
+        window.webContents.send('linux-call-busy',revision);
       }
       return;
     }
@@ -122,7 +126,14 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
       if(disposed || signal.aborted)throw new Error('Call window canceled');
       // A second request can have been awaiting the same page load.
       if(pending)throw new Error('Call window already waiting');
-      if(endQueued)return kind==='consent'?false:kind==='active'?'end':true;
+      if(endQueued) {
+        endQueued=false;
+        return kind==='consent'?false:kind==='active'?'end':true;
+      }
+      if(answerQueued && kind==='consent') {
+        answerQueued=false;
+        return true;
+      }
       if(kind==='active' && startedAt===null)startedAt=Date.now();
       return new Promise((resolve,reject)=>{
         const abort=()=>settle(new Error('Call window canceled'));

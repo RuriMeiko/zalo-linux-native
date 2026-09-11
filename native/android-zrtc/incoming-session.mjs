@@ -111,7 +111,9 @@ export class IncomingSession extends EventEmitter {
       await this.#native('callEvent',{event:'SEND_407'});current();
       this.#setPhase('signaling');current();this.#waitingSignal=407;
       try {
-        await this.#signaling.request(407,{callerId:mapped.configuration.partnerId,callId:mapped.configuration.callId});
+        const ringReq=this.#signaling.request(407,{callerId:mapped.configuration.partnerId,callId:mapped.configuration.callId});
+        const softTimeout=new Promise(resolve=>setTimeout(resolve,1500));
+        await Promise.race([ringReq,softTimeout]);
       } finally {this.#waitingSignal=null;}
       current();
       await this.#native('callEvent',{event:'SEND_407_SUCCESS'});current();
