@@ -305,7 +305,7 @@ function getNativeVideoSink() {
     }
     return nativeVideoSink;
 }
-let setupTransport=null, outgoingSetup=null, incomingAttempt=null;
+let setupTransport=null, outgoingSetup=null, incomingAttempt=null, isOutgoingCancellation=()=>false;
 let nativeAppLocked=process.env.ZALO_ZCALL_APP_LOCKED==='1';
 function setupPhase(phase) {
     log('phase', phase);
@@ -316,9 +316,10 @@ function setupPhase(phase) {
 }
 if(setupEnabled) {
     const {DesktopSignaling}=require('./desktop-signaling');
-    const {OutgoingSetup,isOutgoingCancellation}=require('./outgoing-setup');
+    const outgoingModule=require('./outgoing-setup');
+    isOutgoingCancellation=outgoingModule.isOutgoingCancellation;
     setupTransport=new DesktopSignaling(sendToHost);
-    outgoingSetup=new OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),
+    outgoingSetup=new outgoingModule.OutgoingSetup(setupTransport,{allowVideo:videoEnabled,onPhase:setupPhase,getContext:()=>nativeIdentity.ticket(),
       onPreparing:options=>networkEnabled && mediaEnabled?
         require('../android-zrtc/outgoing-preparation.cjs').outgoingPreparation(nativeCallDialog,options):async()=>{},
       onFailure:options=>networkEnabled && mediaEnabled?nativeCallDialog('error',options):Promise.resolve(),
