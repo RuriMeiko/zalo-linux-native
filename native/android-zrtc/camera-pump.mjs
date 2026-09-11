@@ -36,7 +36,7 @@ export async function runCamera(worker,{device,frameLimit,signal,stallMs=10000,o
     // ZRTC's Android OnByteBufferFrameCaptured path consumes NV21, not NV12.
     // Feeding UV here swaps chroma and produces the blue/red cast seen by peers.
     args.push('-pix_fmt','nv21','-f','rawvideo','pipe:1');
-    child=spawnCapture('ffmpeg',args,{stdio:['ignore','pipe','pipe']});
+    child=spawnCapture(process.env.ZALO_FFMPEG || 'ffmpeg',args,{stdio:['ignore','pipe','pipe']});
     closed=new Promise(resolve=>{
       child.once('error',()=>{failure=new Error('Unable to start camera capture');resolve({code:null,signal:null});});
       child.once('close',(code,signal)=>{clearTimeout(killTimer);resolve({code,signal});});

@@ -25,7 +25,7 @@ Status: development, not a complete native Linux release.
   See [LINUX-DESKTOP-EXTRAS.md](LINUX-DESKTOP-EXTRAS.md).
 - [ ] Automated regression suite covering the released configuration, plus
   fresh-install and user-assisted voice/video acceptance tests. The full
-  20-command suite and separate Electron 22 GUI/native-video fixtures pass on
+  21-command suite and separate Electron 22 GUI/native-video fixtures pass on
   2026-09-11; final-package and current-build live-account coverage are missing.
 
 The detailed evidence and outstanding work are in [PORT-CHECKLIST.md](PORT-CHECKLIST.md).
@@ -48,6 +48,9 @@ Do not substitute successful module tests for these end-to-end gates.
   reproducible, with redistribution permission checked for each component.
 - [ ] Make normal launch select the verified native path without test-only env flags.
 - [ ] Package and test on a clean supported Linux system, without existing caches.
+  A 13,543-file local AppDir now bundles and verifies app/Electron/ZRTC/FFmpeg,
+  and its `AppRun --check` passes on the development host. It is not clean-system
+  or redistribution evidence; see [NATIVE-PACKAGING.md](NATIVE-PACKAGING.md).
 - [ ] Document supported architectures, devices, dependencies and known limitations.
 - [ ] Keep remote debugging opt-in and loopback-only; never enable it by default.
 - [ ] No credentials, account profiles, call captures, device serials, personal

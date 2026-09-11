@@ -10,7 +10,7 @@ ELECTRON_RUN_AS_NODE=1 /absolute/path/to/electron \
   scripts/test-native-regression.mjs
 ```
 
-This runs 20 commands, including the 25-suite call-control runner, native module
+This runs 21 commands, including the 25-suite call-control runner, native module
 contracts, filesystem behavior, JPEG XL addon, synthetic video thumbnail,
 image encoder boundaries, bundled header/viewer/privacy checks and installer/
 integrity-verifier/menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped
@@ -56,7 +56,7 @@ created. The native-loopback video fixture uses synthetic pixels, a private Puls
 null sink and localhost UDP; it exercises native H.264 encode/decode, the snapshot
 pump and Electron canvas ACK without contacting an account.
 
-On 2026-09-11, Electron 22.3.27 passed the full 20-command aggregate, zimage,
+On 2026-09-11, Electron 22.3.27 passed the full 21-command aggregate, zimage,
 cross-directory single-instance, both call-window paths, the reusable video
 display pipe and the native video loopback. The native loopback completed three
 cycles with 81 decoded 480x360 frames and 64 Electron paint ACKs. These checks

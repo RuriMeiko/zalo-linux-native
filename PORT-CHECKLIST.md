@@ -28,7 +28,7 @@ Do not publish a PR; finish native functionality before release claims.
 - Contact name/avatar presentation and remote decline/end handling are source-
   wired and deployed. The first incoming call after restart no longer issues a
   competing 401 configuration request.
-- The complete 20-command regression runner now passes through Electron 22's
+- The complete 21-command regression runner now passes through Electron 22's
   embedded Node. Real Electron fixtures also pass zimage, shared-profile
   single-instance, call answer/mic/camera/end, pre-invitation cancel, reusable
   video display and three native H.264 localhost encode/decode/display cycles.
@@ -137,8 +137,11 @@ has no incoming dispatcher or always ends outgoing calls describe old code.
   22.3.27 runtime used by the installed development app. The full aggregate,
   native zimage and real GUI/IPC/native-video fixtures passed on 2026-09-11.
 - [ ] Repeat native-module and GUI verification with the Electron runtime inside
-  the final self-contained package; no such package exists yet.
-- [ ] Build a self-contained Linux package; smoke-test fresh installation.
+  the final redistributable package. A local AppDir now passes bundled-runtime
+  integrity and device preflight, but clean-system GUI/media testing is pending.
+- [ ] Build a redistributable Linux package and smoke-test a fresh supported
+  system. The local AppDir bundles app/Electron/ZRTC/FFmpeg with 13,543 verified
+  files; FFmpeg/system-library portability and redistribution rights remain open.
 
 ### Live test diagnosis — 2026-09-09 13:28 ICT
 

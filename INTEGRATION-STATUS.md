@@ -2,7 +2,7 @@
 
 ## Electron 22 runtime acceptance — source checkpoint
 
-The complete 20-command account-free regression runner passes when invoked by
+The complete 21-command account-free regression runner passes when invoked by
 Electron 22.3.27 in Node mode. Native/runtime-facing commands therefore execute
 against Electron's embedded Node 16 rather than only the developer's Node 22.
 The installer fixture is the deliberate exception: its public contract is a
@@ -27,6 +27,16 @@ verified 27 received frames per cycle. This is meaningful renderer and media-
 pipeline evidence, but the server and peer were local fixtures. It does not close
 the current-build two-account, physical-device reconnect, final bundled-runtime,
 clean-machine or licensing gates.
+
+A new fail-closed local AppDir builder replaces the old network-downloading
+packaging assumptions. It accepts only a new home destination, Git-tracked app
+payload, pinned Electron 22.3.27, the pinned ZRTC hash and an explicit FFmpeg.
+Runtime symlinks are materialized under bounded component roots; every one of
+13,543 copied/generated files is covered by size, mode and SHA-256. A real local
+AppDir passed independent Node verification and bundled Electron/Node verification,
+then strict camera/Pulse/ZRTC `AppRun --check`. This did not open a second Zalo.
+Dynamic host libraries, clean-system execution and proprietary redistribution
+rights remain open, so the result is retained privately and is not a release.
 
 ## Current authoritative deployment: `8d7a0d0`
 

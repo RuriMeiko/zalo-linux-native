@@ -5,9 +5,9 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {runCamera} from './camera-pump.mjs';
 const bytes=640*480*3/2;
 let child,spawns=0,kills=[];
-function capture(chunks,{stall=false,code=0}={}) {
+function capture(chunks,{stall=false,code=0,executable='ffmpeg'}={}) {
   return (command,args,options)=>{
-    spawns++;assert.equal(command,'ffmpeg');assert.equal(args[args.indexOf('-i')+1],'/dev/video0');
+    spawns++;assert.equal(command,executable);assert.equal(args[args.indexOf('-i')+1],'/dev/video0');
     assert.equal(args[args.indexOf('-pix_fmt')+1],'nv21');
     assert.equal(options.stdio[0],'ignore');
     child=new EventEmitter();child.exitCode=null;child.signalCode=null;
@@ -30,6 +30,14 @@ assert.deepEqual(await runCamera(worker,{device:'/dev/video0',frameLimit:2},capt
   Buffer.alloc(17),Buffer.alloc(bytes-17),Buffer.alloc(bytes)
 ])),{frames:2,width:640,height:480});
 assert.equal(maximum,1);assert.ok(received[1]>received[0]);
+const inheritedFfmpeg=process.env.ZALO_FFMPEG;
+try {
+  process.env.ZALO_FFMPEG='/opt/zalo-package/tools/ffmpeg';
+  assert.equal((await runCamera(worker,{device:'/dev/video0',frameLimit:1},
+    capture([Buffer.alloc(bytes)],{executable:process.env.ZALO_FFMPEG}))).frames,1);
+} finally {
+  if(inheritedFfmpeg===undefined)delete process.env.ZALO_FFMPEG;else process.env.ZALO_FFMPEG=inheritedFfmpeg;
+}
 await assert.rejects(runCamera(worker,{device:'/dev/video0',frameLimit:1},capture([Buffer.alloc(13)])),/partial/);
 await assert.rejects(runCamera(worker,{device:'/dev/video0',frameLimit:2},capture([Buffer.alloc(bytes)])),/before frame limit/);
 await assert.rejects(runCamera(worker,{device:'/dev/video0',frameLimit:1},capture([],{code:1})),/failed or disconnected/);

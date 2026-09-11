@@ -7,12 +7,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {validateConfig,preflight} from './native-launch.mjs';
+import {applicationPayloadRoots,selectApplicationPayload} from './application-payload.mjs';
 const exec=promisify(execFile);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const payload=['bootstrap.js','package.json','version.txt','libs','main-dist','pc-dist','native','scripts',
-  'start.sh','update.sh','CREDITS.md','README.md','NATIVE-LAUNCH.md','NATIVE-INSTALL.md','NATIVE-TESTING.md',
-  'INTEGRATION-STATUS.md','LINUX-DESKTOP-EXTRAS.md','CALL-LINUX.md','CALL-SMOKE.md','HEADER-REGRESSION.md',
-  'RELEASE-CHECKLIST.md','PORT-CHECKLIST.md','PUBLICATION-AUDIT-ALLOWLIST.json'];
 export function installPlan({source,destination,home=homedir(),config,files}) {
   const c=validateConfig(config);
   const under=(parent,child)=>{const r=path.relative(parent,child);return !!r && r!=='..' && !r.startsWith('../') && !path.isAbsolute(r);};
@@ -24,7 +21,7 @@ export function installPlan({source,destination,home=homedir(),config,files}) {
   if(!Array.isArray(files) || !files.length || files.some(f=>typeof f!=='string' || !f || f.includes('\\') ||
     f.split('/').some(p=>!p || p==='.' || p==='..') || path.isAbsolute(f) || /[\0\r\n]/.test(f)))
     throw new Error('Invalid tracked payload paths');
-  const selected=files.filter(f=>payload.some(p=>f===p || f.startsWith(p+'/')));
+  const selected=selectApplicationPayload(files);
   for(const required of ['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/verify-installation.mjs','native/qt-call-cap-linux/zcall-agent.js'])
     if(!selected.includes(required))throw new Error('Incomplete application payload');
   if(new Set(selected).size!==selected.length)throw new Error('Duplicate payload path');
@@ -79,7 +76,7 @@ async function main() {
     throw new Error('Usage: node scripts/install-native.mjs CONFIG_JSON NEW_HOME_DIRECTORY [--check]');
   const config=validateConfig(JSON.parse(await readFile(pos[0],'utf8')));
   const source=await realpath(root);
-  const result=await exec('git',['ls-files','-z','--',...payload],{cwd:source,maxBuffer:4*1024*1024});
+  const result=await exec('git',['ls-files','-z','--',...applicationPayloadRoots],{cwd:source,maxBuffer:4*1024*1024});
   const plan=installPlan({source,destination:pos[1],config,files:result.stdout.split('\0').filter(Boolean)});
   await inspectInstallation(plan);
   await preflight({...config,appDir:source});

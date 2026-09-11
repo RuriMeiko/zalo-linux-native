@@ -4,7 +4,7 @@
 > mic/camera controls. Incoming **Từ chối** now sends the authenticated desktop
 > cancel request for voice/video before local teardown. Snapshot `8d7a0d0` is
 > installed and running from the verified user-local copy; 25 call-control suites
-> and all 20 aggregate regression commands pass under Electron 22's embedded
+> and all 21 aggregate regression commands pass under Electron 22's embedded
 > Node. Real Electron zimage, single-instance, call-control and native H.264
 > localhost encode/decode/canvas fixtures also pass. It includes the corrected NV21
 > camera path, contact name/avatar presentation, normalized remote decline/end,
@@ -64,7 +64,10 @@ bash start.sh
 For a manifest-verified copy and optional desktop-menu entry, follow
 [NATIVE-INSTALL.md](NATIVE-INSTALL.md). Startup does not download dependencies,
 rewrite the checkout or run an updater. This is still a development installation,
-not a self-contained package or released AppImage.
+not a released AppImage. A local AppDir that bundles Electron and the prepared
+native runtime can be built with the fail-closed process in
+[NATIVE-PACKAGING.md](NATIVE-PACKAGING.md); redistribution remains blocked on
+licensing and clean-system acceptance.
 
 ## Usage
 

@@ -108,24 +108,30 @@ async function rejectExistingApp(appDir) {
       throw new Error('Zalo is already running; quit it from the tray before applying native configuration');
   }
 }
+export async function runNativeLaunch(config,{check=false}={}) {
+  if(typeof check!=='boolean')throw new TypeError('check must be boolean');
+  const c=validateConfig(config);
+  const warnings=await preflight(c,{requireDevices:check});
+  if(check) {console.log('PASS native runtime and configured device presence; no call or camera capture started');return null;}
+  await rejectExistingApp(c.appDir);
+  for(const warning of warnings)console.warn(`Call device warning: ${warning}. Reconnect the configured device before calling; selection unchanged.`);
+  const {executable,args:electronArgs,env}=launchSpec(c);
+  console.log(c.experimentalVideo?'Starting experimental native voice/video; end-to-end video acceptance remains unverified.':
+    'Starting experimental native voice; video is disabled.');
+  if(c.noSandbox) console.warn('Warning: Electron sandbox explicitly disabled by configuration.');
+  const child=spawn(executable,electronArgs,{env,stdio:'inherit'});
+  for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));
+  child.on('error',()=>{console.error('Unable to start Electron');process.exitCode=1;});
+  child.on('exit',(code,signal)=>{process.exitCode=code ?? (signal?1:0);});
+  return child;
+}
 async function main() {
   const args=process.argv.slice(2);
   if(args.some(a=>a.startsWith('--') && a!=='--check') || args.filter(a=>a!=='--check').length>1)
     throw new Error('Usage: node scripts/native-launch.mjs [config.json] [--check]');
   const configPath=args.find(a=>a!=='--check') || path.join(process.env.XDG_CONFIG_HOME || path.join(homedir(),'.config'),'zalo-native-linux','launch.json');
   const config=validateConfig(JSON.parse(await readFile(configPath,'utf8')));
-  const warnings=await preflight(config,{requireDevices:args.includes('--check')});
-  if(args.includes('--check')) {console.log('PASS native runtime and configured device presence; no call or camera capture started');return;}
-  await rejectExistingApp(config.appDir);
-  for(const warning of warnings)console.warn(`Call device warning: ${warning}. Reconnect the configured device before calling; selection unchanged.`);
-  const {executable,args:electronArgs,env}=launchSpec(config);
-  console.log(config.experimentalVideo?'Starting experimental native voice/video; end-to-end video acceptance remains unverified.':
-    'Starting experimental native voice; video is disabled.');
-  if(config.noSandbox) console.warn('Warning: Electron sandbox explicitly disabled by configuration.');
-  const child=spawn(executable,electronArgs,{env,stdio:'inherit'});
-  for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));
-  child.on('error',()=>{console.error('Unable to start Electron');process.exitCode=1;});
-  child.on('exit',(code,signal)=>{process.exitCode=code ?? (signal?1:0);});
+  await runNativeLaunch(config,{check:args.includes('--check')});
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url))
   main().catch(error=>{console.error(`Native launch failed: ${error.message}`);process.exitCode=1;});
