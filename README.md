@@ -27,10 +27,12 @@
 For native voice/video startup with user-local runtime and device settings, see
 [NATIVE-LAUNCH.md](NATIVE-LAUNCH.md). This development launcher does not run the
 inherited upstream updater.
+> ### ⚠️ Tình trạng tính năng Gọi thoại & Video (Call Status)
+> - **Cuộc gọi đi (Outgoing Call - Phía mình gọi cho người ta)**: ✅ **Hoạt động tốt (Working)** — Phía mình gọi cho người khác nghe nói 2 chiều và camera hoạt động bình thường trên Linux.
+> - **Cuộc gọi đến (Incoming Call - Người khác gọi tới mình)**: 🚧 **Đang phát triển, hiện CHƯA nghe / cúp máy được (WIP - Cannot answer/end yet)** — Khi người khác gọi đến máy tính, luồng xử lý tín hiệu và giao diện nghe/cúp máy vẫn đang được khắc phục và hoàn thiện.
 
 ⚠️ **Work in Progress** - This project is under active development.
 A Linux port of Zalo, bringing the popular Vietnamese messaging application to the Linux platform.
-
 <img width="1280" height="799" alt="image" src="https://github.com/user-attachments/assets/7f3000e2-6d5d-4bc1-a4c1-d334f4d7a3e9" />
 
 ## How It Works
@@ -49,39 +51,101 @@ The port was created by:
 
 > Note: Newer versions of Electron cause errors — v22.3.27 is required.
 
-## Installation
+## 📦 Hướng dẫn cài đặt & Sử dụng (Installation & Usage)
 
-Clone the independent repository and prepare the external runtime, Electron 22
-and explicit device configuration described in [NATIVE-LAUNCH.md](NATIVE-LAUNCH.md):
+### 1. Yêu cầu hệ thống (Prerequisites)
+- **Hệ điều hành**: Linux x86_64 (Ubuntu, Debian, Fedora, Arch Linux,...).
+- **Node.js**: Phiên bản 18 đến 22 (khuyến nghị v20 hoặc v22).
+- **Electron**: Bắt buộc phiên bản **v22.3.27** (các bản Electron mới hơn sẽ phát sinh lỗi).
+  - Tải Electron 22.3.27: [Electron v22.3.27 Release](https://github.com/electron/electron/releases/tag/v22.3.27) (tải file `electron-v22.3.27-linux-x64.zip` và giải nén).
+- **Âm thanh**: PulseAudio hoặc PipeWire (với gói `pipewire-pulse`).
+- **Camera** *(tùy chọn cho video call)*: Thiết bị V4L2 (mặc định `/dev/video0`).
+- **ZRTC Runtime**: Runtime native engine chuẩn bị sẵn (xem hướng dẫn tại [native/android-zrtc/README.md](native/android-zrtc/README.md)).
 
+---
+
+### 2. Thiết lập cấu hình `launch.json`
+Zalo Linux Native sử dụng file cấu hình `launch.json` để quản lý đường dẫn và thiết bị phần cứng.
+
+Tạo file `launch.json` (ví dụ đặt tại thư mục dự án hoặc `~/.config/zalo-native-linux/launch.json`):
+
+```json
+{
+  "appDir": "/đường_dẫn_tuyệt_đối_đến/zalo-linux-native",
+  "electron": "/đường_dẫn_tuyệt_đối_đến/electron-v22.3.27/electron",
+  "runtime": "/đường_dẫn_tuyệt_đối_đến/runtime",
+  "source": "tên_microphone_từ_pactl",
+  "sink": "tên_loa_từ_pactl",
+  "noSandbox": true,
+  "experimentalVideo": true,
+  "videoDevice": "/dev/video0",
+  "experimentalIncoming": true,
+  "log": true
+}
+```
+
+#### Cách lấy tên Microphone (`source`) và Loa (`sink`):
+Mở terminal và chạy lệnh:
 ```bash
+# Lấy danh sách microphone (chọn tên thiết bị, không chọn dòng có đuôi .monitor):
+pactl list sources short
+
+# Lấy danh sách loa / tai nghe:
+pactl list sinks short
+```
+*Lưu ý:* Tất cả đường dẫn trong `launch.json` phải là đường dẫn tuyệt đối (bắt đầu bằng `/home/...`), không dùng ký hiệu `~` hoặc biến môi trường `$HOME`.
+
+---
+
+### 3. Khởi chạy ứng dụng
+
+#### Cách 1: Chạy trực tiếp từ thư mục mã nguồn
+```bash
+# Clone mã nguồn:
 git clone https://github.com/RuriMeiko/zalo-linux-native.git
 cd zalo-linux-native
-bash start.sh --check
-bash start.sh
+
+# Kiểm tra tính toàn vẹn và thiết bị phần cứng trước khi chạy:
+bash start.sh launch.json --check
+
+# Khởi chạy Zalo:
+bash start.sh launch.json
 ```
 
-For a manifest-verified copy and optional desktop-menu entry, follow
-[NATIVE-INSTALL.md](NATIVE-INSTALL.md). Startup does not download dependencies,
-rewrite the checkout or run an updater. This is still a development installation,
-not a released AppImage. A local AppDir that bundles Electron and the prepared
-native runtime can be built with the fail-closed process in
-[NATIVE-PACKAGING.md](NATIVE-PACKAGING.md); redistribution remains blocked on
-licensing and clean-system acceptance.
-
-## Usage
-
-**Launch the application**:
-- Open Zalo from your application launcher or desktop launcher
-
-**Start manually**:
+#### Cách 2: Cài đặt bản riêng biệt vào thư mục người dùng (`~/.local/share/zalo`)
+Sử dụng script cài đặt tự động để sao chép payload và tạo launcher độc lập:
 ```bash
-./start.sh
+# 1. Kiểm tra preflight:
+node scripts/install-native.mjs launch.json ~/.local/share/zalo --check
+
+# 2. Thực hiện cài đặt:
+node scripts/install-native.mjs launch.json ~/.local/share/zalo
+
+# 3. Khởi chạy Zalo đã cài đặt:
+bash ~/.local/share/zalo/launch-installed.sh
 ```
 
-**Check for a newer source revision without modifying files**:
+---
+
+### 4. Đăng ký Menu ứng dụng trên Desktop (Tùy chọn)
+Để hiển thị biểu tượng Zalo trong menu ứng dụng của hệ điều hành (GNOME, KDE, XFCE...):
+```bash
+node scripts/register-desktop.mjs ~/.local/share/zalo
+```
+
+---
+
+### 5. Kiểm tra phiên bản mới từ repo
 ```bash
 bash update.sh --check
+```
+
+---
+
+### 6. Xem nhật ký log chẩn đoán cuộc gọi
+Khi đặt `"log": true` trong `launch.json`, toàn bộ log kết nối cuộc gọi được lưu tại:
+```bash
+tail -f ~/.config/ZaloData/zcall-agent.log
 ```
 ## Features
 

@@ -1,5 +1,9 @@
 # Calling on Linux — zcall bridge (`native/qt-call-cap-linux/`)
 
+> ### ⚠️ Tình trạng tính năng Gọi thoại & Video (Call Status)
+> - **Cuộc gọi đi (Outgoing Call - Phía mình gọi cho người ta)**: ✅ **Hoạt động tốt (Working)** — Nghe gọi 2 chiều và camera hoạt động bình thường.
+> - **Cuộc gọi đến (Incoming Call - Người khác gọi tới mình)**: 🚧 **Đang phát triển, hiện CHƯA nghe / cúp máy được (WIP - Cannot answer/end yet)** — Khi có cuộc gọi đến, luồng xử lý tín hiệu và giao diện nghe/cúp máy vẫn đang được khắc phục và hoàn thiện.
+
 > 2026-09-09: a separate [Android ZRTC native probe](native/android-zrtc/README.md)
 > now loads the unmodified x86_64 engine on the Linux host with Bionic. Native
 > Peer/CallConfig lifecycle, Opus encode/decode and SRTP initialization pass.
