@@ -4,7 +4,7 @@ const {peerName:normalizePeerName,peerAvatar:normalizePeerAvatar}=require('./cal
 // One window per call. The owner closes it only after media shutdown; changing
 // dialog stages or waiting for a mute ACK must not destroy the window.
 module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
-  let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false;
+  let window,loading,pending,disposed=false,revision=0,startedAt=null,endQueued=false,lastKind=null;
   let notification=null;
   const clearAttention=()=>{
     try {notification?.close();}catch {} notification=null;
@@ -37,8 +37,22 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     pending=null;current.signal.removeEventListener('abort',current.abort);
     if(error)current.reject(error);else current.resolve(value);
   };
+  const dispose=()=>{
+    if(disposed)return;disposed=true;lastKind=null;clearAttention();settle(new Error('Call window closed'));
+    ipcMain.removeListener('linux-call-action',action);
+    ipcMain.removeListener('linux-call-painted',painted);
+    for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
+    if(window && !window.isDestroyed())window.destroy();window=null;
+  };
   const action=(event,id,value)=>{
-    if(!window || event.sender!==window.webContents || !pending || id!==revision)return;
+    if(!window || event.sender!==window.webContents || id!==revision)return;
+    if(!pending) {
+      if(value==='end') {
+        endQueued=true;
+        if(lastKind==='error') dispose();
+      }
+      return;
+    }
     const kind=pending.kind;
     const allowed=kind==='consent'?['answer','end']:kind==='active'?['toggle','end']:['end'];
     if(kind==='active' && pending.cameraControl)allowed.push('camera');
@@ -46,6 +60,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     // Lock controls until the owner has acknowledged the next state.
     window.webContents.send('linux-call-busy',revision);
     settle(null,kind==='consent'?value==='answer':kind==='active'?value:true);
+    if(kind==='error' && value==='end') dispose();
   };
   ipcMain.on('linux-call-action',action);
   const ensure=()=>{
@@ -64,7 +79,10 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
       if(disposed)return;
       event.preventDefault();
       if(pending)action({sender:created.webContents},revision,'end');
-      else endQueued=true; // Preserve close while a mute command is in flight.
+      else {
+        endQueued=true;
+        if(lastKind==='error') dispose();
+      }
     });
     loading=created.loadFile(path.join(__dirname,'call-window.html'));
     return loading;
@@ -90,6 +108,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
       await ensure();
       if(disposed || pending)throw new Error('Call window unavailable');
       const safeName=normalizePeerName(peerName),safeAvatar=normalizePeerAvatar(peerAvatar);
+      lastKind='consent';
       window.webContents.send('linux-call-state',++revision,{kind:'consent',ready:false,video:video===true,
         muted:false,muteControl:false,cameraControl:false,cameraEnabled:true,
         peerName:safeName,peerAvatar:safeAvatar,startedAt:null});
@@ -110,6 +129,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
         pending={kind,signal,abort,resolve,reject,cameraControl:video && cameraControl};signal.addEventListener('abort',abort,{once:true});
         try {
           const safeName=normalizePeerName(peerName),safeAvatar=normalizePeerAvatar(peerAvatar);
+          lastKind=kind;
           window.webContents.send('linux-call-state',++revision,{kind,ready:true,video:video===true,
             muted:muted===true,muteControl:muteControl===true,cameraControl:video && cameraControl===true,
             cameraEnabled:cameraEnabled===true,peerName:safeName,peerAvatar:safeAvatar,startedAt});
@@ -118,12 +138,6 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
         } catch {settle(new Error('Call window unavailable'));}
       });
     },
-    dispose() {
-      if(disposed)return;disposed=true;clearAttention();settle(new Error('Call window closed'));
-      ipcMain.removeListener('linux-call-action',action);
-      ipcMain.removeListener('linux-call-painted',painted);
-      for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
-      if(window && !window.isDestroyed())window.destroy();window=null;
-    }
+    dispose(){dispose();}
   };
 };

@@ -12,7 +12,7 @@ const exec=promisify(execFile);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const hash='c7e5f005fd5c12dc64d72008a1871638246899a9cf6b034dc13981c014caeefe';
 export function validateConfig(config) {
-  const keys=['appDir','electron','runtime','source','sink','noSandbox','cdpPort','experimentalVideo','videoDevice','experimentalIncoming'];
+  const keys=['appDir','electron','runtime','source','sink','noSandbox','cdpPort','experimentalVideo','videoDevice','experimentalIncoming','log'];
   if(!config || typeof config!=='object' || Array.isArray(config) ||
       Object.keys(config).some(k=>!keys.includes(k))) throw new Error('Invalid native-launch configuration keys');
   for(const key of ['appDir','electron','runtime'])
@@ -26,6 +26,11 @@ export function validateConfig(config) {
     throw new Error('experimentalVideo must be boolean');
   if(config.experimentalIncoming!==undefined && typeof config.experimentalIncoming!=='boolean')
     throw new Error('experimentalIncoming must be boolean');
+  // Opt-in diagnostics: launch.json boolean only; the environment never
+  // selects logging (config-isolation invariant). true leaves a phase trace
+  // (~/.config/ZaloData/zcall-agent.log) after a stuck call.
+  if(config.log!==undefined && typeof config.log!=='boolean')
+    throw new Error('log must be boolean');
   if(config.experimentalVideo===true) {
     if(typeof config.videoDevice!=='string' || !/^\/dev\/video[0-9]+$/.test(config.videoDevice))
       throw new Error('Experimental video requires an explicit /dev/videoN device');
@@ -41,7 +46,7 @@ export function launchSpec(config,inherited=process.env) {
     'ZALO_ZCALL_SCHEMA_LOG','ZRTC_DEBUG_BACKTRACE','ZRTC_PCM_HOST','ZRTC_PCM_SOURCE','ZRTC_PCM_SINK',
     'ZALO_ZCALL_NATIVE_VIDEO','ZALO_ZCALL_VIDEO_DEVICE','ZALO_ZCALL_NATIVE_INCOMING',
     'ZALO_ZCALL_UI_PIPE','ZALO_ZCALL_VIDEO_PIPE','ZALO_ZCALL_PREVIEW_PIPE']) delete env[name];
-  Object.assign(env,{ZCALL_USE_PROXY:'0',ZCALL_PROXY_AUTOSTART:'0',ZALO_ZCALL_LOG:'0',
+  Object.assign(env,{ZCALL_USE_PROXY:'0',ZCALL_PROXY_AUTOSTART:'0',ZALO_ZCALL_LOG:c.log===true?'1':'0',
     ZALO_ZCALL_NATIVE_SETUP:'1',ZALO_ZCALL_NATIVE_NETWORK:'1',ZALO_ZCALL_NATIVE_MEDIA:'1',
     ZALO_ZRTC_RUNTIME:c.runtime,ZALO_ZCALL_PCM_SOURCE:c.source,ZALO_ZCALL_PCM_SINK:c.sink,
     ZALO_ZCALL_AGENT_PATH:path.join(root,'native/qt-call-cap-linux/zcall-agent.js')});

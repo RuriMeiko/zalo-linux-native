@@ -74,5 +74,28 @@ const turn=()=>new Promise(resolve=>setImmediate(resolve));
   second.emit('close',{preventDefault(){}});
   assert.equal(await incoming.dialog('active',{signal,muteControl:true}),'end','Close during command/stage gap must not be lost');
   incoming.dispose();
+  // Error dialog: clicking 'end' (Đóng) must dispose/destroy the window
+  const errHost=create({BrowserWindow:Window,ipcMain,Notification});
+  const errDialog=errHost.dialog('error',{signal});await turn();
+  const errWin=windows.at(-1),errId=errWin.messages.at(-1)[1];
+  assert.equal(errWin.messages.at(-1)[2].kind,'error');
+  ipcMain.emit('linux-call-action',{sender:errWin.webContents},errId,'end');
+  assert.equal(await errDialog,true);
+  assert.ok(errWin.destroyed,'Error dialog click must dispose window');
+  assert.equal(ipcMain.listenerCount('linux-call-action'),0);
+  // Notify incoming: clicking 'end' (Từ chối) during preparation must resolve consent to false
+  const declHost=create({BrowserWindow:Window,ipcMain,Notification});
+  await declHost.notifyIncoming({video:false});
+  const declWin=windows.at(-1),declId=declWin.messages.at(-1)[1];
+  ipcMain.emit('linux-call-action',{sender:declWin.webContents},declId,'end');
+  const declConsent=declHost.dialog('consent',{signal});
+  assert.equal(await declConsent,false,'Decline during preparation must resolve consent to false');
+  declHost.dispose();
+  // Error dialog: window manager close (X) must dispose window
+  const errCloseHost=create({BrowserWindow:Window,ipcMain,Notification});
+  errCloseHost.dialog('error',{signal});await turn();
+  const errCloseWin=windows.at(-1);
+  errCloseWin.emit('close',{preventDefault(){}});
+  assert.ok(errCloseWin.destroyed,'Close button on error dialog must dispose window');
   console.log('PASS persistent call window: stage transitions, ACK state, scoped actions, duration, close, consent, cleanup');
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -308,6 +308,7 @@ function getNativeVideoSink() {
 let setupTransport=null, outgoingSetup=null, incomingAttempt=null;
 let nativeAppLocked=process.env.ZALO_ZCALL_APP_LOCKED==='1';
 function setupPhase(phase) {
+    log('phase', phase);
     if(process.env.ZALO_ZCALL_SCHEMA_LOG) {
         try {require('./signal-schema').record(process.env.ZALO_ZCALL_SCHEMA_LOG,
             {type:'update',command:'linux-native-setup',data:{phase}});} catch (_) {}

@@ -23,7 +23,9 @@ function setAvatar(url) {
   if(url)image.src=url;else image.removeAttribute('src');
 }
 function controls() {
+  const incoming=state?.kind==='consent',error=state?.kind==='error';
   for(const id of ['end','answer','mic'])get(id).disabled=busy;
+  if(incoming || error) get('end').disabled=false;
   get('mic').disabled=busy || !state?.muteControl;
   get('camera').disabled=busy || !state?.cameraControl;
 }
