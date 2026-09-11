@@ -1,0 +1,14 @@
+linker: Warning: failed to find generated linker configuration from "/linkerconfig/ld.config.txt"
+WARNING: linker: Warning: failed to find generated linker configuration from "/linkerconfig/ld.config.txt"
+HOST Linux 7.0.0-31-generic x86_64
+PASS dlopen RTLD_NOW: libzrtc constructors and relocations completed
+PASS APK Opus: 50 frames, 48000 decoded samples, 6552 encoded bytes, non-silent PCM
+SRTP init=0
+SRTP shutdown=0
+PASS native CallConfig constructor
+PASS native CallConfig destructor
+TRY native Peer constructor
+PASS native Peer constructor
+PASS native Peer idle state (voice=false, video=false)
+PASS native Peer destructor
+PASS native probe (no signaling or media devices exercised)

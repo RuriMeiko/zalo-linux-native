@@ -67,75 +67,17 @@ fi
 ---
 
 ### Step 4: Auto-Generate `launch.json`
-Run this one-line Node.js helper to automatically query PulseAudio/PipeWire for available microphones and speakers, check for camera devices, and write a valid `launch.json`:
+The native runtime is bundled directly inside `./runtime`. Run the included auto-configuration script to detect the current machine's audio/webcam hardware and write `launch.json`:
 
 ```bash
-node -e "
-import {execSync} from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
-
-const home = os.homedir();
-const appDir = process.cwd();
-const electronPath = path.join(home, '.local', 'electron-v22.3.27', 'electron');
-
-// 1. Detect microphone (PulseAudio source, ignoring .monitor playback outputs)
-let source = '';
-try {
-  const sources = execSync('pactl list sources short', {encoding: 'utf8'}).trim().split('\n');
-  for (const line of sources) {
-    const parts = line.split('\t');
-    const name = parts[1] || parts[0];
-    if (name && !name.endsWith('.monitor')) {
-      source = name;
-      break;
-    }
-  }
-} catch (e) {
-  console.warn('Unable to query sources with pactl:', e.message);
-}
-
-// 2. Detect speaker (PulseAudio sink)
-let sink = '';
-try {
-  const sinks = execSync('pactl list sinks short', {encoding: 'utf8'}).trim().split('\n');
-  if (sinks.length > 0) {
-    const parts = sinks[0].split('\t');
-    sink = parts[1] || parts[0];
-  }
-} catch (e) {
-  console.warn('Unable to query sinks with pactl:', e.message);
-}
-
-// 3. Detect camera
-const videoDevice = fs.existsSync('/dev/video0') ? '/dev/video0' : undefined;
-
-// 4. Runtime path (defaults to user runtime or recovery location)
-let runtime = path.join(home, 'zalo-native-recovery', 'mute-evidence-20260910', 'runtime');
-if (!fs.existsSync(runtime)) {
-  const alt = path.join(home, 'zalo-native-recovery', 'runtime');
-  if (fs.existsSync(alt)) runtime = alt;
-}
-
-const config = {
-  appDir: appDir,
-  electron: electronPath,
-  runtime: runtime,
-  source: source || 'alsa_input.pci-0000_00_1f.3.analog-stereo',
-  sink: sink || 'alsa_output.pci-0000_00_1f.3.analog-stereo',
-  noSandbox: true,
-  experimentalVideo: Boolean(videoDevice),
-  ...(videoDevice ? {videoDevice} : {}),
-  experimentalIncoming: true,
-  log: true
-};
-
-fs.writeFileSync('launch.json', JSON.stringify(config, null, 2) + '\n', {mode: 0o600});
-console.log('Generated launch.json successfully:');
-console.log(JSON.stringify(config, null, 2));
-"
+node scripts/auto-config.mjs
 ```
+*This script automatically:*
+- Detects the microphone from `pactl` (ignoring `.monitor` playback devices).
+- Detects the default speaker/headset from `pactl`.
+- Detects the webcam device (`/dev/video0`).
+- Points `runtime` to the bundled `./runtime` directory.
+- Generates a valid, private `launch.json` configuration for this machine.
 
 ---
 
