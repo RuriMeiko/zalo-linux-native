@@ -28,7 +28,9 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
     if(typeof message?.data?.data?.params!=='string' || Buffer.byteLength(message.data.data.params)>65536)
       throw new Error('Invalid incoming media intent');
     try {params=JSON.parse(message.data.data.params);}catch {throw new Error('Invalid incoming media intent');}
-    video=params?.video?.enable===1;
+    let ext;
+    try {ext=typeof params.extendData==='string'?JSON.parse(params.extendData):params.extendData;}catch{}
+    video=params?.video?.enable===1 && (ext?.callType===undefined || ext?.callType===1);
     const context={nativeLocalId,clientVersion,video};
     if(video && !videoEnabled)throw new Error('Incoming video disabled');
     decoded=video?decodeIncomingVideo(message,{...context,experimentalVideo:true}):decodeIncomingVoice(message,context);

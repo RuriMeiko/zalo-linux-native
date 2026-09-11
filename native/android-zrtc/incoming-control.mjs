@@ -43,8 +43,15 @@ function decodeIncoming(message,{nativeLocalId,clientVersion},video) {
   const localId=uint32(nativeLocalId,'verified local identity');
   if(uint32(data.uidTo,'uidTo')!==localId) throw new Error('Incoming recipient mismatch');
   if(uint32(params.id,'params.id')!==key.callId) throw new Error('Incoming call ID mismatch');
-  // Do not downgrade an unknown/video request into the voice-only engine.
-  if(params.video?.enable!==(video?1:0)) throw new Error('Incoming video or unknown media is unsupported');
+  let callType;
+  try {
+    const ext=typeof params.extendData==='string'?JSON.parse(params.extendData):params.extendData;
+    if(ext && typeof ext==='object' && Number.isInteger(ext.callType)) callType=ext.callType;
+  } catch {}
+  if(params.video?.enable!==0 && params.video?.enable!==1)
+    throw new Error('Incoming video or unknown media is unsupported');
+  const isIncomingVideo=params.video.enable===1 && (callType===undefined || callType===1);
+  if(video!==isIncomingVideo) throw new Error('Incoming video or unknown media is unsupported');
   const codecs=json(data.codec,'codec');
   if(!Array.isArray(codecs) || !codecs.length) throw new Error('Invalid incoming codec offer');
   const config={fromId:localId,toId:key.callerId,callId:key.callId,clientVersion,

@@ -422,7 +422,12 @@ function handleHostMessage(msg) {
             callActive=true;
             log('incoming request data:', JSON.stringify(data));
             let incomingVideo=false;
-            try {incomingVideo=JSON.parse(data.data?.params)?.video?.enable===1;}catch {}
+            try {
+              const p=JSON.parse(data.data?.params);
+              let ext;
+              try {ext=typeof p.extendData==='string'?JSON.parse(p.extendData):p.extendData;}catch{}
+              incomingVideo=p?.video?.enable===1 && (ext?.callType===undefined || ext?.callType===1);
+            }catch {}
             let announced;
             try {announced=getNativeCallUI().notifyIncoming({video:incomingVideo});}
             catch {announced=Promise.reject(new Error('Incoming notification unavailable'));}
