@@ -1,34 +1,30 @@
-name: Build AppImage
+name: Native release guard
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build:
+  verify-source:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          ref: latest
+          node-version: 22
 
-      - name: Install dependencies
-        run: sudo apt-get install -y wget unzip libfuse2
+      - name: Audit publication tree
+        run: node scripts/audit-publication.mjs
 
-      - name: Build AppImage
+      - name: Explain guarded binary packaging
         run: |
-          chmod +x build-appimage.sh
-          ./build-appimage.sh
-
-      - name: Upload AppImage to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.AppImage
+          echo "Binary upload is intentionally disabled."
+          echo "See NATIVE-PACKAGING.md and RELEASE-CHECKLIST.md."
