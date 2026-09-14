@@ -50,8 +50,12 @@ automatic default-device or `auto_null` fallback. Reconnect the configured
 devices before calling. `--check` remains strict and exits unsuccessfully while
 any selected device is unavailable. This is presence checking, not a media test.
 It does not prove call connectivity, renderer patch compatibility or camera
-support. Close an existing Zalo instance from the tray before launching; existing
-instances are rejected to avoid silently retaining old environment settings.
+support. A normal menu/launcher invocation first detects an existing primary
+instance and sends Electron's single-instance activation event without waiting
+for runtime hashing or device probes. The primary process restores, shows and
+focuses its own window. Use `--check` or fully quit Zalo before changing native
+configuration; activating an existing instance intentionally retains the
+environment with which that instance started.
 
 The launcher requires Node.js, Electron and a separately prepared runtime; it
 does not install packages or download binaries. `start.sh` now delegates to

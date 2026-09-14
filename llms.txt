@@ -66,59 +66,33 @@ fi
 
 ---
 
-### Step 4: Auto-Generate `launch.json`
-The native runtime is bundled directly inside `./runtime`. Run the included auto-configuration script to detect the current machine's audio/webcam hardware and write `launch.json`:
+### Step 4: Install or Update Zalo
+Quit an existing Zalo process from its tray, then run the one-command installer:
 
 ```bash
-node scripts/auto-config.mjs
+bash install.sh
 ```
-*This script automatically:*
+*The installer automatically:*
 - Detects the microphone from `pactl` (ignoring `.monitor` playback devices).
 - Detects the default speaker/headset from `pactl`.
 - Detects the webcam device (`/dev/video0`).
 - Points `runtime` to the bundled `./runtime` directory.
 - Generates a valid, private `launch.json` configuration for this machine.
+- Builds and verifies the new installation before replacing the old one.
+- Preserves the previous installation under `~/zalo-native-recovery/`.
+- Creates exactly one native menu entry named `Zalo` with the bundled Zalo icon.
 
 ---
 
-### Step 5: Validate Configuration Preflight
+### Step 5: Validate Configuration Preflight (Optional)
 ```bash
-bash start.sh launch.json --check
+bash "$HOME/.local/share/zalo/launch-installed.sh" --check
 ```
 *Expected result:* `PASS native runtime and configured device presence; no call or camera capture started`.
 
 ---
 
-### Step 6: Install to User Directory (`~/.local/share/zalo`)
-Install as an independent, manifest-verified deployment:
-
-```bash
-TARGET_DIR="$HOME/.local/share/zalo"
-
-# If previous target exists, ensure clean re-install or sync
-if [ -d "$TARGET_DIR" ]; then
-  echo "Installation directory $TARGET_DIR already exists."
-else
-  node scripts/install-native.mjs launch.json "$TARGET_DIR"
-fi
-
-# Verify installation manifest integrity
-node "$TARGET_DIR/scripts/verify-installation.mjs" "$TARGET_DIR" --require-generated
-```
-
----
-
-### Step 7: Create Desktop Menu Shortcut
-Register the application in the system desktop menu (GNOME, KDE, XFCE):
-
-```bash
-node scripts/register-desktop.mjs "$HOME/.local/share/zalo"
-```
-*Creates:* `~/.local/share/applications/zalo-native.desktop` with proper icon and launch script.
-
----
-
-### Step 8: Launching Zalo
+### Step 6: Launching Zalo
 ```bash
 # To start the installed application:
 bash "$HOME/.local/share/zalo/launch-installed.sh"

@@ -10,13 +10,15 @@ import {validateConfig,preflight} from './native-launch.mjs';
 import {applicationPayloadRoots,selectApplicationPayload} from './application-payload.mjs';
 const exec=promisify(execFile);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-export function installPlan({source,destination,home=homedir(),config,files}) {
+export function installPlan({source,destination,installedAppDir=destination,home=homedir(),config,files}) {
   const c=validateConfig(config);
   const under=(parent,child)=>{const r=path.relative(parent,child);return !!r && r!=='..' && !r.startsWith('../') && !path.isAbsolute(r);};
   for(const value of [source,home])if(typeof value!=='string' || !path.isAbsolute(value) || path.normalize(value)!==value || /[\0\r\n]/.test(value))
     throw new Error('Source and home must be canonical absolute paths');
   if(!path.isAbsolute(destination) || path.normalize(destination)!==destination || /[\0\r\n]/.test(destination) ||
-    !under(home,destination) || destination===source || under(source,destination) || under(destination,source))
+    !under(home,destination) || destination===source || under(source,destination) || under(destination,source) ||
+    !path.isAbsolute(installedAppDir) || path.normalize(installedAppDir)!==installedAppDir || /[\0\r\n]/.test(installedAppDir) ||
+    !under(home,installedAppDir) || installedAppDir===source || under(source,installedAppDir) || under(installedAppDir,source))
     throw new Error('Choose a new installation directory inside home and outside the source checkout');
   if(!Array.isArray(files) || !files.length || files.some(f=>typeof f!=='string' || !f || f.includes('\\') ||
     f.split('/').some(p=>!p || p==='.' || p==='..') || path.isAbsolute(f) || /[\0\r\n]/.test(f)))
@@ -25,7 +27,7 @@ export function installPlan({source,destination,home=homedir(),config,files}) {
   for(const required of ['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/verify-installation.mjs','native/qt-call-cap-linux/zcall-agent.js'])
     if(!selected.includes(required))throw new Error('Incomplete application payload');
   if(new Set(selected).size!==selected.length)throw new Error('Duplicate payload path');
-  return {source,destination,home,files:selected,config:{...c,appDir:destination}};
+  return {source,destination,installedAppDir,home,files:selected,config:{...c,appDir:installedAppDir}};
 }
 // No overwrite, profile migration, dependency download, or global desktop writes.
 // Interrupted directories are retained for inspection, never recursively erased.
@@ -71,13 +73,21 @@ export async function copyInstallation(input) {
   } catch(error) {throw new Error('Installation incomplete; destination retained for inspection', {cause:error});}
 }
 async function main() {
-  const args=process.argv.slice(2),check=args.includes('--check'),pos=args.filter(a=>a!=='--check');
-  if(pos.length!==2 || pos.some(a=>a.startsWith('--')) || args.filter(a=>a==='--check').length>1)
-    throw new Error('Usage: node scripts/install-native.mjs CONFIG_JSON NEW_HOME_DIRECTORY [--check]');
+  const args=process.argv.slice(2),pos=[];let check=false,installedAppDir;
+  for(let i=0;i<args.length;i++) {
+    if(args[i]==='--check') {if(check)throw new Error('Duplicate --check');check=true;}
+    else if(args[i]==='--app-dir') {
+      if(installedAppDir!==undefined || !args[i+1] || args[i+1].startsWith('--'))throw new Error('Invalid --app-dir');
+      installedAppDir=args[++i];
+    } else pos.push(args[i]);
+  }
+  if(pos.length!==2 || pos.some(a=>a.startsWith('--')))
+    throw new Error('Usage: node scripts/install-native.mjs CONFIG_JSON NEW_HOME_DIRECTORY [--app-dir FINAL_HOME_DIRECTORY] [--check]');
   const config=validateConfig(JSON.parse(await readFile(pos[0],'utf8')));
   const source=await realpath(root);
   const result=await exec('git',['ls-files','-z','--',...applicationPayloadRoots],{cwd:source,maxBuffer:4*1024*1024});
-  const plan=installPlan({source,destination:pos[1],config,files:result.stdout.split('\0').filter(Boolean)});
+  const plan=installPlan({source,destination:pos[1],installedAppDir:installedAppDir || pos[1],config,
+    files:result.stdout.split('\0').filter(Boolean)});
   await inspectInstallation(plan);
   await preflight({...config,appDir:source});
   if(check){console.log(`PASS install preflight: ${plan.files.length} tracked files; no files changed`);return;}

@@ -61,7 +61,7 @@ a new directory; the verifier deliberately will not pretend they have complete
 coverage. This mechanism detects accidental/local payload changes, not a hostile
 attacker able to replace both the verifier and manifest.
 
-No menu shortcut or updater is installed. The app retains its existing profile
+The low-level installer does not create a menu shortcut or updater. The app retains its existing profile
 behavior, so running another copy is not an isolated second account. Do not
 launch it concurrently with your current app to test installation.
 
@@ -96,10 +96,11 @@ node scripts/register-desktop.mjs /home/YOU/zalo-installed --check
 node scripts/register-desktop.mjs /home/YOU/zalo-installed
 ```
 
-This creates only `~/.local/share/applications/zalo-linux-native.desktop` and
+This creates only `~/.local/share/applications/zalo.desktop` and
 does not launch the app. It uses the installation's `launch-installed.sh`, so
 the launcher uses the absolute Node executable pinned at install time;
-Electron/runtime remain external. The generic `internet-chat` icon follows the desktop icon theme.
+Electron/runtime remain external. The visible name is `Zalo` and the icon is
+the bundled `pc-dist/zalo.png` from the verified installation.
 Before either mode, the complete installed payload/config/launcher manifest is
 verified. `--check` accepts an existing menu entry only when its canonical file
 and contents exactly match the desired entry. Write mode never overwrites an

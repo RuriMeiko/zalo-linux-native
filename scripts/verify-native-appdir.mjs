@@ -38,7 +38,7 @@ export async function verifyNativeAppDir(packageRoot) {
       throw new Error('Invalid native package manifest entry');
     seen.add(entry.file);
   }
-  for(const required of ['AppRun','zalo-linux-native.desktop','zalo-linux-native.png','electron/electron','electron/LICENSE',
+  for(const required of ['AppRun','zalo.desktop','zalo.png','electron/electron','electron/LICENSE',
     'runtime/bionic/linker64','runtime/apk/lib/x86_64/libzrtc.so','runtime/results/zrtc-worker','runtime/results/pcm-host',
     'tools/ffmpeg','app/bootstrap.js','app/package.json','app/scripts/packaged-launch.mjs','app/scripts/native-launch.mjs'])
     if(!seen.has(required))throw new Error('Incomplete native package manifest');

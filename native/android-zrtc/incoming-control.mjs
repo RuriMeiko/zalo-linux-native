@@ -24,7 +24,7 @@ function json(value,field) {
 export function incomingControlKey(message) {
   const control=object(message?.data,'control');
   if(message.type!=='control' || control.act_type!=='voip' ||
-     !['request','cancel','endcall'].includes(control.act))
+     !['request','answer','cancel','endcall'].includes(control.act))
     throw new TypeError('Unsupported incoming control');
   const data=object(control.data,'data');
   return {action:control.act,callId:uint32(data.callId,'callId'),callerId:uint32(data.uidFrom,'uidFrom')};

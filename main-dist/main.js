@@ -110043,7 +110043,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                 Dt = he.get("zalo_installed");
             Dt && 1 !== Dt || (he.set("zalo_installed", Date.now()), vt.onZaloInstalled());
             he.get("shortcut-screenshot");
-            const Ot = p.createFromPath(c.join(te(), "favicon-96x96.v1.png")),
+            const Ot = p.createFromPath(c.join(te(), "zalo.png")),
                 Nt = {
                     shortcut_screenshot: "shortcut-screenshot",
                     shortcut_screenshot_withoutZ: "shortcut-screenshot-withoutZ"
@@ -142243,7 +142243,13 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                                     r && !r.isDestroyed() && r.setOpacity(1)
                                 }), 100)
                             }
-                        else r.show();
+                        else {
+                            if (r.isMinimized()) r.restore();
+                            r.show();
+                            r.focus();
+                            try { r.setAlwaysOnTop(!0, "normal"); r.moveTop(); setTimeout((() => { try { r && (r.setAlwaysOnTop(!1), r.focus()); } catch(e){} }), 100); } catch(e){}
+                            try { r.webContents && r.webContents.send("show-from-tray"); } catch(e){}
+                        }
                         An.receiveArguments(t)
                     } else An.receiveArguments(t);
                     var i

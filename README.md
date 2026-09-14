@@ -123,26 +123,28 @@ bash start.sh launch.json --check
 bash start.sh launch.json
 ```
 
-#### Cách 2: Cài đặt bản riêng biệt vào thư mục người dùng (`~/.local/share/zalo`)
-Sử dụng script cài đặt tự động để sao chép payload và tạo launcher độc lập:
+#### Cách 2: Cài đặt tự động vào máy
+Script cài đặt sẽ tự nhận diện thiết bị, tải đúng Electron 22.3.27 khi cần,
+build bản có manifest, thay bản cũ bằng một bản backup có thể phục hồi và đăng
+ký đúng một mục menu tên **Zalo** với icon Zalo:
 ```bash
-# 1. Kiểm tra preflight:
-node scripts/install-native.mjs launch.json ~/.local/share/zalo --check
-
-# 2. Thực hiện cài đặt:
-node scripts/install-native.mjs launch.json ~/.local/share/zalo
-
-# 3. Khởi chạy Zalo đã cài đặt:
-bash ~/.local/share/zalo/launch-installed.sh
+git clone https://github.com/RuriMeiko/zalo-linux-native.git
+cd zalo-linux-native
+bash install.sh
 ```
+
+Khi cập nhật, thoát Zalo từ tray rồi chạy lại `bash install.sh`. Bản cũ được
+chuyển vào `~/zalo-native-recovery/`, không đụng tới hồ sơ đăng nhập.
 
 ---
 
-### 4. Đăng ký Menu ứng dụng trên Desktop (Tùy chọn)
-Để hiển thị biểu tượng Zalo trong menu ứng dụng của hệ điều hành (GNOME, KDE, XFCE...):
+### 4. Đăng ký menu thủ công (Tùy chọn)
+`install.sh` đã làm bước này. Nếu dùng installer cấp thấp, có thể đăng ký lại:
 ```bash
 node scripts/register-desktop.mjs ~/.local/share/zalo
 ```
+Nó tạo duy nhất `~/.local/share/applications/zalo.desktop`, tên hiển thị
+**Zalo**, và dùng `pc-dist/zalo.png` trong bản cài.
 
 ---
 

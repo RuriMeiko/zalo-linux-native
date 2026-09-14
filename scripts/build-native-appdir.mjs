@@ -115,7 +115,7 @@ export async function inspectNativeAppDir({config,destination,home=homedir(),sou
     items.push({source:sourceFile,file,mode:0o755});
   }
   items.push({source:ffmpeg,file:'tools/ffmpeg',mode:0o755});
-  items.push({source:path.join(source,'pc-dist/favicon-96x96.v1.png'),file:'zalo-linux-native.png',mode:0o644});
+  items.push({source:path.join(source,'pc-dist/zalo.png'),file:'zalo.png',mode:0o644});
 
   const duplicates=new Set(),seen=new Set();
   for(const item of items){if(seen.has(item.file))duplicates.add(item.file);seen.add(item.file);}
@@ -130,10 +130,10 @@ export async function inspectNativeAppDir({config,destination,home=homedir(),sou
   }
 
   const appRun='#!/bin/bash\nset -euo pipefail\nZALO_PACKAGE_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)"\nexport ELECTRON_RUN_AS_NODE=1\nexec "$ZALO_PACKAGE_ROOT/electron/electron" "$ZALO_PACKAGE_ROOT/app/scripts/packaged-launch.mjs" "$ZALO_PACKAGE_ROOT" "$@"\n';
-  const desktop='[Desktop Entry]\nName=Zalo Linux Native\nComment=Unofficial native Linux development port of Zalo\nExec=AppRun\nIcon=zalo-linux-native\nTerminal=false\nType=Application\nCategories=Network;InstantMessaging;\nStartupWMClass=Zalo\n';
+  const desktop='[Desktop Entry]\nName=Zalo\nComment=Zalo Messenger\nExec=AppRun\nIcon=zalo\nTerminal=false\nType=Application\nCategories=Network;InstantMessaging;\nStartupWMClass=Zalo\n';
   const generated=[
     {file:'AppRun',contents:appRun,mode:0o755,size:Buffer.byteLength(appRun),sha256:hashText(appRun)},
-    {file:'zalo-linux-native.desktop',contents:desktop,mode:0o644,size:Buffer.byteLength(desktop),sha256:hashText(desktop)},
+    {file:'zalo.desktop',contents:desktop,mode:0o644,size:Buffer.byteLength(desktop),sha256:hashText(desktop)},
   ];
   return {source,destination,config:c,electronVersion,checked,generated};
 }

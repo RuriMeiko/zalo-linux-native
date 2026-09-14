@@ -8,7 +8,7 @@ import {verifyNativeAppDir} from './verify-native-appdir.mjs';
 const parent=path.join(homedir(),'zalo-native-recovery');await mkdir(parent,{recursive:true});
 const fixture=await mkdtemp(path.join(parent,'native-appdir-fixture-'));
 const definitions=[
-  ['AppRun','launcher',0o755],['zalo-linux-native.desktop','desktop',0o644],['zalo-linux-native.png','png',0o644],
+  ['AppRun','launcher',0o755],['zalo.desktop','desktop',0o644],['zalo.png','png',0o644],
   ['electron/electron','electron',0o755],['electron/LICENSE','license',0o644],
   ['electron/resources/default_app.asar','synthetic asar container',0o644],
   ['runtime/bionic/linker64','linker',0o755],['runtime/apk/lib/x86_64/libzrtc.so','zrtc',0o644],

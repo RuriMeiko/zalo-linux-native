@@ -5,11 +5,20 @@ const assert = require('node:assert/strict');
 const file = path.join(__dirname, '../pc-dist/linux-extras/viewer.js');
 const source = fs.readFileSync(file, 'utf8');
 const loader = fs.readFileSync(path.join(__dirname, '../pc-dist/linux-extras/loader.js'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '../pc-dist/linux-extras/viewer.css'), 'utf8');
 for (const html of ['compact-app.html','popup-viewer.html'])
-  assert.ok(fs.readFileSync(path.join(__dirname, '../pc-dist', html), 'utf8').includes('<script src="linux-extras/loader.js"></script>'),
+  assert.ok(fs.readFileSync(path.join(__dirname, '../pc-dist', html), 'utf8').includes('<script src="linux-extras/loader.js?v=20260913-1"></script>'),
     `${html} must load viewer actions directly`);
 assert.ok(loader.includes('.media-viewer__footer action-group'));
+assert.ok(loader.includes("const version = '20260913-1'"));
+assert.ok(loader.includes("element.src = resource(name)"));
+assert.ok(loader.includes("css.href = resource('viewer.css')"));
 assert.ok(source.includes('cont.querySelector("action-group, .action-group")'));
+for (const nativeMetric of ['width: 32px','height: 32px','padding: 0','border-radius: 6px'])
+  assert.ok(css.includes(nativeMetric), `Viewer actions must retain native ${nativeMetric}`);
+for (const nativeState of ['--button-tertiary-neutral-normal','--button-tertiary-neutral-hover','--button-tertiary-neutral-pressed'])
+  assert.ok(css.includes(nativeState), `Viewer actions must use native token ${nativeState}`);
+assert.ok(!/\.zpf-vbtn[^}]*background[^;]*!important/s.test(css), 'Native toolbar hover must be allowed to win');
 const cut = source.indexOf('  // src/index.js');
 assert.ok(cut > 0);
 let locked = false, removed = 0, printed = 0, iframe, image;

@@ -47,7 +47,11 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     failure??=new Error('Incoming native media failed');cancel();
   };
   const control=event=>{
-    if(!['answer_ack','cancel','endcall'].includes(event?.act))return;
+    // The desktop control stream broadcasts a successful `answer` to the
+    // recipient's other signed-in devices.  For this incoming owner that is a
+    // terminal remote action, just like cancel/endcall; our own accepted path
+    // receives `answer_ack` instead.
+    if(!['answer','answer_ack','cancel','endcall'].includes(event?.act))return;
     const envelope={type:'control',data:event};
     // An unrelated malformed control must not tear down this call.
     if(event.act!=='answer_ack') {

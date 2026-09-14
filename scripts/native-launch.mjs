@@ -101,7 +101,7 @@ export function isRunningApp(cmdline,executable,appDir) {
   const options=title.slice(executable.length+1,-appDir.length-1);
   return !options || options.split(' ').every(a=>/^--[A-Za-z0-9-]+(?:=[^\s]+)?$/.test(a) && !a.startsWith('--type='));
 }
-async function rejectExistingApp(appDir) {
+export async function findRunningApp(appDir) {
   for(const pid of await readdir('/proc')) {
     if(!/^\d+$/.test(pid)) continue;
     let cmdline,executable;
@@ -110,21 +110,87 @@ async function rejectExistingApp(appDir) {
     }
     catch {continue;} // exited process or inaccessible other-user process
     if(isRunningApp(cmdline,executable,appDir))
-      throw new Error('Zalo is already running; quit it from the tray before applying native configuration');
+      return Number(pid);
   }
+  return null;
 }
-export async function runNativeLaunch(config,{check=false}={}) {
+export function parseKdeWindowMatch(output) {
+  if(typeof output!=='string') return null;
+  // KWin's runner returns both ordinary search hits and running windows. Only
+  // accept the exact Zalo window tuple; never activate a terminal/document
+  // merely because its title also contains "Zalo".
+  const match=output.match(/"(0_\{[0-9a-fA-F-]{36}\})",\s*"Zalo",\s*"zalo"/);
+  return match?.[1] || null;
+}
+export async function activateKdeWindow({desktop=process.env.XDG_CURRENT_DESKTOP,run=exec}={}) {
+  if(typeof run!=='function')throw new TypeError('Invalid KDE window activator');
+  if(typeof desktop!=='string' || !/(?:^|:)KDE(?:$|:)/i.test(desktop))return false;
+  try {
+    const result=await run('qdbus6',['--literal','org.kde.KWin','/WindowsRunner',
+      'org.kde.krunner1.Match','Zalo'],{timeout:1500,maxBuffer:256*1024});
+    const matchId=parseKdeWindowMatch(result.stdout);
+    if(!matchId)return false;
+    await run('qdbus6',['org.kde.KWin','/WindowsRunner','org.kde.krunner1.Run',matchId,''],
+      {timeout:1500,maxBuffer:64*1024});
+    return true;
+  } catch {return false;}
+}
+export async function activateExistingApp(config,{launch=spawn,settleMs=750,activateDesktop=activateKdeWindow}={}) {
+  if(typeof launch!=='function' || typeof activateDesktop!=='function' ||
+      !Number.isInteger(settleMs) || settleMs<1 || settleMs>5000)
+    throw new TypeError('Invalid existing-instance activator');
+  const {executable,args:electronArgs,env}=launchSpec(config);
+  // Electron's single-instance event is the desktop-independent activation
+  // path. The existing main process restores, shows and focuses its own real
+  // BrowserWindow, avoiding compositor-specific DBus/wmctrl races.
+  try {
+    const notified=await new Promise(resolve=>{
+      let child,done=false,timer;
+      const finish=value=>{if(done)return;done=true;clearTimeout(timer);resolve(value);};
+      try {child=launch(executable,electronArgs,{env,stdio:'ignore'});}
+      catch {finish(false);return;}
+      child.once('error',()=>finish(false));
+      child.once('exit',()=>finish(true));
+      child.unref?.();
+      // If the previous owner exited between detection and launch, this child
+      // becomes the replacement app. Never kill it merely because it stayed
+      // alive; detach the short-lived menu launcher instead.
+      timer=setTimeout(()=>finish(true),settleMs);
+    });
+    if(!notified)return false;
+    // Electron 22 can deliver `second-instance` yet leave a minimized Wayland
+    // surface minimized. KWin's own runner supplies the compositor activation
+    // token and reliably de-minimizes/focuses it. This is a best-effort KDE
+    // supplement; GNOME/X11 and systems without qdbus keep the Electron path.
+    await activateDesktop();
+    return true;
+  } catch {return false;}
+}
+export async function runNativeLaunch(config,{check=false}={},
+  {findApp=findRunningApp,activateApp=activateExistingApp,runPreflight=preflight,launch=spawn}={}) {
   if(typeof check!=='boolean')throw new TypeError('check must be boolean');
+  if(typeof findApp!=='function' || typeof activateApp!=='function' ||
+    typeof runPreflight!=='function' || typeof launch!=='function')throw new TypeError('Invalid launcher dependencies');
   const c=validateConfig(config);
-  const warnings=await preflight(c,{requireDevices:check});
+  // Menu activation must not wait for runtime hashing or Pulse/V4L2 probes.
+  // A running app owns its already-open resources and only needs the standard
+  // Electron second-instance notification.
+  if(!check) {
+    const existingPid=await findApp(c.appDir);
+    if(existingPid) {
+      if(!await activateApp(c))throw new Error('Unable to activate the running Zalo window');
+      console.log('Zalo is already running; activated existing window.');
+      return null;
+    }
+  }
+  const warnings=await runPreflight(c,{requireDevices:check});
   if(check) {console.log('PASS native runtime and configured device presence; no call or camera capture started');return null;}
-  await rejectExistingApp(c.appDir);
   for(const warning of warnings)console.warn(`Call device warning: ${warning}. Reconnect the configured device before calling; selection unchanged.`);
   const {executable,args:electronArgs,env}=launchSpec(c);
   console.log(c.experimentalVideo?'Starting experimental native voice/video; end-to-end video acceptance remains unverified.':
     'Starting experimental native voice; video is disabled.');
   if(c.noSandbox) console.warn('Warning: Electron sandbox explicitly disabled by configuration.');
-  const child=spawn(executable,electronArgs,{env,stdio:'inherit'});
+  const child=launch(executable,electronArgs,{env,stdio:'inherit'});
   for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));
   child.on('error',()=>{console.error('Unable to start Electron');process.exitCode=1;});
   child.on('exit',(code,signal)=>{process.exitCode=code ?? (signal?1:0);});

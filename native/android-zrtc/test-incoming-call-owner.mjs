@@ -8,6 +8,7 @@ const params={id:789,protocol:1,sessId:'fixture',settings:{},zrtc_config:{},rtpI
 const message={type:'control',data:{act_type:'voip',act:'request',data:{uidFrom:'456',uidTo:'123',
   callId:'789',codec,params:JSON.stringify(params)}}};
 const ended={act_type:'voip',act:'endcall',data:{uidFrom:'456',callId:'789'}};
+const answeredElsewhere={act_type:'voip',act:'answer',data:{uidFrom:'456',callId:'789',status:'0'}};
 const defer=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),resolve};};
 function fixture() {
   const events=[],signals=[];
@@ -62,6 +63,23 @@ function fixture() {
   f.transport.emit('control',ended);
   await rejected;late.resolve(true);await Promise.resolve();
   assert.ok(!f.events.includes(402));f.clean();
+}
+for(const terminal of [answeredElsewhere,ended]) {
+  const f=fixture(),entered=defer(),late=defer();
+  const running=f.run({requestConsent:()=>{entered.resolve();return late.promise;}});
+  const canceled=assert.rejects(running,/canceled/);
+  await entered.promise;
+  // A stale answer for another call or caller must leave this popup intact.
+  f.transport.emit('control',{...terminal,data:{...terminal.data,callId:'790'}});
+  f.transport.emit('control',{...terminal,data:{...terminal.data,uidFrom:'457'}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.events.filter(x=>x==='stop').length,0);
+  f.transport.emit('control',terminal);await canceled;
+  late.resolve(true);await Promise.resolve();
+  assert.ok(!f.events.includes(402));
+  assert.ok(!f.events.includes(405),'do not decline a call answered/canceled remotely');
+  assert.ok(!f.events.includes(409),'do not echo a remote terminal action');
+  f.clean();
 }
 {
   const f=fixture(),entered=defer(),join=defer(),aborted=defer();

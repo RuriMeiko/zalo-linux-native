@@ -11,7 +11,8 @@ export function desktopEntry(installation) {
   // Exec quoting, followed by desktop string escaping. No shell is invoked.
   const executable=path.join(installation,'launch-installed.sh');
   const quoted=executable.replace(/["`$\\]/g,character=>'\\'+character).replace(/\\/g,'\\\\');
-  return `[Desktop Entry]\nType=Application\nVersion=1.0\nName=Zalo Linux Native\nComment=Independent Linux port of Zalo\nExec="${quoted}"\nIcon=internet-chat\nTerminal=false\nCategories=Network;InstantMessaging;\nStartupNotify=false\n`;
+  const icon=path.join(installation,'pc-dist/zalo.png');
+  return `[Desktop Entry]\nType=Application\nVersion=1.0\nName=Zalo\nComment=Zalo Messenger\nExec="${quoted}"\nIcon=${icon}\nTerminal=false\nCategories=Network;InstantMessaging;\nStartupNotify=true\nStartupWMClass=Zalo\n`;
 }
 export async function registerDesktop(installation,{home=homedir(),check=false}={}) {
   const contents=desktopEntry(installation);
@@ -21,7 +22,7 @@ export async function registerDesktop(installation,{home=homedir(),check=false}=
   await verifyInstallation(installation,{requireGenerated:true});
   const directory=path.join(home,'.local/share/applications');
   if(await realpath(directory)!==directory)throw new Error('Applications directory must exist without symlink traversal');
-  const target=path.join(directory,'zalo-linux-native.desktop');
+  const target=path.join(directory,'zalo.desktop');
   try {
     const info=await lstat(target);
     if(check && info.isFile() && await realpath(target)===target && await readFile(target,'utf8')===contents)return target;

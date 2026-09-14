@@ -416,7 +416,7 @@ function handleHostMessage(msg) {
     if(setupTransport && type==='control') {
         log('CONTROL MSG RECEIVED:', JSON.stringify(msg));
         setupTransport.receive(msg);
-        if(incomingAttempt && data?.act_type==='voip' && ['cancel','endcall'].includes(data.act) &&
+        if(incomingAttempt && data?.act_type==='voip' && ['answer','cancel','endcall'].includes(data.act) &&
             String(data.data?.callId)===incomingAttempt.callId && String(data.data?.uidFrom)===incomingAttempt.callerId)
             incomingAttempt.controller.abort();
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&

@@ -13,11 +13,14 @@ const files=['bootstrap.js','package.json','scripts/native-launch.mjs','scripts/
 const args={source,destination,home,config,files};
 const p=installPlan(args);
 assert.equal(p.config.appDir,destination);assert.equal(config.appDir,source);
+assert.equal(installPlan({...args,destination:'/home/test/staging',installedAppDir:destination}).config.appDir,destination);
 assert.ok(p.files.includes('CREDITS.md'));
 assert.ok(p.files.includes('PUBLICATION-AUDIT-ALLOWLIST.json'));
 for(const excluded of ['reverse-engineering/account-capture.json','.git/config','launch.json'])assert.ok(!p.files.includes(excluded));
 for(const bad of [home,source,source+'/nested','/tmp/install','relative','/home/test/../test/installed'])
   assert.throws(()=>installPlan({...args,destination:bad}));
+for(const bad of [home,source,source+'/nested','/tmp/install','relative','/home/test/../test/installed'])
+  assert.throws(()=>installPlan({...args,installedAppDir:bad}));
 for(const file of ['../escape','/absolute','native/../secret','pc-dist//image','native\\secret'])
   assert.throws(()=>installPlan({...args,files:[...files,file]}));
 assert.throws(()=>installPlan({...args,files:['package.json']}),/Incomplete/);

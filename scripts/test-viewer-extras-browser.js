@@ -13,6 +13,12 @@
   const button = title => [...document.querySelectorAll('button')].find(b => b.title === title || b.textContent === title);
   button('Open fixture image').click();
   await wait(() => button('Vẽ / chú thích'));
+  for (const action of ['Vẽ / chú thích', 'In ảnh (Ctrl+P)']) {
+    const element = button(action), style = getComputedStyle(element), icon = element.querySelector('svg').getBoundingClientRect();
+    check(style.width === '32px' && style.height === '32px', action + ' uses native 32px action geometry');
+    check(style.padding === '0px' && style.borderRadius === '6px', action + ' uses native padding/radius');
+    check(icon.width === 20 && icon.height === 20, action + ' uses native medium icon scale');
+  }
   check(window.fabric.version === '5.3.0', 'Dependency version');
   button('Vẽ / chú thích').click();
   await wait(() => button('Copy ảnh') && !button('Copy ảnh').disabled);
@@ -61,6 +67,6 @@
   document.querySelector('#titleBar').classList.remove('locked');
   check(window.fixtureErrors.length === 0, JSON.stringify(window.fixtureErrors));
   return {pass: true, tested: ['lazy loading', 'real Fabric rectangle', 'pixel-exact undo/redo', 'recolor undo/redo',
-    'annotated original-resolution print preview', 'lock cleanup', 'locked open guard'],
+    'native viewer action geometry', 'annotated original-resolution print preview', 'lock cleanup', 'locked open guard'],
     notTested: ['real Zalo account', 'OS clipboard', 'native printer dialog']};
 })();

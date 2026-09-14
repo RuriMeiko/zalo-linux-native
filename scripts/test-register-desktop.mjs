@@ -7,6 +7,8 @@ import {createHash} from 'node:crypto';
 for(const bad of ['relative','/home/u/a\nb','/home/u/%f','/home/u/x=y','/home/u/../x'])assert.throws(()=>desktopEntry(bad));
 assert.ok(desktopEntry('/home/u/app dir').includes('Exec="/home/u/app dir/launch-installed.sh"'));
 assert.ok(desktopEntry('/home/u/$x').includes('\\\\$x'));
+assert.match(desktopEntry('/home/u/app dir'),/\nName=Zalo\n/);
+assert.ok(desktopEntry('/home/u/app dir').includes('Icon=/home/u/app dir/pc-dist/zalo.png'));
 const parent=path.join(homedir(),'zalo-native-recovery');await mkdir(parent,{recursive:true});
 const fixture=await mkdtemp(path.join(parent,'desktop-fixture-'));
 const installation=path.join(fixture,'installed app');
@@ -25,7 +27,7 @@ await writeFile(path.join(installation,'INSTALL-COMPLETE.json'),JSON.stringify({
   externalRuntime:true,generatedIntegrity:true,files:entries}));
 await writeFile(path.join(installation,'bootstrap.js'),'tampered');
 await assert.rejects(registerDesktop(installation,{home:fixture,check:true}),/bootstrap\.js/);
-await assert.rejects(lstat(path.join(fixture,'.local/share/applications/zalo-linux-native.desktop')),{code:'ENOENT'});
+await assert.rejects(lstat(path.join(fixture,'.local/share/applications/zalo.desktop')),{code:'ENOENT'});
 await writeFile(path.join(installation,'bootstrap.js'),'bootstrap');
 const target=await registerDesktop(installation,{home:fixture,check:true});
 await assert.rejects(lstat(target),{code:'ENOENT'});

@@ -14,6 +14,7 @@ const context={nativeLocalId:123,clientVersion:'681'};
 const withParams=p=>({...request,data:{...request.data,data:{...request.data.data,params:JSON.stringify({...params,...p})}}});
 const withData=p=>({...request,data:{...request.data,data:{...request.data.data,...p}}});
 const cancel=(callId='789',uidFrom='456')=>({type:'control',data:{act_type:'voip',act:'cancel',data:{callId,uidFrom}}});
+const answeredElsewhere=(callId='789',uidFrom='456')=>({type:'control',data:{act_type:'voip',act:'answer',data:{callId,uidFrom}}});
 const mapped=decodeIncomingVoice(request,context);
 assert.equal(mapped.config.fromId,123);assert.equal(mapped.config.toId,456);
 assert.equal(mapped.config.audioConfig,codec);assert.equal(mapped.config.rtpIP,params.rtpIP);
@@ -33,6 +34,7 @@ for(const p of [{params:'{"secret-session":'}, {params:' '.repeat(65537)}, {code
 }
 assert.throws(()=>decodeIncomingVoice(withParams({changeZRTP:{enable:1}}),context),/switching/);
 assert.equal(incomingControlKey(cancel()).action,'cancel');
+assert.equal(incomingControlKey(answeredElsewhere()).action,'answer');
 
 const worker=await NativeWorker.start(process.argv[2]);
 let sent=0;

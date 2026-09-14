@@ -45,7 +45,7 @@ The output contains:
 - `runtime/`: Bionic libraries, APK x86_64 libraries, platform shims and the
   `zrtc-worker`/`pcm-host` executables;
 - `tools/ffmpeg`: the exact executable selected by the builder;
-- `AppRun`, a desktop entry, icon and `PACKAGE-COMPLETE.json`.
+- `AppRun`, `zalo.desktop`, `zalo.png` and `PACKAGE-COMPLETE.json`.
 
 Every copied/generated file has a size, mode and SHA-256 entry. Both the separate
 verifier and `AppRun` verify all entries before preflight or launch. Electron's

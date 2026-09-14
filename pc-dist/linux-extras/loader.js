@@ -3,11 +3,17 @@
   if (window.__zaloLinuxViewerLoader) return;
   window.__zaloLinuxViewerLoader = true;
   const base = new URL('.', document.currentScript.src);
+  const version = '20260913-1';
+  const resource = name => {
+    const url = new URL(name, base);
+    url.searchParams.set('v', version);
+    return url.href;
+  };
   let loading = false;
   function script(name) {
     return new Promise((resolve, reject) => {
       const element = document.createElement('script');
-      element.src = new URL(name, base).href;
+      element.src = resource(name);
       element.onload = resolve;
       element.onerror = () => {element.remove(); reject(new Error('Viewer resource unavailable'));};
       document.head.appendChild(element);
@@ -19,7 +25,7 @@
     observer.disconnect();
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = new URL('viewer.css', base).href;
+    css.href = resource('viewer.css');
     document.head.appendChild(css);
     try {
       // Keep Zalo's own globals intact if another Fabric version is present.

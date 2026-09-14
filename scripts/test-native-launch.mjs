@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {validateConfig,launchSpec,isRunningApp,inspectCallDevices,preflight} from './native-launch.mjs';
+import {EventEmitter} from 'node:events';
+import {validateConfig,launchSpec,isRunningApp,parseKdeWindowMatch,activateKdeWindow,activateExistingApp,runNativeLaunch,inspectCallDevices,preflight} from './native-launch.mjs';
 const electron='/opt/electron/electron',app='/opt/test app';
 for(const cmd of [`${electron}\0--no-sandbox\0${app}\0`,`${electron} --no-sandbox ${app}\0`,`${electron} ${app}\0`])
   assert.equal(isRunningApp(cmd,electron,app),true);
@@ -45,7 +46,45 @@ for(const key of ['ELECTRON_RUN_AS_NODE','LD_PRELOAD','ZALO_ZCALL_CAPTURE','ZALO
   assert.equal(Object.hasOwn(spec.env,key),false);
 assert.deepEqual(launchSpec({...config,noSandbox:true,cdpPort:9222},{}).args,
   ['--no-sandbox','--remote-debugging-address=127.0.0.1','--remote-debugging-port=9222',config.appDir]);
-console.log('PASS portable native launch: strict config, Bluetooth names, no proxy/capture inheritance, explicit sandbox/CDP');
+{
+  const kdeFixture='[Argument: a(sssida{sv}) [Argument: (sssida{sv}) "0_{11111111-2222-3333-4444-555555555555}", "Zalo notes", "konsole", 100, 0.9], [Argument: (sssida{sv}) "0_{73164c4f-24d4-41e9-a384-0f014dbd50f8}", "Zalo", "zalo", 100, 0.8]]';
+  assert.equal(parseKdeWindowMatch(kdeFixture),'0_{73164c4f-24d4-41e9-a384-0f014dbd50f8}');
+  assert.equal(parseKdeWindowMatch('"0_{73164c4f-24d4-41e9-a384-0f014dbd50f8}", "Zalo notes", "konsole"'),null);
+  const kdeCalls=[];
+  assert.equal(await activateKdeWindow({desktop:'KDE',run:async(command,args,options)=>{
+    kdeCalls.push([command,args,options]);
+    return {stdout:kdeCalls.length===1?kdeFixture:''};
+  }}),true);
+  assert.deepEqual(kdeCalls.map(call=>call[1]),[
+    ['--literal','org.kde.KWin','/WindowsRunner','org.kde.krunner1.Match','Zalo'],
+    ['org.kde.KWin','/WindowsRunner','org.kde.krunner1.Run','0_{73164c4f-24d4-41e9-a384-0f014dbd50f8}',''],
+  ]);
+  assert.equal(await activateKdeWindow({desktop:'GNOME',run:()=>assert.fail('must not query KWin')}),false);
+  assert.equal(await activateKdeWindow({desktop:'KDE',run:async()=>({stdout:'no exact window'})}),false);
+  let invocation,unref=0,desktopActivations=0;
+  const activated=activateExistingApp(config,{launch:(...args)=>{
+    invocation=args;const child=new EventEmitter();child.unref=()=>{unref++;};
+    queueMicrotask(()=>child.emit('exit',0));return child;
+  },activateDesktop:async()=>{desktopActivations++;return true;}});
+  assert.equal(await activated,true);assert.equal(unref,1);
+  assert.equal(desktopActivations,1);
+  assert.deepEqual(invocation.slice(0,2),[config.electron,[config.appDir]]);
+  assert.equal(invocation[2].stdio,'ignore');
+  assert.equal(await activateExistingApp(config,{launch:()=>{throw new Error('private spawn failure');},activateDesktop:()=>assert.fail()}),false);
+  let preflightCalls=0,activateCalls=0;
+  assert.equal(await runNativeLaunch(config,{}, {
+    findApp:async appDir=>{assert.equal(appDir,config.appDir);return 4321;},
+    activateApp:async value=>{activateCalls++;assert.deepEqual(value,config);return true;},
+    runPreflight:async()=>{preflightCalls++;throw new Error('must not inspect devices');},
+    launch:()=>assert.fail('must not launch a primary process'),
+  }),null);
+  assert.equal(activateCalls,1);assert.equal(preflightCalls,0,'running-app activation is the fast path');
+  await assert.rejects(runNativeLaunch(config,{}, {
+    findApp:async()=>4321,activateApp:async()=>false,
+    runPreflight:async()=>assert.fail(),launch:()=>assert.fail(),
+  }),/activate/);
+}
+console.log('PASS portable native launch: strict config, fast single-instance activation, no proxy/capture inheritance, explicit sandbox/CDP');
 const cameraConfig={...config,experimentalVideo:true,videoDevice:'/dev/video0'};
 for(const mode of ['ready','camera-missing','camera-file','no-output','pulse-error','malformed']) {
   const selected=JSON.parse(JSON.stringify(cameraConfig)),queries=[];

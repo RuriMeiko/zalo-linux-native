@@ -35,7 +35,8 @@ No account profile, camera or microphone is used by this runner.
 The zcall legacy stub test may print expected unsupported-method diagnostics;
 it tests a wrapper contract, **not the production native call backend**. Header
 and viewer checks use mocked boundaries. Do not interpret this runner as real
-media or complete desktop acceptance.
+media or complete desktop acceptance. Use [CALL-ACCEPTANCE.md](CALL-ACCEPTANCE.md)
+for the two-account/manual matrix, including answer-on-another-device behavior.
 
 Separate real-runtime checks include:
 
@@ -63,4 +64,6 @@ cycles with 81 decoded 480x360 frames and 64 Electron paint ACKs. These checks
 cover the runtime currently configured for the installed development app. Actual
 two-account voice/video, device reconnect, installed-menu launch, final packaged
 runtime, clean-machine packaging and component licensing remain independent
-release gates.
+release gates. Source checks added on 2026-09-13 cover queued early answer,
+correlated answer-on-another-device teardown, and the launcher's fast existing-
+instance activation path; the manual matrix remains the acceptance authority.
