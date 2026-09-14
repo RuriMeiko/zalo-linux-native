@@ -87,6 +87,23 @@ rm -f -- "$DESKTOP_DIR/Zalo.desktop" \
 if [[ -d "$HOME/Desktop" ]]; then
     rm -f -- "$HOME/Desktop/Zalo.desktop" "$HOME/Desktop/zalo-linux-native.desktop"
 fi
+
+# KDE stores recently launched desktop IDs separately from the .desktop files.
+# Clear only IDs used by older native releases so removed launchers do not stay
+# behind as blank "Zalo Linux Native" results in the application menu.
+if command_exists qdbus6; then
+    while IFS= read -r activity_id; do
+        [[ -n "$activity_id" ]] || continue
+        for client in org.kde.plasma.kicker org.kde.krunner; do
+            for resource in applications:zalo-linux-native.desktop applications:zalo-native.desktop applications:Zalo.desktop; do
+                qdbus6 org.kde.ActivityManager /ActivityManager/Resources/Scoring \
+                    org.kde.ActivityManager.ResourcesScoring.DeleteStatsForResource \
+                    "$activity_id" "$client" "$resource" >/dev/null 2>&1 || true
+            done
+        done
+    done < <(qdbus6 org.kde.ActivityManager /ActivityManager/Activities \
+        org.kde.ActivityManager.Activities.ListActivities 2>/dev/null || true)
+fi
 node "$INSTALL_DIR/scripts/register-desktop.mjs" "$INSTALL_DIR"
 
 command_exists update-desktop-database && update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
