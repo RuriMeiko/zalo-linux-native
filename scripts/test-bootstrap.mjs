@@ -29,4 +29,6 @@ const secondInstance=mainSource.slice(secondInstanceStart,secondInstanceStart+22
 for(const behavior of ['r.isMinimized()', 'r.restore()', 'r.show()', 'r.focus()',
   'r.webContents.send("show-from-tray")', 'An.receiveArguments(t)'])
   assert.ok(secondInstance.includes(behavior), `Linux second-instance handler must perform ${behavior}`);
-console.log('PASS actual bootstrap: exclusive lock routes plus Linux second-instance restore/show/focus activation');
+assert.ok(mainSource.includes('"linux" === process.platform ? xe.on("click", en) : xe.on("double-click", en)'),
+  'Linux tray activation must show/focus Zalo on one click');
+console.log('PASS actual bootstrap: exclusive lock routes plus Linux second-instance and one-click tray activation');

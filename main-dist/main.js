@@ -111085,7 +111085,7 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                                     click: () => Ae.webContents.toggleDevTools()
                                 }), n = t.buildFromTemplate(r)
                             }
-                            xe.on("double-click", en), xe.setToolTip("Zalo"), xe.setContextMenu(n)
+                            "linux" === process.platform ? xe.on("click", en) : xe.on("double-click", en), xe.setToolTip("Zalo"), xe.setContextMenu(n)
                         }
                     }(), n("ML2M")({
                         window: Ae,
