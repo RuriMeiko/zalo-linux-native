@@ -106,6 +106,53 @@ async function main() {
     assert.ok(info.width > 0 && info.height > 0);
   });
 
+  await T('jxlDecompressMulti returns ordered JPEG descriptors and writes requested files', async () => {
+    const fs = require('fs/promises');
+    const dir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'zalo-jxl-multi-'));
+    const input = path.join(dir, 'input.jxl'), output = path.join(dir, 'preview.jpg');
+    try {
+      await fs.writeFile(input, jxl);
+      const options = {localPath: input, quality: .8, tasks: [
+        {maxWidth: 8, maxHeight: 8, outputPath: output},
+        {width: 4, height: 4}, {}, {maxWidth: 100, maxHeight: 100},
+        {width: W, height: H, maxWidth: 8, maxHeight: 8},
+      ]};
+      const result = await zjxl.jxlDecompressMulti(options);
+      assert.strictEqual(result.status_code, 1);
+      assert.ok(Array.isArray(result.data), 'desktop requires a descriptor array, not JPEG bytes');
+      assert.deepStrictEqual(result.data.map(r => [r.width, r.height]), [[8,4],[4,2],[16,8],[16,8],[8,4]]);
+      assert.strictEqual(result.data[0].output_path, output);
+      assert.strictEqual(result.data[0].data, undefined);
+      for (const item of result.data) {
+        const jpeg = item.output_path ? await fs.readFile(item.output_path) : item.data;
+        assert.ok(Buffer.isBuffer(jpeg));
+        assert.strictEqual(jpeg.readUInt16BE(0), 0xffd8);
+        assert.strictEqual(item.size, jpeg.length);
+        // Verify actual SOF dimensions, not just the descriptor metadata.
+        let p = 2;
+        while (p < jpeg.length - 9) {
+          const marker = jpeg[p + 1];
+          if (marker >= 0xc0 && marker <= 0xcf && ![0xc4,0xc8,0xcc].includes(marker)) {
+            assert.strictEqual(jpeg.readUInt16BE(p + 5), item.height);
+            assert.strictEqual(jpeg.readUInt16BE(p + 7), item.width);
+            break;
+          }
+          p += 2 + jpeg.readUInt16BE(p + 2);
+        }
+        assert.ok(p < jpeg.length - 9, 'JPEG contains a SOF marker');
+      }
+      assert.strictEqual(options.tasks[0].maxWidth, 8, 'caller options unchanged');
+      const memory = await zjxl.jxlDecompressMulti({buffer: jxl});
+      assert.strictEqual(memory.data.length, 1);
+      assert.strictEqual(memory.data[0].output_path, '');
+      assert.deepStrictEqual((await zjxl.jxlDecompressMulti({buffer: jxl, tasks: []})).data, []);
+      await assert.rejects(zjxl.jxlDecompressMulti({buffer: jxl, tasks: [{outputPath: path.join(dir, 'missing', 'image.jpg')}]}), {code:'ENOENT'});
+      await assert.rejects(zjxl.jxlDecompressMulti({buffer: Buffer.from('invalid')}), {code:2003});
+    } finally {
+      await fs.rm(dir, {recursive:true, force:true});
+    }
+  });
+
   await T('corrupt buffer rejects with status_code', async () => {
     let err = null;
     try {

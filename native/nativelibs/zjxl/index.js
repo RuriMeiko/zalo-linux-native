@@ -130,6 +130,9 @@ function getLib() {
     }
 
     const jxlDecompressMulti = (options) => {
+        if (process.platform === 'linux') {
+            return require('./linux-multi.cjs')(nodeAddon, options);
+        }
         return new Promise((resolve, reject) => {
             nodeAddon.jxlDecompressMulti(options, (error, data, status_code) => {
                 if (error) {
