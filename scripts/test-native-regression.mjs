@@ -18,6 +18,7 @@ const tests=[
   ['scripts/test-linux-header.cjs'],['scripts/test-linux-header.cjs','--shared'],
   ['scripts/test-viewer-extras.cjs'],['scripts/test-signaling-log-privacy.cjs'],
   ['scripts/test-jxl-native-selection.cjs'],
+  ['native/nativelibs/zjxl/test-large-jpeg.cjs'],
   ['scripts/test-install-native.mjs'],['scripts/test-verify-installation.mjs'],['scripts/test-native-appdir.mjs'],
   ['scripts/test-register-desktop.mjs'],['scripts/test-entrypoints.mjs'],
 ];

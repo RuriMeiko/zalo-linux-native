@@ -29,7 +29,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -205,47 +207,29 @@ void JpegErrorExit(j_common_ptr c) {
   longjmp(e->jb, 1);
 }
 
-struct MemDest : jpeg_destination_mgr {
-  std::vector<uint8_t>* out = nullptr;
+struct JpegOutput {
+  unsigned char* bytes = nullptr;
+  unsigned long size = 0;
+  ~JpegOutput() { std::free(bytes); }
 };
-
-void MemInit(j_compress_ptr c) {
-  MemDest* d = static_cast<MemDest*>(c->dest);
-  d->out = new std::vector<uint8_t>();
-  d->out->resize(32768);
-  d->next_output_byte = d->out->data();
-  d->free_in_buffer = d->out->size();
-}
-boolean MemEmpty(j_compress_ptr c) {
-  MemDest* d = static_cast<MemDest*>(c->dest);
-  size_t used = d->out->size() - d->free_in_buffer;
-  d->out->resize(d->out->size() * 2);
-  d->next_output_byte = d->out->data() + used;
-  d->free_in_buffer = d->out->size() - used;
-  return TRUE;
-}
-void MemTerm(j_compress_ptr c) {
-  MemDest* d = static_cast<MemDest*>(c->dest);
-  size_t used = d->out->size() - d->free_in_buffer;
-  d->out->resize(used);
-}
 
 uint32_t EncodeJpeg(const uint8_t* rgba, uint32_t w, uint32_t h, uint32_t stride,
                     int quality, std::vector<uint8_t>& jpeg) {
   jpeg_compress_struct cinfo{};
   JpegErr jerr{};
+  // Keep the destination on the heap so cleanup remains valid after longjmp.
+  auto output = std::make_unique<JpegOutput>();
+  cinfo.err = jpeg_std_error(&jerr);
   jerr.error_exit = JpegErrorExit;
   if (setjmp(jerr.jb)) {
     jpeg_destroy_compress(&cinfo);
     return ENC_JPEG_FAILURE;
   }
-  cinfo.err = jpeg_std_error(&jerr);
   jpeg_create_compress(&cinfo);
-  MemDest dest{};
-  dest.init_destination = MemInit;
-  dest.empty_output_buffer = MemEmpty;
-  dest.term_destination = MemTerm;
-  cinfo.dest = reinterpret_cast<jpeg_destination_mgr*>(&dest);
+  // libjpeg owns buffer growth. Its entropy encoder may keep a local cursor
+  // while calling empty_output_buffer; the former custom destination used a
+  // stale free_in_buffer value and overwrote JPEG bytes past 32 KiB.
+  jpeg_mem_dest(&cinfo, &output->bytes, &output->size);
 
   cinfo.image_width = w;
   cinfo.image_height = h;
@@ -256,19 +240,13 @@ uint32_t EncodeJpeg(const uint8_t* rgba, uint32_t w, uint32_t h, uint32_t stride
   if (quality > 100) quality = 100;
   jpeg_set_quality(&cinfo, quality, TRUE);
   jpeg_start_compress(&cinfo, TRUE);
-  std::vector<uint8_t> packed(static_cast<size_t>(w) * 4);
   while (cinfo.next_scanline < cinfo.image_height) {
-    if (stride != w * 4) {
-      std::memcpy(packed.data(), rgba + static_cast<size_t>(cinfo.next_scanline) * stride,
-                  packed.size());
-    }
-    JSAMPLE* row = (stride != w * 4) ? packed.data()
-                                     : const_cast<JSAMPLE*>(rgba +
-                                            static_cast<size_t>(cinfo.next_scanline) * stride);
+    JSAMPLE* row = const_cast<JSAMPLE*>(rgba +
+        static_cast<size_t>(cinfo.next_scanline) * stride);
     jpeg_write_scanlines(&cinfo, &row, 1);
   }
   jpeg_finish_compress(&cinfo);
-  if (dest.out) jpeg.swap(*dest.out);
+  jpeg.assign(output->bytes, output->bytes + output->size);
   jpeg_destroy_compress(&cinfo);
   return SUCCESS_STATUS;
 }

@@ -10,7 +10,7 @@ ELECTRON_RUN_AS_NODE=1 /absolute/path/to/electron \
   scripts/test-native-regression.mjs
 ```
 
-This runs 21 commands, including the 25-suite call-control runner, native module
+This runs 23 commands, including the 25-suite call-control runner, native module
 contracts, filesystem behavior, JPEG XL addon, synthetic video thumbnail,
 image encoder boundaries, bundled header/viewer/privacy checks and installer/
 integrity-verifier/menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped
@@ -31,6 +31,13 @@ The file-utilities test no longer deletes fixed `/tmp/fu-*` paths. The trash
 test stubs the home-directory lookup instead of rewriting HOME. Some tests
 remove their own synthetic fixture; others retain it and print its path.
 No account profile, camera or microphone is used by this runner.
+
+For JPEG XL changes, `node native/nativelibs/zjxl/test-large-jpeg.cjs` creates a
+synthetic image whose JPEG output exceeds 32 KiB, decodes it independently with
+FFmpeg, and checks every pixel against the source. It detects stream corruption
+during destination-buffer growth that header/dimension checks alone miss.
+`node scripts/test-jxl-native-selection.cjs` checks the Linux native decoder
+selection in the main, compact viewer and search bundles.
 
 The zcall legacy stub test may print expected unsupported-method diagnostics;
 it tests a wrapper contract, **not the production native call backend**. Header
