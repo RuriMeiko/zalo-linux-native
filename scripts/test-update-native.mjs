@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {parseArgs,runtimeArch,repointConfig,isUpToDate,pickStale,timerUnits,DEFAULT_REPO,EXIT} from './update-native.mjs';
+assert.equal(parseArgs([]).repo,DEFAULT_REPO);
+assert.equal(parseArgs(['--check']).check,true);
+assert.equal(parseArgs(['--ref','dev/x','--app-dir','/h/z']).ref,'dev/x');
+for(const bad of [['--bogus'],['--check','--rollback'],['--ref','-rf'],['--ref','a b'],['--repo','http://insecure/x.git'],['--repo','ssh://x'],['--app-dir']])
+  assert.throws(()=>parseArgs(bad),undefined,JSON.stringify(bad));
+assert.equal(runtimeArch('x64'),'x86_64');
+assert.throws(()=>runtimeArch('arm64'),/ARM-PORT-NOTES/);
+const config={appDir:'/home/u/zalo',electron:'/home/u/e/electron',runtime:'/home/u/old',source:'mic',sink:'spk',experimentalVideo:true,videoDevice:'/dev/video0',log:true};
+const next=repointConfig(config,'/home/u/new');
+assert.equal(next.runtime,'/home/u/new');
+assert.deepEqual({...next,runtime:config.runtime},config,'only runtime changes');
+assert.throws(()=>repointConfig(config,'relative/path'),/absolute/);
+assert.equal(isUpToDate({commit:'abc'},'abc'),true);
+assert.equal(isUpToDate({commit:'abc'},'abd'),false);
+assert.equal(isUpToDate(null,'abc'),false);
+assert.deepEqual(pickStale(['z.prev-3','z.prev-1','z.prev-2'],1),['z.prev-1','z.prev-2']);
+assert.deepEqual(pickStale(['a'],1),[]);
+const units=timerUnits({node:'/n/node',script:'/a b/update.mjs',appDir:'/h/zalo'});
+assert.match(units.service,/ExecStart="\/n\/node" "\/a b\/update\.mjs" --app-dir "\/h\/zalo"/);
+assert.match(units.service,/SuccessExitStatus=3 10/);
+assert.match(units.timer,/OnUnitActiveSec=6h/);
+assert.deepEqual(EXIT,{OK:0,UPDATE_AVAILABLE:10,USAGE:2,RUNNING:3,FAILED:1});
+console.log('PASS update-native: argument validation, x86_64-only runtime, config carry-over, up-to-date check, pruning, timer units');

@@ -73,23 +73,24 @@ export async function copyInstallation(input) {
   } catch(error) {throw new Error('Installation incomplete; destination retained for inspection', {cause:error});}
 }
 async function main() {
-  const args=process.argv.slice(2),pos=[];let check=false,installedAppDir;
+  const args=process.argv.slice(2),pos=[];let check=false,installedAppDir,deviceCheck=true;
   for(let i=0;i<args.length;i++) {
     if(args[i]==='--check') {if(check)throw new Error('Duplicate --check');check=true;}
+    else if(args[i]==='--no-device-check')deviceCheck=false;
     else if(args[i]==='--app-dir') {
       if(installedAppDir!==undefined || !args[i+1] || args[i+1].startsWith('--'))throw new Error('Invalid --app-dir');
       installedAppDir=args[++i];
     } else pos.push(args[i]);
   }
   if(pos.length!==2 || pos.some(a=>a.startsWith('--')))
-    throw new Error('Usage: node scripts/install-native.mjs CONFIG_JSON NEW_HOME_DIRECTORY [--app-dir FINAL_HOME_DIRECTORY] [--check]');
+    throw new Error('Usage: node scripts/install-native.mjs CONFIG_JSON NEW_HOME_DIRECTORY [--app-dir FINAL_HOME_DIRECTORY] [--check] [--no-device-check]');
   const config=validateConfig(JSON.parse(await readFile(pos[0],'utf8')));
   const source=await realpath(root);
   const result=await exec('git',['ls-files','-z','--',...applicationPayloadRoots],{cwd:source,maxBuffer:4*1024*1024});
   const plan=installPlan({source,destination:pos[1],installedAppDir:installedAppDir || pos[1],config,
     files:result.stdout.split('\0').filter(Boolean)});
   await inspectInstallation(plan);
-  await preflight({...config,appDir:source});
+  await preflight({...config,appDir:source},{requireDevices:deviceCheck});
   if(check){console.log(`PASS install preflight: ${plan.files.length} tracked files; no files changed`);return;}
   await copyInstallation(plan);
   console.log('Native development installation copied. Launch with launch-installed.sh inside the new directory.');
