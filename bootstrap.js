@@ -15,6 +15,7 @@ function bootstrap() {
     }
     if (isCompactApp) return handleEntryCompactApp();
     perf.record(perf.MAIN_SCRIPT);
+    require('./pc-dist/zadark/js/zadark-main.min');
     return require('./main-dist/main');
 }
 

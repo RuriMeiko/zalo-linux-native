@@ -14,13 +14,14 @@ for(const compact of [false,true])for(const acquired of [false,true]) {
         assert.equal(++locks,1,'A bootstrap must request the instance lock exactly once');return acquired;
       }}};
       assert.ok(['./libs/perf-tracing/runtime','./main-dist/migration','./main-dist/main',
-        './main-dist/compact-app','./main-dist/second-instance'].includes(module));
+        './main-dist/compact-app','./main-dist/second-instance','./pc-dist/zadark/js/zadark-main.min'].includes(module));
       return {};
     },
   },{timeout:1000});
   assert.equal(locks,1);
   assert.deepEqual(modules.filter(module=>['./main-dist/main','./main-dist/compact-app','./main-dist/second-instance'].includes(module)),
     [acquired?(compact?'./main-dist/compact-app':'./main-dist/main'):'./main-dist/second-instance']);
+  assert.equal(modules.includes('./pc-dist/zadark/js/zadark-main.min'),acquired&&!compact,'ZaDark main hook loads only on the main-app path');
   assert.deepEqual(phases,acquired&&!compact?['startup','migration','main']:['startup','migration']);
 }
 const secondInstanceStart=mainSource.indexOf('bn.on("second-instance"');

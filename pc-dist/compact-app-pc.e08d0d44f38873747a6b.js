@@ -527337,7 +527337,7 @@ __SCRIPT_TYPE__ = "renderer",
                         return this.getThemeSettingInApp()
                     }
                 }
-                updateThemeSetting(e) {
+                updateThemeSetting(e) { e = 0; /* light-only */
                     l.a.trackSwitchTheme({
                         currMode: this.theme,
                         prevTheme: this.theme_setting,

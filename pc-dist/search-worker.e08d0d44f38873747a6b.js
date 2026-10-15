@@ -539276,7 +539276,7 @@ __ZaBUNDLENAME__ = "search-worker", __SCRIPT_TYPE__ = "web-worker",
                         return this.getThemeSettingInApp()
                     }
                 }
-                updateThemeSetting(e) {
+                updateThemeSetting(e) { e = 0; /* light-only */
                     l.a.trackSwitchTheme({
                         currMode: this.theme,
                         prevTheme: this.theme_setting,
