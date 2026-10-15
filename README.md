@@ -133,6 +133,22 @@ cd zalo-linux-native
 bash install.sh
 ```
 
+Cài nhanh bằng một dòng lệnh (Linux x86_64, cần `git`, `node` 18–22, `curl`, `unzip`):
+```bash
+git clone --depth 1 https://github.com/RuriMeiko/zalo-linux-native.git ~/zalo-linux-native && bash ~/zalo-linux-native/install.sh
+```
+Giữ thư mục `~/zalo-linux-native` sau khi cài, vì bản cài dùng runtime trong đó cho đến lần cập nhật đầu tiên.
+
+#### Cập nhật
+```bash
+node ~/.local/share/zalo/scripts/update-native.mjs --check          # có bản mới không
+node ~/.local/share/zalo/scripts/update-native.mjs                  # cập nhật (đóng Zalo trước)
+node ~/.local/share/zalo/scripts/update-native.mjs --rollback       # quay về bản trước
+node ~/.local/share/zalo/scripts/update-native.mjs --install-timer  # tự kiểm tra mỗi 6 giờ
+```
+Bản mới được tải vào thư mục riêng, kiểm hash rồi mới thay; nếu bản mới không qua bước
+kiểm tra thì tự quay về bản cũ. Cấu hình thiết bị trong `launch.json` được giữ nguyên.
+
 Khi cập nhật, thoát Zalo từ tray rồi chạy lại `bash install.sh`. Bản cũ được
 chuyển vào `~/zalo-native-recovery/`, không đụng tới hồ sơ đăng nhập.
 
