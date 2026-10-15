@@ -68,7 +68,7 @@ for(const video of [false,true])for(const scenario of ['local-reject','consent-c
   if(['consent-cancel','answer-cancel','native-fault'].includes(scenario))await assert.rejects(running);
   else assert.deepEqual(await running,{accepted:scenario!=='local-reject',callReady:false});
   assert.equal(events.filter(x=>x===405).length,scenario==='local-reject'?1:0);
-  assert.equal(events.filter(x=>x===409).length,['local-end','native-fault'].includes(scenario)?1:0);
+  assert.equal(events.filter(x=>x===409).length,['local-end','native-fault','local-reject'].includes(scenario)?1:0);
   assert.equal(dialogs.includes('error'),scenario==='native-fault');
   assert.equal(events.filter(x=>x==='closed').length,1);
   if(video && ['media-cancel','local-end','native-fault'].includes(scenario))

@@ -51,7 +51,7 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
     // recipient's other signed-in devices.  For this incoming owner that is a
     // terminal remote action, just like cancel/endcall; our own accepted path
     // receives `answer_ack` instead.
-    if(!['answer','answer_ack','cancel','endcall'].includes(event?.act))return;
+    if(!['answer','answer_ack','cancel','endcall','end_call'].includes(event?.act))return;
     const envelope={type:'control',data:event};
     // An unrelated malformed control must not tear down this call.
     if(event.act!=='answer_ack') {
@@ -86,6 +86,9 @@ export async function runIncomingCall(worker,transport,message,{context,callerId
       // 0 = voice, 1 = video. This is the pre-answer rejection path; command
       // 409 is reserved for a call whose media session was already started.
       await transport.request(405,{toId:callerId,callId:decoded.key.callId,callType:video?1:0});
+      // The server accepts 405 (error_code 0) but the caller's other devices kept ringing in a
+      // live test; also send the end-call request the Windows client uses. Best effort.
+      try {await transport.request(409,{toId:callerId,callId:decoded.key.callId});} catch {}
       return {accepted:false,callReady:false};
     }
     await session.answer({callerId,userAccepted:true});check();

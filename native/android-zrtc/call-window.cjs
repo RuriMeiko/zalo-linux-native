@@ -44,7 +44,13 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
     if(window && !window.isDestroyed())window.destroy();window=null;
   };
+  const traceAction=(note)=>{
+    if(process.env.ZALO_ZCALL_LOG==='0')return;
+    try {require('fs').appendFileSync(require('path').join(require('os').homedir(),'.config','ZaloData','zcall-agent.log'),
+      `${new Date().toISOString()} [call-window] ${note}\n`);} catch {}
+  };
   const action=(event,id,value)=>{
+    traceAction(`click ${String(value).slice(0,12)} id=${id} revision=${revision} kind=${pending?pending.kind:'none'} ${(!window || event.sender!==window.webContents || id!==revision)?'IGNORED':'accepted'}`);
     if(!window || event.sender!==window.webContents || id!==revision)return;
     if(!pending) {
       if(value==='end') {

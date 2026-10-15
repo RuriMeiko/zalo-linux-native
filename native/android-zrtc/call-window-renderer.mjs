@@ -36,7 +36,13 @@ window.linuxCall.subscribe((id,next)=>{
   const incoming=state.kind==='consent',active=state.kind==='active',error=state.kind==='error';
   get('status').textContent=incoming?(state.video?'Cuộc gọi video đến':'Cuộc gọi thoại đến'):
     state.kind==='preparing'?'Đang chuẩn bị cuộc gọi':state.kind==='dialing'?'Đang đổ chuông':error?'Cuộc gọi bị gián đoạn':state.muted?'Mic đã tắt':'Đang trong cuộc gọi';
-  get('answer').hidden=!incoming;get('mic').hidden=!active;get('camera').hidden=incoming || error || !state.video;
+  get('answer').hidden=!incoming;
+  const answerVideo=incoming && state.video===true,answerLabel=answerVideo?'Trả lời video':'Trả lời';
+  get('answer').setAttribute('aria-label',answerLabel);get('answer').title=answerLabel;
+  get('answer').toggleAttribute('data-video',answerVideo);
+  get('answer-voice').toggleAttribute('hidden',answerVideo);get('answer-video').toggleAttribute('hidden',!answerVideo);
+  get('answer-text').toggleAttribute('hidden',!answerVideo);
+get('mic').hidden=!active;get('camera').hidden=incoming || error || !state.video;
   const endLabel=incoming?'Từ chối':error?'Đóng':state.kind==='preparing'?'Hủy':'Kết thúc';
   get('end').setAttribute('aria-label',endLabel);get('end').title=endLabel;
   const micLabel=state.muted?'Bật mic':'Tắt mic';

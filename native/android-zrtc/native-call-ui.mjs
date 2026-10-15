@@ -32,8 +32,12 @@ export function callDialog(kind,{video=false,signal,muteControl=false,muted=fals
 // One command at a time; the next dialog only reflects acknowledged state.
 // Joining the in-flight request on cancellation prevents worker teardown from
 // racing a queued mute command. Native request timeout bounds this wait.
+// Reports acknowledged mic/camera state so the peer UI can follow it.
+let mediaStateReporter=null;
+export function setMediaStateReporter(fn) {mediaStateReporter=typeof fn==='function'?fn:null;}
 export async function activeCallControls(worker,{video=false,signal,cameraControl},dialog=callDialog) {
   let muted=false,cameraEnabled=true;
+  const report=()=>{try{Promise.resolve(mediaStateReporter?.({video,muted,cameraEnabled})).catch(()=>{});}catch{}};
   while(!signal.aborted) {
     const action=await dialog('active',{video,signal,muteControl:true,muted,cameraControl:!!cameraControl,cameraEnabled});
     if(signal.aborted || action==='end')return;
@@ -41,7 +45,7 @@ export async function activeCallControls(worker,{video=false,signal,cameraContro
       try {await cameraControl.setEnabled(!cameraEnabled);}
       catch {if(signal.aborted)return;throw new Error('Camera control unavailable');}
       if(signal.aborted)return;
-      cameraEnabled=!cameraEnabled;continue;
+      cameraEnabled=!cameraEnabled;report();continue;
     }
     if(action!=='toggle')throw new Error('Invalid native call control');
     let reply;
@@ -49,6 +53,6 @@ export async function activeCallControls(worker,{video=false,signal,cameraContro
     catch {if(signal.aborted)return;throw new Error('Microphone control unavailable');}
     if(signal.aborted)return;
     if(reply?.code!==0)throw new Error('Microphone control unavailable');
-    muted=!muted;
+    muted=!muted;report();
   }
 }

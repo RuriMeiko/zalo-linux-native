@@ -552,6 +552,14 @@ int main(int argc, char **argv) {
                 if(length!=12 || u32(frame+8)>1){rc=-EINVAL;break;}
                 if(!initialized || !__atomic_load_n(&call_request,__ATOMIC_ACQUIRE)){rc=-ENOTCONN;break;}
                 zrtc_linux_audio_set_muted((int)u32(frame+8));
+                /* Tell the remote side: the same call Peer::mute makes after pauseRecord,
+                   without touching the audio device. Offsets match the pinned libzrtc. */
+                {
+                    void (*set_mute_state)(void *,unsigned char)=sym("_ZN4zrtc14CallController12setMuteStateEb");
+                    int call_state=*(int *)((uintptr_t)peer+0x70);
+                    if(set_mute_state && (unsigned)(call_state-1)<=1u)
+                        set_mute_state((void *)((uintptr_t)peer+0x8e8),(unsigned char)u32(frame+8));
+                }
                 break;
             }
             case 16: {
