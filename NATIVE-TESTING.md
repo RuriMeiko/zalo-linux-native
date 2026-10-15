@@ -10,7 +10,8 @@ ELECTRON_RUN_AS_NODE=1 /absolute/path/to/electron \
   scripts/test-native-regression.mjs
 ```
 
-This runs 23 commands, including the 25-suite call-control runner, native module
+This runs 24 commands, including the 25-suite call-control runner, the `ZaloCap`
+screenshot-helper protocol test (fake screenshot/clipboard tools, no real screen), native module
 contracts, filesystem behavior, JPEG XL addon, synthetic video thumbnail,
 image encoder boundaries, bundled header/viewer/privacy checks and installer/
 integrity-verifier/menu/entrypoint tests. Each command has a timeout; a failed or explicitly skipped

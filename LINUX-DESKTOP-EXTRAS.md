@@ -104,6 +104,24 @@ messages, native voice setup or unrelated changes. The newly added
 restored bundle. If reverse checking fails after subsequent edits, stop and
 inspect rather than force replacement. Recovery has not been executed.
 
+## Screenshot ("Chụp màn hình")
+
+`main-dist/main.js` starts a helper at `native/qt-call-cap-linux/ZaloCap` and talks to it over
+stdin/stdout; before this directory had none, so the capture button and shortcut did nothing.
+`ZaloCap` (launcher) + `zalocap-agent.js` implement that protocol on Linux:
+
+- The region is picked by a tool already on the desktop, tried in this order of preference:
+  `spectacle` on KDE, `gnome-screenshot` on GNOME, otherwise `flameshot`; then the remaining ones
+  (`grim`+`slurp`, `maim`, ImageMagick `import`). `ZALO_ZCAP_TOOL=<name>` forces one. With none
+  installed it cancels the capture and logs the list of supported tools on stderr.
+- The picture goes to the clipboard as `image/png` (`xclip`, plus `wl-copy` when present). Zalo
+  runs on X11/XWayland, so the X selection is what it reads. When the request has `enableAccept`
+  the helper also sends `cap:acceptScrs` so the open chat receives the picture; otherwise it is only
+  copied. "Send to my cloud", forwarding and photo editing have no toolbar of their own and are not offered.
+- Temporary pictures live in `~/.config/ZaloData/cap-tmp` (files older than a day are removed at start).
+- Verified by `native/qt-call-cap-linux/test-zalocap.js` with fake tools. A real region selection on
+  screen has not been exercised by an automated test.
+
 ## Remaining project scope
 
 These additions do not replace the outstanding native video call, packaging,

@@ -12,6 +12,7 @@ const nodeExecutable=plainNode?
 if(!nodeExecutable) throw new Error('A plain Node.js runtime is required for the installer regression');
 const tests=[
   ['scripts/test-call-control.mjs'],
+  ['native/qt-call-cap-linux/test-zalocap.js'],
   ...['file-utils','file-utilities','zfile','zwalker','v8-profiles','mp4thumb','zjxl','zcall','zimage']
     .map(name=>[`native/nativelibs/${name}/test-linux.js`]),
   ['native/nativelibs/zimage/test-vips-temp.cjs'],['native/nativelibs/zimage/test-encode-extra.cjs'],
