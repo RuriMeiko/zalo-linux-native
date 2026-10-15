@@ -2,6 +2,8 @@ import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {EventEmitter} from 'node:events';
 import {readFile} from 'node:fs/promises';
+import {appendFileSync} from 'node:fs';
+import {homedir} from 'node:os';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {CALL_EVENTS, MEDIA_STATES} from './protocol-enums.mjs';
@@ -12,6 +14,63 @@ async function validateDevices(pcm) {
     const rows=JSON.parse(result.stdout);
     if(!Array.isArray(rows) || !rows.some(row=>row.name===pcm[key])) throw new Error('Selected PCM device is unavailable');
   }));
+}
+// Connection diagnostics: numeric engine events, plus engine stats/log text with
+// IPs and long numbers redacted, bounded in size and rate.
+const TRACE_EVENTS=new Set(['onCallState','onCallAutoHangup','onCallErr','onCallQualityChanged','onCallUpdateP2PStatus','onCallAudioState','onCallVideoState']);
+const TEXT_EVENTS=new Set(['onCallStats','onCallLog']);
+let lastText=0;
+// Dead-relay watchdog: once confirmed, two consecutive stats reports with no inbound
+// media at all (audio and video) means the relay path is not delivering to us.
+export const callHealth=new EventEmitter();
+const health={confirmed:false,zeroReports:0,fired:false};
+export function watchHealth(message) {
+  if(message.event==='onCallState') {
+    const state=message.args[0];
+    if(state===5){health.confirmed=true;health.zeroReports=0;health.fired=false;}
+    else if(state===6||state===3){health.confirmed=false;health.zeroReports=0;}
+  } else if(message.event==='onCallStats' && health.confirmed && !health.fired && typeof message.args[0]==='string') {
+    let stats;
+    try {stats=JSON.parse(message.args[0]);} catch {return;}
+    if(!Number.isFinite(stats.inputBw)) return;
+    health.zeroReports=stats.inputBw<=5?health.zeroReports+1:0;
+    if(health.zeroReports>=2){health.fired=true;callHealth.emit('noInboundMedia');}
+  }
+}
+function traceEvent(message) {
+  watchHealth(message);
+  if(process.env.ZALO_ZCALL_LOG==='0') return;
+  let detail;
+  if(TRACE_EVENTS.has(message.event)) detail=JSON.stringify(message.args.filter(Number.isInteger));
+  else if(TEXT_EVENTS.has(message.event) && typeof message.args[0]==='string') {
+    const now=Date.now();
+    if(message.event==='onCallStats' && now-lastText<2500) return;
+    if(message.event==='onCallStats') lastText=now;
+    detail=message.args[0].replace(/\b\d{1,3}(\.\d{1,3}){3}(:\d+)?\b/g,'<ip>').replace(/\d{7,}/g,'<n>')
+      .replace(/[\r\n]+/g,' ').slice(0,400);
+  } else return;
+  try {
+    appendFileSync(path.join(homedir(),'.config','ZaloData','zcall-agent.log'),
+      `${new Date().toISOString()} [zcall-agent] native event ${message.event} ${detail}\n`);
+  } catch {}
+}
+// A configured device can vanish (HDMI off, Bluetooth switched, webcam unplugged).
+// Calls must still work, so fall back to the system default for that side only.
+async function resolvePcm(pcm) {
+  const out={...pcm};
+  await Promise.all([['source','sources','get-default-source'],['sink','sinks','get-default-sink']].map(async ([key,kind,getDefault])=>{
+    const result=await exec('pactl',['--format=json','list',kind],{timeout:3000,maxBuffer:2*1024*1024});
+    const rows=JSON.parse(result.stdout);
+    if(!Array.isArray(rows) || rows.some(row=>row.name===out[key])) return;
+    let name=(await exec('pactl',[getDefault],{timeout:3000})).stdout.trim();
+    if(!rows.some(row=>row.name===name) || name.endsWith('.monitor'))
+      name=rows.map(row=>row.name).find(n=>typeof n==='string' && !n.endsWith('.monitor'));
+    if(name) {
+      console.warn(`[zrtc] selected ${key} unavailable; using ${name}`);
+      out[key]=name;
+    }
+  }));
+  return out;
 }
 const HASH = 'c7e5f005fd5c12dc64d72008a1871638246899a9cf6b034dc13981c014caeefe';
 const OPS = {initialize:1, stop:2, status:3, shutdown:4, configure:5, makeCall:6, callEvent:7, incomingCall:8, audioCodecs:9, callState:10, extendData:11, updateCallerInfo:12, videoFrame:13, videoStats:14, videoSnapshot:15, callInfo:16, microphoneMute:17};
@@ -105,6 +164,7 @@ export class NativeWorker extends EventEmitter {
     if(cpuVideo) args.push('--cpu-video');
     if(experimentalVideoNetwork) args.push('--cpu-video-network');
     if (pcm !== undefined) {
+      if (pcm && typeof pcm.source==='string' && typeof pcm.sink==='string') pcm=await resolvePcm(pcm);
       if (!pcm || Object.keys(pcm).some(key => !['source','sink'].includes(key)) ||
           !['source','sink'].every(key => typeof pcm[key] === 'string' && /^[A-Za-z0-9_.:-]+$/.test(pcm[key])))
         throw new Error('PCM requires explicit source and sink device names');
@@ -177,6 +237,7 @@ export class NativeWorker extends EventEmitter {
       } else if (message.type === 'event') {
         if (typeof message.event !== 'string' || !Array.isArray(message.args) ||
             !Number.isInteger(message.requestId)) return this.#fail(new Error('Invalid worker event'));
+        traceEvent(message);
         this.emit('callEvent', message);
       } else return this.#fail(new Error('Unexpected worker message'));
     }

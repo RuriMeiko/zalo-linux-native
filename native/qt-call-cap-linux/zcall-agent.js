@@ -232,13 +232,38 @@ function buildDeviceList() {
     return {
         autoAudioInput: true,
         autoAudioOutput: true,
-        defaultAudInputDevice: inputs[0] || null,
-        defaultAudOutputDevice: outputs[0] || null,
+        defaultAudInputDevice: inputs.find(d=>d.id===systemDefault('source')) || inputs[0] || null,
+        defaultAudOutputDevice: outputs.find(d=>d.id===systemDefault('sink')) || outputs[0] || null,
         defaultVidDevice: videos[0] || null,
         otherAudInputDevice: inputs,
         otherAudOutputDevice: outputs,
         otherVidDevice: videos,
     };
+}
+
+// ---- device selection from the Zalo settings UI --------------------------------
+// The renderer pushes update/listDevice with the user's choice; launch.json env
+// values are only the fallback before any choice arrives.
+let deviceSelection=null;
+function systemDefault(kind) {
+    const out=tryCmd("pactl",[kind==='source'?"get-default-source":"get-default-sink"],2000);
+    const name=(out||'').trim();
+    return name && !/\.monitor$/.test(name) ? name : null;
+}
+function chosenPcm() {
+    const base={source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK};
+    const sel=deviceSelection;
+    if(!sel) return base;
+    const pick=(auto,dev,kind,fallback)=>{
+        if(auto===false && typeof dev?.id==='string' && /^[A-Za-z0-9_.:-]+$/.test(dev.id)) return dev.id;
+        return systemDefault(kind)||fallback;
+    };
+    return {source:pick(sel.autoAudioInput,sel.defaultAudInputDevice,'source',base.source),
+            sink:pick(sel.autoAudioOutput,sel.defaultAudOutputDevice,'sink',base.sink)};
+}
+function chosenVideoDevice() {
+    const id=deviceSelection?.defaultVidDevice?.id;
+    return typeof id==='string' && /^\/dev\/video[0-9]+$/.test(id) ? id : process.env.ZALO_ZCALL_VIDEO_DEVICE;
 }
 
 // ---- call handling ----------------------------------------------------------
@@ -248,6 +273,8 @@ function buildDeviceList() {
 // teardown notification stays the host's job.
 const NO_MEDIA_REASON = "media engine not implemented on linux (see CALL-LINUX.md)";
 let callActive = false;
+let relayFailed = false;
+let activePeer = null; // {calleeId, callId} of the call whose mic/camera state we report
 let callPartnerId = "";
 
 function sendToHost(msg) {
@@ -261,6 +288,7 @@ function sendToHost(msg) {
 function endCall(reason) {
     if (!callActive) return;
     callActive = false;
+    activePeer = null;
     log("ending call:", reason);
     try { setupTransport?.reset?.(); } catch {}
     // Mirror the renderer's own teardown so the window leaves dialing:
@@ -268,6 +296,32 @@ function endCall(reason) {
     sendToHost({ type: "update", command: "callState", data: { state: "free" } });
     sendToHost({ type: "sendSignal", command: "end", data: null });
 }
+
+// Tell the peer when we mute the mic or turn the camera off/on (renderer API 12006).
+// Fire and forget: the renderer's reply for this command is not reliably returned, and
+// every toggle must be sent even if an earlier one never got an answer.
+function reportMediaState(state) {
+    const peer=activePeer;
+    const mic=state.muted!==true, cam=state.video===true && state.cameraEnabled===true;
+    log('media state changed', JSON.stringify({mic,cam,video:state.video===true}));
+    if(!peer) {log('media state skipped: no active peer');return;}
+    // Same shape as Windows ZaloCall.exe ("sendOnOffMicCam, %s-%d-%d-%d-%s"): calleeId as a
+    // string, callId and the two flags as integers (0/1), data as a string.
+    sendToHost({type:'sendSignal',command:12006,data:{calleeId:String(peer.calleeId),callId:peer.callId,isOnCam:cam?1:0,isOnMic:mic?1:0,data:''}});
+    log('media state 12006 sent to host');
+}
+import('../android-zrtc/native-call-ui.mjs').then(m=>m.setMediaStateReporter(reportMediaState)).catch(()=>{});
+
+// If the relay never delivers media to us, end the call instead of leaving it loading.
+import('../android-zrtc/worker-client.mjs').then(({callHealth})=>{
+    callHealth.on('noInboundMedia',()=>{
+        if(!callActive) return;
+        log('no inbound media from relay; ending call');
+        relayFailed=true;
+        if(incomingAttempt) incomingAttempt.controller.abort();
+        else if(outgoingSetup) outgoingSetup.stop().finally(()=>endCall('no inbound media'));
+    });
+}).catch(()=>{});
 
 let initInfo = {};
 const nativeIdentity=new (require('./native-identity').NativeIdentity)();
@@ -285,7 +339,7 @@ function getNativePreviewSink() {
     return nativePreviewSink;
 }
 let nativeCallUI;
-const incomingName=new (require('./incoming-name').IncomingName)(sendToHost);
+const incomingName=new (require('./incoming-name').IncomingName)(sendToHost,{onResult:r=>log('contact lookup', JSON.stringify(r))});
 function getNativeCallUI() {
     if(process.env.ZALO_ZCALL_UI_PIPE!=='4')throw new Error('Native call UI pipe unavailable');
     if(!nativeCallUI) {
@@ -336,11 +390,12 @@ if(setupEnabled) {
             setupPhase(phases[error.code] || 'unsupported-config');throw new Error('Unsupported native config');
         }
         current();nativeIdentity.remember(context,mapped.configuration.userId);
+        activePeer={calleeId:mapped.configuration.partnerId,callId:mapped.configuration.callId};
         const {NativeWorker}=await import('../android-zrtc/worker-client.mjs');
         const runtime=process.env.ZALO_ZRTC_RUNTIME;
         if(!runtime || !path.isAbsolute(runtime)) throw new Error('Missing native runtime');
-        const pcm=mediaEnabled?{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK}:undefined;
-        const device=process.env.ZALO_ZCALL_VIDEO_DEVICE;
+        const pcm=mediaEnabled?chosenPcm():undefined;
+        const device=chosenVideoDevice();
         if(video && (typeof device!=='string' || !/^\/dev\/video[0-9]+$/.test(device)))throw new Error('Missing explicit video device');
         const videoSink=video?getNativeVideoSink():null;
         const worker=await NativeWorker.start(runtime,{network:networkEnabled,pcm,cpuVideo:video,experimentalVideoNetwork:video});
@@ -411,17 +466,19 @@ function handleHostMessage(msg) {
     if(incomingName.receive(msg))return;
     capture("host->engine", msg);
     if(setupTransport && ['recvSignal','recvSignalError'].includes(type)) {
+        if(command===12006) log('host reply for 12006:', type, JSON.stringify({keys:Object.keys(data||{}),errorCode:data?.errorCode}));
         setupTransport.receive(msg);return;
     }
     if(setupTransport && type==='control') {
         log('CONTROL MSG RECEIVED:', JSON.stringify(msg));
         setupTransport.receive(msg);
-        if(incomingAttempt && data?.act_type==='voip' && ['answer','cancel','endcall'].includes(data.act) &&
+        if(incomingAttempt && data?.act_type==='voip' && ['answer','cancel','endcall','end_call'].includes(data.act) &&
             String(data.data?.callId)===incomingAttempt.callId && String(data.data?.uidFrom)===incomingAttempt.callerId)
             incomingAttempt.controller.abort();
         if(data?.act_type==='voip' && data.act==='request' && !callActive && !nativeAppLocked &&
             process.env.ZALO_ZCALL_NATIVE_INCOMING==='1' && networkEnabled && mediaEnabled) {
             callActive=true;
+            activePeer={calleeId:Number(data.data?.uidFrom),callId:Number(data.data?.callId)};
             try { setupTransport?.reset?.(); } catch {}
             log('incoming request data:', JSON.stringify(data));
             let incomingVideo=false;
@@ -452,8 +509,8 @@ function handleHostMessage(msg) {
                 try {
                   return (await runIncomingDesktop(setupTransport,msg,{nativeLocalId,clientVersion:initInfo.clientVersion,
                     runtime:process.env.ZALO_ZRTC_RUNTIME,
-                    pcm:{source:process.env.ZALO_ZCALL_PCM_SOURCE,sink:process.env.ZALO_ZCALL_PCM_SINK},
-                    videoEnabled,device:process.env.ZALO_ZCALL_VIDEO_DEVICE,
+                    pcm:chosenPcm(),
+                    videoEnabled,device:chosenVideoDevice(),
                     sink:videoEnabled?getNativeVideoSink():null,
                     preview:videoEnabled?getNativePreviewSink():null,
                     signal:attempt.controller.signal,onPhase:phase=>{
@@ -470,6 +527,13 @@ function handleHostMessage(msg) {
                 }).finally(async()=>{
                         await clearNativeCallUI();
                         if(incomingAttempt===attempt){incomingAttempt=null;endCall('incoming ended');}
+                        if(relayFailed) {
+                            relayFailed=false;
+                            // Tell the user why the call dropped; the relay chosen by the caller is not delivering.
+                            const notice=new AbortController();
+                            setTimeout(()=>notice.abort(),8000);
+                            try {Promise.resolve(nativeCallDialog('error',{signal:notice.signal})).catch(()=>{});} catch {}
+                        }
                     });
         }
         return;
@@ -496,6 +560,8 @@ function handleHostMessage(msg) {
                 sendToHost({ type: "update", command: "listDevice", data: buildDeviceList() });
                 return;
             case "listDevice":
+                if(data && typeof data==='object' && !Array.isArray(data)) deviceSelection=data;
+                return;
             case "updateLang":
             case "advancedOptions":
                 return; // informational host pushes; nothing to apply

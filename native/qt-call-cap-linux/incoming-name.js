@@ -4,9 +4,9 @@ const {peerName,peerAvatar}=require('../android-zrtc/call-presentation.cjs');
 // Use the existing renderer contact lookup. A unique response ticket prevents
 // delayed results from an earlier call/account from naming a new call.
 class IncomingName {
-  constructor(send,{timeoutMs=750}={}) {
+  constructor(send,{timeoutMs=1500,onResult=()=>{}}={}) {
     if(typeof send!=='function' || !Number.isInteger(timeoutMs) || timeoutMs<1 || timeoutMs>2000)throw new TypeError('Invalid name lookup');
-    this.send=send;this.timeoutMs=timeoutMs;this.pending=null;
+    this.send=send;this.timeoutMs=timeoutMs;this.onResult=onResult;this.pending=null;
   }
   resolveContact(id,signal) {
     const empty={peerName:'',peerAvatar:''};
@@ -16,7 +16,7 @@ class IncomingName {
       const done=value=>{
         if(this.pending?.requestId!==requestId)return;
         clearTimeout(this.pending.timer);signal.removeEventListener('abort',abort);
-        this.pending=null;resolve(value);
+        this.pending=null;try{this.onResult({name:!!value.peerName,avatar:!!value.peerAvatar,timedOut:value===empty});}catch{}resolve(value);
       };
       const abort=()=>done(empty);
       this.pending={id,requestId,done,timer:setTimeout(abort,this.timeoutMs)};

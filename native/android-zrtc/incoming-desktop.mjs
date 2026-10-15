@@ -14,7 +14,7 @@ export async function runIncomingDesktop(transport,message,{nativeLocalId,client
     // `answer` means another device on this recipient account accepted the
     // call. It can arrive while the worker/contact lookup is still starting,
     // so dismiss the local notification at this outer boundary as well.
-    if(!['answer','cancel','endcall'].includes(event?.act))return;
+    if(!['answer','cancel','endcall','end_call'].includes(event?.act))return;
     try {const key=incomingControlKey({type:'control',data:event});
       if(decoded && key.callId===decoded.key.callId && key.callerId===decoded.key.callerId){remoteCanceled=true;controller.abort();}
     }catch {}

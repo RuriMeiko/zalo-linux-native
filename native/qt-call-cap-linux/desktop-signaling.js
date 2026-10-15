@@ -12,6 +12,8 @@ const FIELDS = Object.freeze({
     402:['callerId','callId','status','codec','extendData','rtcpAddress','rtpAddress','session'],
     405:['toId','callId','callType'],
     409:['toId','callId'],
+    // Renderer /api/voicecall/conf: current mic/camera state for the peer.
+    12006:['calleeId','callId','isOnCam','isOnMic','data'],
 });
 class DesktopSignaling extends EventEmitter {
     constructor(send, {timeoutMs=15000}={}) {
@@ -23,6 +25,16 @@ class DesktopSignaling extends EventEmitter {
         this.configurationIds=new Set();
     }
     request(command,data) {
+        const started=Date.now();
+        const trace=(note)=>{
+            if(process.env.ZALO_ZCALL_LOG==='0')return;
+            try{require('fs').appendFileSync(require('path').join(require('os').homedir(),'.config','ZaloData','zcall-agent.log'),
+                `${new Date().toISOString()} [signaling] ${command} ${note} +${Date.now()-started}ms\n`);}catch{}
+        };
+        trace('request');
+        return this.requestInner(command,data).then(value=>{trace('ok');return value;},error=>{trace('failed: '+String(error&&error.message).slice(0,80)+' code='+(error&&error.code));throw error;});
+    }
+    requestInner(command,data) {
         if(this.closed) return Promise.reject(new Error('Signaling transport closed'));
         if(!Number.isInteger(command) || !Object.hasOwn(FIELDS,command) ||
             !data || typeof data!=='object' || Array.isArray(data))
@@ -34,7 +46,8 @@ class DesktopSignaling extends EventEmitter {
             return Promise.reject(new Error('Unexpected signaling field'));
         for(const key of fields) {
             if(key==='extendData' && data[key]===undefined) continue;
-            if(!Object.hasOwn(data,key) || !['string','number'].includes(typeof data[key]) ||
+            const kinds=command===12006 && (key==='isOnCam' || key==='isOnMic')?['boolean']:['string','number'];
+            if(!Object.hasOwn(data,key) || !kinds.includes(typeof data[key]) ||
                 (typeof data[key]==='number' && !Number.isFinite(data[key])))
                 return Promise.reject(new Error('Missing or invalid signaling field: '+key));
             payload[key]=data[key];
@@ -51,7 +64,7 @@ class DesktopSignaling extends EventEmitter {
                 this.pending.delete(command);
                 // Late command-only responses require a fresh connection.
                 // A 401 retry is safe only with a fresh, never-reused call ID.
-                if(command!==401)this.expired.add(command);
+                if(command!==401 && command!==12006)this.expired.add(command);
                 reject(new Error('Signaling response timeout'));
             },this.timeoutMs);
             this.pending.set(command,{resolve,reject,timer,callId:String(payload.callId)});
