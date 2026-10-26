@@ -162,6 +162,12 @@ export async function update(opts,appDir) {
         if(!/Selected (source|sink|camera) is unavailable|Unable to check selected/.test(text))throw error;
         log('warning: configured audio/camera device is not present right now');
       });
+      // The previous copy is only needed until the new one passes its check.
+      // Delete it immediately: keeping one backup per update filled the disk
+      // with tens of gigabytes of near-identical copies. The git history is
+      // the source of truth, so a failed update is reinstalled rather than
+      // rolled back to a stale tree.
+      await rm(previous,{recursive:true,force:true}).catch(()=>{});
     } catch(error) {
       log('new version failed its check; restoring the previous one');
       await rm(appDir,{recursive:true,force:true}).catch(()=>{});
@@ -171,7 +177,7 @@ export async function update(opts,appDir) {
     await mkdir(STATE_DIR,{recursive:true,mode:0o700});
     await writeFile(path.join(STATE_DIR,'state.json'),JSON.stringify({commit:remote,runtime:runtimeDir,previous:state,updatedAt:new Date().toISOString()},null,2)+'\n',{mode:0o600});
     await prune(appDir,runtimeDir,state&&state.runtime);
-    log(`updated to ${sha7(remote)}. Start Zalo again to use it. Roll back with: node ${path.join(appDir,'scripts/update-native.mjs')} --rollback`);
+    log(`updated to ${sha7(remote)}. Start Zalo again to use it.`);
     return EXIT.OK;
   } finally {
     await rm(work,{recursive:true,force:true}).catch(()=>{});

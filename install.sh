@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 INSTALL_PARENT="$HOME/.local/share"
 INSTALL_DIR="$INSTALL_PARENT/zalo"
 DESKTOP_DIR="$HOME/.local/share/applications"
-RECOVERY_DIR="$HOME/zalo-native-recovery"
 CONFIG_FILE="$SCRIPT_DIR/launch.json"
 STAGING_ROOT=""
 
@@ -47,7 +46,7 @@ fi
 
 # Building in a sibling staging directory keeps the active installation intact
 # until the complete payload and generated manifest have been written.
-mkdir -p -- "$INSTALL_PARENT" "$DESKTOP_DIR" "$RECOVERY_DIR"
+mkdir -p -- "$INSTALL_PARENT" "$DESKTOP_DIR"
 STAGING_ROOT="$(mktemp -d "$INSTALL_PARENT/.zalo-install.XXXXXX")"
 STAGED_APP="$STAGING_ROOT/zalo"
 print_step "Building verified Zalo installation..."
@@ -64,16 +63,15 @@ for cmdline in /proc/[0-9]*/cmdline; do
     fi
 done
 
-BACKUP_DIR=""
+# Reinstalling replaces the previous copy in place; no backup directory is kept.
+# Every installed version is reproducible from the git commit it came from, so a
+# stale copy on disk is pure disk cost (this used to accumulate ~385 MB per run).
 if [[ -d "$INSTALL_DIR" ]]; then
-    BACKUP_ROOT="$(mktemp -d "$RECOVERY_DIR/zalo-before-$(date +%Y%m%d-%H%M%S)-XXXXXX")"
-    BACKUP_DIR="$BACKUP_ROOT/zalo"
-    print_step "Moving the previous installation to $BACKUP_DIR..."
-    mv -- "$INSTALL_DIR" "$BACKUP_DIR"
+    print_step "Replacing the previous installation at $INSTALL_DIR..."
+    rm -rf -- "$INSTALL_DIR"
 fi
 if ! mv -- "$STAGED_APP" "$INSTALL_DIR"; then
-    [[ -n "$BACKUP_DIR" && ! -e "$INSTALL_DIR" ]] && mv -- "$BACKUP_DIR" "$INSTALL_DIR"
-    echo "ERROR: Could not activate the new installation; the previous copy was restored." >&2
+    echo "ERROR: Could not activate the new installation; run install.sh again." >&2
     exit 1
 fi
 
@@ -112,6 +110,4 @@ command_exists kbuildsycoca5 && kbuildsycoca5 --noincremental >/dev/null 2>&1 ||
 
 printf '\n%s installed successfully.\nLocation: %s\nLauncher: %s/zalo.desktop\n' \
     "$APP_NAME" "$INSTALL_DIR" "$DESKTOP_DIR"
-if [[ -n "$BACKUP_DIR" ]]; then
-    printf 'Previous version backup: %s\n' "$BACKUP_DIR"
-fi
+
