@@ -61,7 +61,11 @@ export async function copyInstallation(input) {
     const nodePath=process.execPath;
     if(!path.isAbsolute(nodePath) || /[\0\r\n]/.test(nodePath) || !(await lstat(nodePath)).isFile())throw new Error('Node executable is unavailable');
     const quotedNode="'"+nodePath.replaceAll("'","'\\''")+"'";
-    const launcherText=`#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "\${BASH_SOURCE[0]%/*}" && pwd -P)"\nZALO_INSTALLED_NODE=${quotedNode}\nif [[ ! -x "$ZALO_INSTALLED_NODE" ]]; then\n    echo 'Installed Node.js runtime is unavailable; recreate this installation.' >&2\n    exit 1\nfi\n"$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/verify-installation.mjs" "$ZALO_INSTALLED_DIR" --require-generated\nexec "$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n`;
+    // The update pass runs before exec so "quit and reopen Zalo" applies a pending
+    // update; it is best effort and never blocks the launch (|| true), and it is
+    // skipped entirely once Zalo is already running, because the updater refuses to
+    // swap directories underneath a live process.
+    const launcherText=`#!/bin/bash\nset -euo pipefail\nZALO_INSTALLED_DIR="$(cd -- "\${BASH_SOURCE[0]%/*}" && pwd -P)"\nZALO_INSTALLED_NODE=${quotedNode}\nif [[ ! -x "$ZALO_INSTALLED_NODE" ]]; then\n    echo 'Installed Node.js runtime is unavailable; recreate this installation.' >&2\n    exit 1\nfi\n"$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/verify-installation.mjs" "$ZALO_INSTALLED_DIR" --require-generated\n"$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/apply-update-on-launch.mjs" --app-dir "$ZALO_INSTALLED_DIR" --quiet || true\nexec "$ZALO_INSTALLED_NODE" "$ZALO_INSTALLED_DIR/scripts/native-launch.mjs" "$ZALO_INSTALLED_DIR/launch.json" "$@"\n`;
     await writeFile(path.join(plan.destination,'launch.json'),configText,{flag:'wx',mode:0o600});
     await writeFile(path.join(plan.destination,'launch-installed.sh'),launcherText,
       {flag:'wx',mode:0o755});
