@@ -14,7 +14,7 @@ const tests=[
   ['scripts/test-call-control.mjs'],
   ['native/qt-call-cap-linux/test-zalocap.js'],
   ['scripts/test-update-native.mjs'],
-  ['scripts/test-tray-update.mjs'],
+  ['scripts/test-tray-linux.mjs'],
   ['scripts/test-zadark.mjs'],
   ...['file-utils','file-utilities','zfile','zwalker','v8-profiles','mp4thumb','zjxl','zcall','zimage']
     .map(name=>[`native/nativelibs/${name}/test-linux.js`]),

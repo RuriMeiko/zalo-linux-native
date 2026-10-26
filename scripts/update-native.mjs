@@ -156,6 +156,12 @@ export async function update(opts,appDir) {
     await rename(appDir,previous);
     try {
       await rename(staging,appDir);
+      // The tray entry lives in the main-process bundle, which is replaced wholesale
+      // by every update. Re-apply it before the check so the new version launches
+      // with the entry already present.
+      await runNode(path.join(appDir,'scripts/tray-linux.mjs'),['apply',appDir]).catch(error=>{
+        log('warning: could not add the tray update entry: '+String(error.message||error).trim());
+      });
       await runNode(path.join(appDir,'scripts/native-launch.mjs'),[path.join(appDir,'launch.json'),'--check']).catch(error=>{
         // Only a missing audio/camera device is acceptable here; anything else rolls back.
         const text=String(error.stdout||'')+String(error.stderr||'');

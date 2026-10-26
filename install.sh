@@ -103,6 +103,10 @@ if command_exists qdbus6; then
         org.kde.ActivityManager.Activities.ListActivities 2>/dev/null || true)
 fi
 node "$INSTALL_DIR/scripts/register-desktop.mjs" "$INSTALL_DIR"
+# The tray update entry lives in the main-process bundle, so it must be re-applied
+# whenever the payload is replaced. Failing here only loses the entry, not the install.
+node "$INSTALL_DIR/scripts/tray-linux.mjs" apply "$INSTALL_DIR" || \
+    echo "Warning: could not add the tray update entry." >&2
 
 command_exists update-desktop-database && update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
 command_exists kbuildsycoca6 && kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
@@ -110,4 +114,3 @@ command_exists kbuildsycoca5 && kbuildsycoca5 --noincremental >/dev/null 2>&1 ||
 
 printf '\n%s installed successfully.\nLocation: %s\nLauncher: %s/zalo.desktop\n' \
     "$APP_NAME" "$INSTALL_DIR" "$DESKTOP_DIR"
-
