@@ -1,5 +1,21 @@
 // CLIPBOARD IMAGE PASTE FIX
-// Cleanup old temp files on startup
+//
+// Zalo's chat input reads pasted images from two places:
+//   * the paste event's clipboardData files (its own _callPasteData path), and
+//   * a native clipboard poll (getClipboardImage) when the event carries none.
+//
+// On Linux an image copied from another application often arrives as a bitmap
+// only: clipboardData.files is empty, so Zalo's own path uploads nothing and
+// the picture never reaches the composer. This shim covers exactly that case by
+// turning the bitmap into a File and dropping it on the composer.
+//
+// It must stay completely out of the way whenever clipboardData already carries
+// an image file. Doing both inserts the picture twice: Zalo uploads the real
+// file (7858 bytes in testing) while the shim's synthetic drop uploads a
+// re-encoded copy, so one Ctrl+V produces two images.
+//
+// The decision is made in the capture phase, before Zalo's own listener, so
+// Zalo keeps its normal path whenever the event already has the file.
 try {
     const _fs = require('fs'), _os = require('os'), _path = require('path');
     _fs.readdirSync(_os.tmpdir()).filter(f => f.startsWith('zalo_clip_')).forEach(f => {
@@ -7,7 +23,59 @@ try {
     });
 } catch(_) {}
 window.addEventListener('DOMContentLoaded', () => {
-    async function tryPasteImage() {
+    const IMAGE_EXTS = ['png','jpg','jpeg','gif','webp','bmp','tiff','tif','avif','jxl'];
+
+    function clipboardDataOf(e) {
+        return e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData) || null;
+    }
+    // True when the event itself carries an image file. Zalo uploads that file
+    // natively, so the shim must not add a second one.
+    function eventHasImageFile(data) {
+        if (!data) return false;
+        try {
+            const files = data.files;
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    if (String(files[i].type || '').startsWith('image/')) return true;
+                }
+            }
+            const items = data.items;
+            if (items && items.length > 0) {
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].kind === 'file' && String(items[i].type || '').startsWith('image/')) return true;
+                }
+            }
+        } catch (_) {}
+        return false;
+    }
+    // A clipboard carrying text as well as a bitmap (copying from a web page or
+    // a document) belongs to Zalo: hijacking it would silently drop the text.
+    function eventHasText(data) {
+        if (!data) return false;
+        try {
+            const types = data.types || [];
+            if (types.indexOf && types.indexOf('text/plain') >= 0) {
+                return String(data.getData('text/plain') || '').trim().length > 0;
+            }
+        } catch (_) {}
+        return false;
+    }
+    // Only a bitmap that Zalo cannot see needs the shim. Both readers below are
+    // synchronous so the decision happens before Zalo's listener runs.
+    function clipboardHasBitmap() {
+        if (!window.$zelectronNative) return false;
+        try {
+            const png = window.$zelectronNative.getClipboardImagePNG;
+            if (png && png()) return true;
+        } catch (_) {}
+        try {
+            const getPath = window.$zelectronNative.getClipboardFilePath;
+            const file = getPath && getPath();
+            if (!file) return false;
+            return IMAGE_EXTS.includes(String(file).split('.').pop().toLowerCase());
+        } catch (_) { return false; }
+    }
+    async function insertClipboardImage() {
         if (!window.$zelectronNative) return;
         try {
             let file = null;
@@ -20,9 +88,7 @@ window.addEventListener('DOMContentLoaded', () => {
             } else {
                 const filePath = window.$zelectronNative.getClipboardFilePath && window.$zelectronNative.getClipboardFilePath();
                 if (!filePath) return;
-                const ext = filePath.split('.').pop().toLowerCase();
-                const imageExts = ['png','jpg','jpeg','gif','webp','bmp','tiff','tif','avif','jxl'];
-                if (!imageExts.includes(ext)) return;
+                if (!IMAGE_EXTS.includes(filePath.split('.').pop().toLowerCase())) return;
                 const res = await fetch('file://' + filePath);
                 const blob = await res.blob();
                 file = new File([blob], filePath.split('/').pop(), { type: blob.type || 'image/png' });
@@ -36,14 +102,28 @@ window.addEventListener('DOMContentLoaded', () => {
             target.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt, bubbles: true }));
             target.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true }));
             target.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
-        } catch(err) {}
+        } catch (_) {}
     }
-    let _lastPaste = 0;
-    document.addEventListener('paste', async (e) => {
+    let lastPasteAt = 0;
+    document.addEventListener('paste', (e) => {
+        const target = e.target;
+        if (!target || typeof target.closest !== 'function' || !target.closest('#chatView')) return;
+        const data = clipboardDataOf(e);
+        // Zalo handles these itself; touching them would duplicate the image.
+        if (eventHasImageFile(data)) return;
+        if (eventHasText(data)) return;
+        if (!clipboardHasBitmap()) return;
+        // One gesture can reach more than one listener; only the first acts.
         const now = Date.now();
-        if (now - _lastPaste < 200) return;
-        _lastPaste = now;
-        await tryPasteImage();
+        if (now - lastPasteAt < 300) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+        lastPasteAt = now;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        insertClipboardImage();
     }, true);
 });
 __ZaBUNDLENAME__ = "preload-render", __SCRIPT_TYPE__ = "preload",

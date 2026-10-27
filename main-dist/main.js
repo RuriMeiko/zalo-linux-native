@@ -111046,6 +111046,39 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                                     label: "Mở Zalo",
                                     click: en
                                 }, {
+    label: "Kiểm tra cập nhật",
+    click: () => {
+        try {
+            const cp = require("child_process"),
+                fs = require("fs"),
+                p = require("path"),
+                root = p.join(__dirname, ".."),
+                script = p.join(root, "scripts/update-native.mjs"),
+                {Notification} = require("electron");
+            const done = (body) => {
+                try { new Notification({title: "Kiểm tra cập nhật", body}).show(); }
+                catch (e) { console.log("[update] " + body); }
+            };
+            if (!fs.existsSync(script)) {
+                done("Bản chạy từ mã nguồn: hãy dùng git pull.");
+                return;
+            }
+            done("Đang kiểm tra...");
+            cp.execFile(process.execPath, [script, "--check", "--app-dir", root],
+                {timeout: 180000}, (error, stdout, stderr) => {
+                    if (error && error.code === 10)
+                        return done("Có bản mới. Thoát hẳn Zalo rồi mở lại để cập nhật.");
+                    if (error && error.code === 3)
+                        return done("Có bản mới nhưng Zalo đang chạy. Thoát hẳn rồi mở lại.");
+                    if (error)
+                        return done("Kiểm tra thất bại: " + String(stderr || error.message || "").trim().split("\n").pop());
+                    done("Bạn đang dùng bản mới nhất.");
+                });
+        } catch (error) {
+            console.log("[update] tray check failed: " + (error && error.message));
+        }
+    }
+}, {
                                     submenu: t.buildFromTemplate([{
                                         label: "Đang online",
                                         click: nn,
@@ -111074,6 +111107,39 @@ __ZaBUNDLENAME__ = "main", __SCRIPT_TYPE__ = "main",
                                     label: "Mở Zalo",
                                     click: en
                                 }, {
+    label: "Kiểm tra cập nhật",
+    click: () => {
+        try {
+            const cp = require("child_process"),
+                fs = require("fs"),
+                p = require("path"),
+                root = p.join(__dirname, ".."),
+                script = p.join(root, "scripts/update-native.mjs"),
+                {Notification} = require("electron");
+            const done = (body) => {
+                try { new Notification({title: "Kiểm tra cập nhật", body}).show(); }
+                catch (e) { console.log("[update] " + body); }
+            };
+            if (!fs.existsSync(script)) {
+                done("Bản chạy từ mã nguồn: hãy dùng git pull.");
+                return;
+            }
+            done("Đang kiểm tra...");
+            cp.execFile(process.execPath, [script, "--check", "--app-dir", root],
+                {timeout: 180000}, (error, stdout, stderr) => {
+                    if (error && error.code === 10)
+                        return done("Có bản mới. Thoát hẳn Zalo rồi mở lại để cập nhật.");
+                    if (error && error.code === 3)
+                        return done("Có bản mới nhưng Zalo đang chạy. Thoát hẳn rồi mở lại.");
+                    if (error)
+                        return done("Kiểm tra thất bại: " + String(stderr || error.message || "").trim().split("\n").pop());
+                    done("Bạn đang dùng bản mới nhất.");
+                });
+        } catch (error) {
+            console.log("[update] tray check failed: " + (error && error.message));
+        }
+    }
+}, {
                                     label: "",
                                     type: "separator"
                                 }, {
