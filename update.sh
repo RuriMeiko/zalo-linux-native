@@ -2,8 +2,7 @@
 # One command to install Zalo on a new Linux machine, or update an existing
 # installation from the project's GitHub repository.
 #
-#   curl -fsSL https://raw.githubusercontent.com/RuriMeiko/zalo-linux-native/main/update.sh -o /tmp/zalo-update.sh
-#   bash /tmp/zalo-update.sh
+#   curl -fsSL https://raw.githubusercontent.com/RuriMeiko/zalo-linux-native/main/update.sh | bash
 #
 # or, from a checkout:
 #

@@ -35,7 +35,18 @@ var instance = module.exports = {
     },
     fileUtilities: () => {
         try {
-            return require('./file-utilities/index.js');
+            const utilities = require('./file-utilities/index.js');
+            // The Linux build has no directory walker of its own, so borrow the
+            // native one. getDirectorySize* is what the storage screens call;
+            // the values are identical to the JS walk, only faster.
+            try {
+                const native = require('./nativedirstat/index.js');
+                if (native.usingNative()) {
+                    utilities.getDirectorySizeSync = (dir, options) => native.getDirectorySizeSync(dir, options);
+                    utilities.getDirectorySizeAsync = (dir, options) => native.getDirectorySizeAsync(dir, options);
+                }
+            } catch (error) {}
+            return utilities;
         } catch (error) {
             return {};
         }

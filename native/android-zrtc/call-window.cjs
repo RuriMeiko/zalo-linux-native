@@ -37,8 +37,21 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     pending=null;current.signal.removeEventListener('abort',current.abort);
     if(error)current.reject(error);else current.resolve(value);
   };
+  // When the remote party hangs up while no dialog is waiting, the popup has
+  // nobody to resolve to: the "end" click used to only set endQueued, which
+  // left the window on screen and the app unresponsive until it was killed.
+  // Arm a short idle close instead; a new incoming call cancels it.
+  let idleClose=null;
+  const cancelIdleClose=()=>{if(idleClose!==null){clearTimeout(idleClose);idleClose=null;}};
+  const armIdleClose=()=>{
+    endQueued=true;
+    if(lastKind==='error'){dispose();return;}
+    cancelIdleClose();
+    idleClose=setTimeout(()=>{idleClose=null;dispose();},1000);
+    try {idleClose.unref?.();}catch {}
+  };
   const dispose=()=>{
-    if(disposed)return;disposed=true;lastKind=null;endQueued=false;answerQueued=false;clearAttention();settle(new Error('Call window closed'));
+    if(disposed)return;disposed=true;lastKind=null;endQueued=false;answerQueued=false;cancelIdleClose();clearAttention();settle(new Error('Call window closed'));
     ipcMain.removeListener('linux-call-action',action);
     ipcMain.removeListener('linux-call-painted',painted);
     for(const task of framePending.values()){clearTimeout(task.timer);task.reject(new Error('Call window closed'));}framePending.clear();
@@ -54,9 +67,8 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     if(!window || event.sender!==window.webContents || id!==revision)return;
     if(!pending) {
       if(value==='end') {
-        endQueued=true;
         window.webContents.send('linux-call-busy',revision);
-        if(lastKind==='error') dispose();
+        armIdleClose();
       } else if(value==='answer') {
         answerQueued=true;
         window.webContents.send('linux-call-busy',revision);
@@ -89,10 +101,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
       if(disposed)return;
       event.preventDefault();
       if(pending)action({sender:created.webContents},revision,'end');
-      else {
-        endQueued=true;
-        if(lastKind==='error') dispose();
-      }
+      else armIdleClose();
     });
     loading=created.loadFile(path.join(__dirname,'call-window.html'));
     return loading;
@@ -115,6 +124,11 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     clearVideo(source='remote'){if(window && !disposed)window.webContents.send('linux-call-video-clear',source);},
     async notifyIncoming({video=false,peerName='',peerAvatar=''}={}) {
       if(disposed)throw new Error('Call window unavailable');
+      // A queued end click must not close the window of the call that arrives
+      // next, and must not answer the new consent dialog either: clear both.
+      cancelIdleClose();
+      endQueued=false;
+      answerQueued=false;
       await ensure();
       if(disposed || pending)throw new Error('Call window unavailable');
       const safeName=normalizePeerName(peerName),safeAvatar=normalizePeerAvatar(peerAvatar);
@@ -128,6 +142,7 @@ module.exports=function createCallWindow({BrowserWindow,ipcMain,Notification}) {
     async dialog(kind,{signal,video=false,muted=false,muteControl=false,cameraControl=false,cameraEnabled=true,peerName='',peerAvatar=''}={}) {
       if(disposed || pending || !['consent','preparing','dialing','active','error'].includes(kind) || !signal || signal.aborted)
         throw new Error('Call window unavailable');
+      cancelIdleClose();
       await ensure();
       if(disposed || signal.aborted)throw new Error('Call window canceled');
       // A second request can have been awaiting the same page load.
